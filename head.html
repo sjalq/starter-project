@@ -1,0 +1,35 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                // Add any custom theme extensions here
+            }
+        }
+    }
+</script>
+<style type="text/tailwindcss">
+    @layer utilities {
+        .transition-colors {
+            transition: background-color 0.5s ease-out;
+        }
+        .hover\:bg-green-200:hover {
+            background-color: #bbf7d0; /* Tailwind's green-200 color */
+            transition: background-color 0s;
+        }
+        .bg-blue-100 {
+            background-color: #dbeafe; /* Tailwind's blue-100 color */
+        }
+        .bg-blue-200 {
+            background-color: #bfdbfe; /* Tailwind's blue-200 color */
+        }
+        .bg-white {
+            background-color: #ffffff; /* White color */
+        }
+        .border-blue-200 {
+            border-color: #bfdbfe; /* Tailwind's blue-200 color */
+        }
+    }
+</style>

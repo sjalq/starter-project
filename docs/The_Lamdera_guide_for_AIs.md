@@ -272,14 +272,12 @@ Before reaching for ports, exhaust these alternatives:
    
    Always use `lamdera install` rather than `elm install` to ensure compatibility with the Lamdera ecosystem.
 
-2. **Search for Lamdera-specific packages** that may already solve your problem:
-   ```
-   lamdera install lamdera/<package-name>
-   ```
 
-3. **Browse elm-search.org** to find functions across all published packages that might solve your problem.
+2. **Browse elm-search.org** to find functions across all published packages that might solve your problem.
 
-4. **Look at existing Elm implementations** in similar domains. The community has often already solved common problems in a pure-Elm way.
+3. **Look at existing Elm implementations** in similar domains. The community has often already solved common problems in a pure-Elm way.
+
+For example, there's an elm/file package!
 
 Remember: nearly every JavaScript interop problem has been solved in a typed, reliable way by the Elm ecosystem. Ports should be your absolute last resort after exhausting all other options, and even then, consider carefully whether the functionality is truly necessary.
 

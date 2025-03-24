@@ -1,0 +1,250 @@
+# The Lamdera Guide for AIs
+
+## Core Concepts
+
+One of Lamdera's most powerful features is that if your code compiles, it typically works correctly. This is due to Elm's extremely strict typing system, which allows you to model your application's features by starting with the types that represent your domain. This will cause compiler errors in all the places where you need to add functionality. If you were to look at the files in the src/ directory, you would see the red ones are the ones that don't compile, and they would serve as a guide to the places where you need to add functionality.
+
+## Key Types in Lamdera Applications
+
+### 1. Backend Model
+The Backend Model serves as your database, representing persistent data. Best practices for Backend Models include:
+- Keep the structure flat and simple
+- Use Dictionaries with String keys for collections
+- Include the key as a field in record types
+- Model relationships between types using Dictionary keys as references
+- Think of each Dictionary as a table in a traditional database
+
+### 2. Frontend Model
+The Frontend Model lives in the browser and should be designed independently from the Backend Model. Key considerations:
+- Keep it as flat as possible
+- May contain different versions of backend types
+  - Example: A User record might exclude sensitive fields like passwords
+  - May combine data that exists in separate backend collections
+- Should represent the UI state effectively
+
+### 3. Message Types
+
+#### Frontend Messages
+- Represent state changes in the browser
+- Handle user interactions and environmental events
+- Drive the frontend update cycle
+
+#### ToBackend Messages
+- Communication from browser to Lamdera backend
+- Represent requests for data or actions
+
+#### ToFrontend Messages
+- Communication from backend to frontend
+- Typically carry responses or push notifications
+
+#### Backend Messages
+- Handle external events on the backend
+- Examples:
+  - HTTP response handling
+  - Time-based events
+  - System notifications
+
+## Feature Development Workflow
+
+### Phase 1: Type Design
+1. Start with the Backend Model
+   - Define your persistent data structures
+   - Plan your collections and relationships
+
+2. Design the Frontend Model
+   - Consider UI requirements
+   - Define view-specific data structures
+
+3. Define Message Types
+   - Map out the complete communication flow
+   - Design all necessary messages between components
+
+### Phase 2: Implementation
+4. Build Frontend with Mock Data
+   - Create UI components
+   - Implement frontend logic
+   - Use hardcoded data for testing
+   - **Note:** After this step, the code should at least compile
+
+5. Wire Up Backend Communication
+   - Implement ToBackend messages
+   - Set up backend request handling
+   - **Note:** After this step, the code should likely compile
+
+6. Implement Backend Logic
+   - This is where the actual functions are written
+   - They will typically be Task Chains but occasionally Message Ricochets
+   - Handle data persistence
+   - Implement business logic
+
+7. Complete Frontend Integration
+   - Handle ToFrontend messages
+   - Create necessary frontend functions
+     - Initially implemented with mock data in step 4
+     - Now updated to work with real backend data
+   - Update UI based on backend responses
+   - Polish error handling
+   - **Note:** After this step, the code should at least compile
+
+### Diagram of the Workflow
+```mermaid
+sequenceDiagram
+    participant FE as Frontend
+    participant BE as Backend
+    
+    Note over FE, BE: Phase 1: Type Design
+    
+    Note over BE: 1. Start with Backend Model
+    Note over FE: 2. Design Frontend Model
+    Note over FE, BE: 3. Define Message Types
+    
+    Note over FE, BE: Phase 2: Implementation
+    
+    Note over FE: 4. Build Frontend with Mock Data
+    Note right of FE: Code Should Compile
+    
+    FE->>BE: 5. Wire Up Backend Communication
+    Note right of FE: Code Should Compile
+    
+    Note over BE: 6. Implement Backend Logic
+    
+    BE->>FE: 7. Complete Frontend Integration
+    Note right of FE: Code Should Compile
+```
+
+
+## Message Patterns
+
+### Message Ricochets vs Task Chains
+
+When implementing processes that involve multiple external interactions (HTTP calls, time delays, etc.), you should strongly prefer using Task chains. Message ricochets should only be used when specific functional requirements or reliability concerns make them absolutely necessary.
+
+#### Task Chains (Preferred Approach)
+A task chain describes the entire process in a sequence of `Task.andThen` / `Task.map` functions. All external interactions are described as tasks, resolving in a single message when the entire chain completes. This approach provides cleaner code, better error handling, and simpler state management.
+
+**Real Example from the Codebase:**
+```elm
+-- From src/EndpointExample/Price.elm
+fetchEthPriceInZar : Task Http.Error String
+fetchEthPriceInZar =
+    let
+        log message =
+            sendSlackMessage Env.slackApiToken Env.slackChannel message
+                |> Task.map (\_ -> ())
+                |> Task.onError (\_ -> Task.succeed ())
+    in
+    log "Starting to fetch ETH price"
+        |> Task.andThen (\_ -> fetchEthPrice)
+        |> Task.andThen (\ethPrice -> 
+            log ("ETH price fetched: " ++ String.fromFloat ethPrice ++ " USD")
+                |> Task.map (\_ -> ethPrice))
+        |> Task.andThen (\ethPrice ->
+            fetchZarRate
+                |> Task.map (\zarRate -> { ethPrice = ethPrice, zarRate = zarRate }))
+        |> Task.andThen (\data ->
+            let
+                finalPrice = data.ethPrice * data.zarRate
+            in
+            log ("Final price calculated: " ++ String.fromFloat finalPrice ++ " ZAR")
+                |> Task.map (\_ -> finalPrice))
+```
+
+**Benefits of Task Chains:**
+- Clear, linear flow of operations
+- Unified error handling
+- No intermediate model updates needed
+- Easier to reason about and maintain
+- Better performance due to fewer model updates
+- Simpler testing as the entire process is contained
+
+#### Message Ricochets (Use Only When Necessary)
+A message ricochet is when each step in a process triggers a message, which might update the model and then trigger another external process, resulting in another message, and so forth. This creates a "ping-pong" effect between your application and external services. While more complex and harder to maintain, there are specific scenarios where this pattern is necessary.
+
+**Example of a Message Ricochet:**
+```elm
+-- This is a conceptual example of a message ricochet pattern
+update msg model =
+    case msg of
+        FetchEthPrice ->
+            ( model
+            , Http.get 
+                { url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+                , expect = Http.expectJson GotEthPrice decoder
+                }
+            )
+        
+        GotEthPrice (Ok price) ->
+            ( { model | ethPrice = price }
+            , Http.get 
+                { url = "https://api.exchangerate.com/v1/latest/USD"
+                , expect = Http.expectJson GotZarRate decoder
+                }
+            )
+        
+        GotZarRate (Ok rate) ->
+            ( { model | finalPrice = model.ethPrice * rate }
+            , fetchJoke model.finalPrice
+            )
+```
+
+#### When to Use Each Pattern
+
+**Default to Task Chains Unless:**
+- You have a specific requirement that absolutely necessitates intermediate state persistence
+- The process MUST be interruptible and resumable
+- You need to show detailed progress updates to users
+- The flow requires complex branching based on intermediate results
+- You need a detailed audit trail of each step
+
+**Best Practice:**
+Even when you need some of the benefits of message ricochets, consider using a hybrid approach:
+1. Start with a task chain as the primary implementation
+2. Add strategic persistence points only where absolutely necessary
+3. Use Slack (or similar) logging for process visibility instead of model persistence
+4. Only fall back to a full message ricochet pattern if the hybrid approach proves insufficient
+
+Remember: Task chains should be your default choice. Only deviate from this when you have a clear, compelling reason that makes message ricochets necessary for your specific use case.
+
+## Task Chain Pattern Example
+
+Here's a concrete example of a Task Chain pattern from the codebase that demonstrates fetching an ETH price and converting it to ZAR:
+
+```elm
+fetchEthPriceInZar : Task Http.Error String
+fetchEthPriceInZar =
+    let
+        log message =
+            sendSlackMessage Env.slackApiToken Env.slackChannel message
+                |> Task.map (\_ -> ())
+                |> Task.onError (\_ -> Task.succeed ())
+    in
+    log "Starting to fetch ETH price"
+        |> Task.andThen (\_ -> fetchEthPrice)
+        |> Task.andThen (\ethPrice -> 
+            log ("ETH price fetched: " ++ String.fromFloat ethPrice ++ " USD")
+                |> Task.map (\_ -> ethPrice))
+        |> Task.andThen (\ethPrice ->
+            fetchZarRate
+                |> Task.map (\zarRate -> { ethPrice = ethPrice, zarRate = zarRate }))
+        |> Task.andThen (\data ->
+            let
+                finalPrice = data.ethPrice * data.zarRate
+            in
+            log ("Final price calculated: " ++ String.fromFloat finalPrice ++ " ZAR")
+                |> Task.map (\_ -> finalPrice))
+```
+
+This pattern shows:
+- Clear sequential flow of operations
+- Error handling through Task results
+- Data passing between steps
+- Integrated logging
+- Final transformation of the data
+
+The Task Chain pattern is particularly useful for:
+- Complex API calls
+- Multi-step data transformations
+- Operations requiring intermediate logging
+- Processes with potential failure points
+- Sequential operations that depend on previous results
+

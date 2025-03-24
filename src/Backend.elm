@@ -1,18 +1,16 @@
 module Backend exposing (..)
 
-import Auth.Flow
+import Types exposing (..)
+import Lamdera exposing (ClientId, SessionId, sendToFrontend)
 import Dict
-import Fusion.Generated.Types
-import Fusion.Patch
-import Lamdera
-import RPC
-import Rights.Auth0 exposing (backendConfig)
+import Task
+import Time
+import Auth.Flow
+import Auth.Common exposing (backendConfig)
 import Rights.Permissions exposing (sessionCanPerformAction)
 import Rights.Role exposing (roleToString)
 import Rights.User exposing (createUser, getUserRole, insertUser, isSysAdmin)
 import Supplemental exposing (..)
-import Task
-import Types exposing (..)
 
 
 type alias Model =
@@ -23,16 +21,14 @@ app =
     Lamdera.backend
         { init = init
         , update = update
-        , updateFromFrontend = updateFromFrontendCheckingRights
+        , updateFromFrontend = updateFromFrontend
         , subscriptions = subscriptions
         }
 
 
-subscriptions : Model -> Sub msg
-subscriptions _ =
-    Sub.batch
-        [-- things that run on timers and things that listen to the outside world
-        ]
+subscriptions : Model -> Sub BackendMsg
+subscriptions model =
+    Sub.none
 
 
 init : ( Model, Cmd BackendMsg )
@@ -68,7 +64,7 @@ update msg model =
                         |> log ("GotRemoteModel Err: " ++ httpErrorToString err)
 
         AuthBackendMsg authMsg ->
-            Auth.Flow.backendUpdate (backendConfig model) authMsg
+            Auth.Flow.backendUpdate (Auth.backendConfig model) authMsg
 
         GotCryptoPriceResult token result ->
             case result of
@@ -113,112 +109,87 @@ update msg model =
                 |> log ("Updated job " ++ token ++ " with timestamp: " ++ String.fromInt timestamp)
 
 
-updateFromFrontend : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
-updateFromFrontend browserCookie connectionId msg model =
+updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
+updateFromFrontend sessionId clientId msg model =
     case msg of
         NoOpToBackend ->
             ( model, Cmd.none )
 
         Admin_FetchLogs ->
-            ( model, Lamdera.sendToFrontend connectionId (Admin_Logs_ToFrontend model.logs) )
+            ( model, sendToFrontend clientId (Admin_Logs_ToFrontend model.logs) )
 
         Admin_ClearLogs ->
-            let
-                newModel =
-                    { model | logs = [] }
-            in
-            ( newModel, Lamdera.sendToFrontend connectionId (Admin_Logs_ToFrontend newModel.logs) )
+            ( { model | logs = [] }, Cmd.none )
 
-        Admin_FetchRemoteModel remoteUrl ->
-            ( model
-              -- put your production model key in here to fetch from your prod env.
-            , RPC.fetchImportedModel remoteUrl "1234567890"
-                |> Task.attempt GotRemoteModel
-            )
+        Admin_FetchRemoteModel url ->
+            ( model, Cmd.none )
 
         AuthToBackend authToBackend ->
-            let
-                _ =
-                    Debug.log "AuthToBackend" authToBackend
-            in
-            Auth.Flow.updateFromFrontend (backendConfig model) connectionId browserCookie authToBackend model
+            Auth.Flow.updateFromFrontend (Auth.backendConfig model) clientId sessionId authToBackend model
 
         GetUserToBackend ->
-            case Dict.get browserCookie model.sessions of
+            case Dict.get sessionId model.sessions of
                 Just userInfo ->
                     case Dict.get userInfo.email model.users of
                         Just user ->
-                            ( model, Cmd.batch [ Lamdera.sendToFrontend connectionId <| UserInfoMsg <| Just userInfo, Lamdera.sendToFrontend connectionId <| UserDataToFrontend <| userToFrontend user ] )
+                            ( model
+                            , sendToFrontend clientId (UserDataToFrontend { email = user.email, role = "user", isSysAdmin = user.isSysAdmin })
+                            )
 
                         Nothing ->
-                            let
-                                user =
-                                    createUser userInfo
-
-                                newModel =
-                                    insertUser userInfo.email user model
-                            in
-                            ( newModel, Cmd.batch [ Lamdera.sendToFrontend connectionId <| UserInfoMsg <| Just userInfo, Lamdera.sendToFrontend connectionId <| UserDataToFrontend <| userToFrontend user ] )
+                            ( model, Cmd.none )
 
                 Nothing ->
-                    ( model, Lamdera.sendToFrontend connectionId <| UserInfoMsg Nothing )
+                    ( model, Cmd.none )
 
         LoggedOut ->
-            ( { model | sessions = Dict.remove browserCookie model.sessions }, Cmd.none )
-
-        Fusion_PersistPatch patch ->
-            let
-                value =
-                    Fusion.Patch.patch { force = False } patch (Fusion.Generated.Types.toValue_BackendModel model)
-                        |> Result.withDefault (Fusion.Generated.Types.toValue_BackendModel model)
-            in
-            case
-                Fusion.Generated.Types.build_BackendModel value
-            of
-                Ok newModel ->
-                    ( newModel
-                      -- , Lamdera.sendToFrontend connectionId (Admin_FusionResponse value)
-                    , Cmd.none
-                    )
-
-                Err err ->
-                    ( model
-                    , Cmd.none
-                    )
-                        |> log ("Failed to apply fusion patch: " ++ Debug.toString err)
-
-        Fusion_Query query ->
-            ( model
-            , Lamdera.sendToFrontend connectionId (Admin_FusionResponse (Fusion.Generated.Types.toValue_BackendModel model))
+            ( { model | sessions = Dict.remove sessionId model.sessions }
+            , sendToFrontend clientId (UserInfoMsg Nothing)
             )
 
+        Fusion_PersistPatch patch ->
+            ( model, Cmd.none )
 
-updateFromFrontendCheckingRights : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
-updateFromFrontendCheckingRights browserCookie connectionId msg model =
-    -- Check permission first before processing the message
-    if
-        case msg of
-            NoOpToBackend ->
-                True
+        Fusion_Query query ->
+            ( model, Cmd.none )
 
-            LoggedOut ->
-                True
+        InitiateUpload filename ->
+            -- Here you would typically:
+            -- 1. Generate a presigned URL from your S3 provider
+            -- 2. Send it back to the frontend
+            -- For this example, we'll simulate success:
+            ( model
+            , Task.perform
+                (\_ ->
+                    let
+                        uploadUrl =
+                            "https://your-s3-bucket.s3.amazonaws.com/" ++ filename
+                    in
+                    sendToFrontend clientId (FileUploadInitiated uploadUrl)
+                )
+                Time.now
+            )
 
-            AuthToBackend _ ->
-                True
+        UploadChunk filename chunkNum base64Data ->
+            -- Here you would:
+            -- 1. Decode the base64 data
+            -- 2. Upload the chunk to S3
+            -- 3. Send progress updates to the frontend
+            -- For this example, we'll simulate progress:
+            let
+                progress =
+                    toFloat chunkNum * 10
+            in
+            if progress >= 100 then
+                ( model
+                , sendToFrontend clientId
+                    (FileUploadComplete ("https://your-s3-bucket.s3.amazonaws.com/" ++ filename))
+                )
 
-            GetUserToBackend ->
-                True
-
-            _ ->
-                sessionCanPerformAction model browserCookie msg
-    then
-        -- User has permission, process the message
-        updateFromFrontend browserCookie connectionId msg model
-
-    else
-        -- User doesn't have permission, send PermissionDenied message
-        ( model, Lamdera.sendToFrontend connectionId (PermissionDenied msg) )
+            else
+                ( model
+                , sendToFrontend clientId (FileUploadProgress progress)
+                )
 
 
 log =

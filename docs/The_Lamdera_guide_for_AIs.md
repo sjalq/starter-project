@@ -61,6 +61,7 @@ The Frontend Model lives in the browser and should be designed independently fro
 
 ### Phase 2: Implementation
 4. Build Frontend with Mock Data
+   - Add the frontend to either the correct existing page or add a new one, adding it to the Route system.
    - Create UI components
    - Implement frontend logic
    - Use hardcoded data for testing
@@ -247,4 +248,38 @@ The Task Chain pattern is particularly useful for:
 - Operations requiring intermediate logging
 - Processes with potential failure points
 - Sequential operations that depend on previous results
+
+## The Perils of Ports: A Warning
+
+Ports are almost always the wrong approach in Lamdera applications and should be avoided. While Elm's port system was designed as an intentional escape hatch to JavaScript, this comes with significant downsides:
+
+- Every port introduces untypable, unverifiable code into your application
+- Ports require boilerplate on both Elm and JavaScript sides
+- They create implicit dependencies that break Elm's guarantees
+- Ports make applications harder to maintain and evolve
+- Error handling becomes significantly more complex
+- Testing is more difficult and less reliable
+- It's lazy, lazy, lazy
+
+### Better Alternatives to Ports
+
+Before reaching for ports, exhaust these alternatives:
+
+1. **Search the Elm Package Registry** for existing pure-Elm solutions:
+   ```
+   lamdera install <package-name>
+   ```
+   
+   Always use `lamdera install` rather than `elm install` to ensure compatibility with the Lamdera ecosystem.
+
+2. **Search for Lamdera-specific packages** that may already solve your problem:
+   ```
+   lamdera install lamdera/<package-name>
+   ```
+
+3. **Browse elm-search.org** to find functions across all published packages that might solve your problem.
+
+4. **Look at existing Elm implementations** in similar domains. The community has often already solved common problems in a pure-Elm way.
+
+Remember: nearly every JavaScript interop problem has been solved in a typed, reliable way by the Elm ecosystem. Ports should be your absolute last resort after exhausting all other options, and even then, consider carefully whether the functionality is truly necessary.
 

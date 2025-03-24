@@ -13,6 +13,7 @@ parser =
         , Parser.map (Admin AdminLogs) (s "admin" </> s "logs")
         , Parser.map (Admin AdminFetchModel) (s "admin" </> s "fetch-model")
         , Parser.map (Admin AdminFusion) (s "admin" </> s "fusion")
+        , Parser.map FileUpload (s "upload")
         ]
 
 
@@ -39,6 +40,9 @@ toString route =
 
         Admin AdminFusion ->
             "/admin/fusion"
+
+        FileUpload ->
+            "/upload"
 
         NotFound ->
             "/not-found"

@@ -30,6 +30,7 @@ type alias BrowserCookie =
 type Route
     = Default
     | Admin AdminRoute
+    | FileUpload
     | NotFound
 
 
@@ -47,6 +48,19 @@ type alias AdminPageModel =
     }
 
 
+type alias FileUploadModel =
+    { selectedFile : Maybe String
+    , uploadStatus : UploadStatus
+    }
+
+
+type UploadStatus
+    = NotStarted
+    | UploadingInProgress Float  -- Progress percentage
+    | FileUploaded String  -- URL of uploaded file
+    | FileUploadFailed String
+
+
 type alias FrontendModel =
     { key : Key
     , currentRoute : Route
@@ -57,6 +71,7 @@ type alias FrontendModel =
     , currentUser : Maybe UserFrontend
     , pendingAuth : Bool
     , fusionState : Fusion.Value
+    , fileUpload : FileUploadModel
     }
 
 
@@ -83,6 +98,12 @@ type FrontendMsg
     --- Fusion
     | Admin_FusionPatch Fusion.Patch.Patch
     | Admin_FusionQuery Fusion.Query
+    --- File Upload
+    | FileSelected String
+    | UploadRequested
+    | UploadProgress Float
+    | UploadComplete String
+    | UploadFailed String
 
 
 type ToBackend
@@ -96,6 +117,9 @@ type ToBackend
     --- Fusion
     | Fusion_PersistPatch Fusion.Patch.Patch
     | Fusion_Query Fusion.Query
+    --- File Upload
+    | InitiateUpload String
+    | UploadChunk String Int String  -- filename, chunk number, base64 data
 
 
 type BackendMsg
@@ -111,14 +135,17 @@ type BackendMsg
 
 type ToFrontend
     = NoOpToFrontend
-      -- Admin page
     | Admin_Logs_ToFrontend (List String)
     | AuthToFrontend Auth.Common.ToFrontend
     | AuthSuccess Auth.Common.UserInfo
     | UserInfoMsg (Maybe Auth.Common.UserInfo)
     | UserDataToFrontend UserFrontend
-    | PermissionDenied ToBackend
     | Admin_FusionResponse Fusion.Value
+    --- File Upload
+    | FileUploadInitiated String  -- Upload URL
+    | FileUploadProgress Float
+    | FileUploadComplete String
+    | FileUploadError String
 
 
 type alias Email =

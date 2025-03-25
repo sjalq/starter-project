@@ -5,7 +5,7 @@ import Auth.Flow
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Nav
 import Html exposing (..)
-import Html.Attributes as Attr exposing (style)
+import Html.Attributes exposing (style)
 import Html.Events as HE
 import Lamdera
 import Pages.Admin
@@ -18,7 +18,6 @@ import Types exposing (..)
 import Url exposing (Url)
 import Fusion.Patch
 import Fusion
-import Pages.FileUpload
 
 type alias Model =
     FrontendModel
@@ -76,7 +75,6 @@ init url key =
             , currentUser = Nothing
             , pendingAuth = False
             , fusionState = Fusion.VUnloaded
-            , fileUpload = { selectedFile = Nothing, uploadStatus = NotStarted }
             }
     in
     inits model route
@@ -90,9 +88,6 @@ inits model route =
 
         Default ->
             Pages.Default.init model
-
-        FileUpload ->
-            Pages.FileUpload.init model
 
         _ ->
             ( model, Cmd.none )
@@ -169,63 +164,13 @@ update msg model =
         Admin_FusionQuery query ->
             ( model, Lamdera.sendToBackend (Fusion_Query query) )
 
-        FileSelected filename ->
-            let
-                oldFileUpload =
-                    model.fileUpload
-            in
-            ( { model | fileUpload = { oldFileUpload | selectedFile = Just filename } }
-            , Cmd.none
-            )
-
-        UploadRequested ->
-            case model.fileUpload.selectedFile of
-                Just filename ->
-                    ( { model
-                        | fileUpload =
-                            { selectedFile = model.fileUpload.selectedFile
-                            , uploadStatus = UploadingInProgress 0
-                            }
-                      }
-                    , Lamdera.sendToBackend (InitiateUpload filename)
-                    )
-
-                Nothing ->
-                    ( model, Cmd.none )
-
-        UploadProgress progress ->
-            let
-                oldFileUpload =
-                    model.fileUpload
-            in
-            ( { model | fileUpload = { oldFileUpload | uploadStatus = UploadingInProgress progress } }
-            , Cmd.none
-            )
-
-        UploadComplete url ->
-            let
-                oldFileUpload =
-                    model.fileUpload
-            in
-            ( { model | fileUpload = { oldFileUpload | uploadStatus = FileUploaded url } }
-            , Cmd.none
-            )
-
-        UploadFailed error ->
-            let
-                oldFileUpload =
-                    model.fileUpload
-            in
-            ( { model | fileUpload = { oldFileUpload | uploadStatus = FileUploadFailed error } }
-            , Cmd.none
-            )
-
 updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
 updateFromBackend msg model =
     case msg of
         NoOpToFrontend ->
             ( model, Cmd.none )
 
+        -- Admin page
         Admin_Logs_ToFrontend logs ->
             let
                 oldAdminPage =
@@ -253,18 +198,9 @@ updateFromBackend msg model =
         Admin_FusionResponse value ->
             ( { model | fusionState = value }, Cmd.none )
 
-        FileUploadInitiated _ ->
-            -- Handle upload initiation, potentially start sending chunks
+        PermissionDenied _ ->
+            -- Simply ignore the denied action without any UI notification
             ( model, Cmd.none )
-
-        FileUploadProgress progress ->
-            update (UploadProgress progress) model
-
-        FileUploadComplete url ->
-            update (UploadComplete url) model
-
-        FileUploadError error ->
-            update (UploadFailed error) model
 
 
 view : Model -> Browser.Document FrontendMsg
@@ -272,18 +208,7 @@ view model =
     { title = "Dashboard"
     , body =
         [ viewTabs model
-        , case model.currentRoute of
-            Default ->
-                Pages.Default.view model
-
-            Admin _ ->
-                Pages.Admin.view model
-
-            FileUpload ->
-                Pages.FileUpload.view model
-
-            NotFound ->
-                viewNotFoundPage
+        , viewCurrentPage model
         ]
     }
 
@@ -428,9 +353,3 @@ authUpdateFromBackend authToFrontendMsg model =
 
         Auth.Common.AuthSessionChallenge _ ->
             ( model, Cmd.none )
-
-
-viewNotFoundPage : Html FrontendMsg
-viewNotFoundPage =
-    div [ Attr.class "text-center p-4" ]
-        [ text "404 - Page Not Found" ]

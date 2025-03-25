@@ -1,11 +1,12 @@
 module RPC exposing (..)
 
-import EndpointExample.Price
 import Dict
+import EndpointExample.Price
 import Env
 import Http
 import Json.Encode as Encode
 import Lamdera exposing (SessionId)
+import Lamdera.Wire exposing (bytesDecode)
 import LamderaRPC exposing (..)
 import Supplemental exposing (..)
 import SupplementalRPC exposing (..)
@@ -28,14 +29,14 @@ lamdera_handleEndpoints rawReq args model =
 
                 "getLogs" ->
                     LamderaRPC.handleEndpointJson getLogs args model
-                    
+
                 -- Example of long running process : Crypto Price Endpoints
                 -- Necessary since Lamdera needs to respond immediately and can
-                -- only provide the result after the asyncrounous calls to external 
-                -- services have been completed. 
+                -- only provide the result after the asyncrounous calls to external
+                -- services have been completed.
                 "getPrice" ->
                     LamderaRPC.handleEndpointJson EndpointExample.Price.getPrice args model
-                
+
                 "getPriceResult" ->
                     LamderaRPC.handleEndpointJson EndpointExample.Price.getPriceResult args model
 
@@ -111,16 +112,16 @@ fetchImportedModel remoteLamderaUrl modelKey =
                 , url = url |> addProxy
                 , body = Http.emptyBody
                 , resolver =
-                    Http.stringResolver <|
+                    Http.bytesResolver <|
                         \response ->
                             case response of
-                                Http.GoodStatus_ _ _ ->
-                                    Ok { logs = []
-                                       , pendingAuths = Dict.empty
-                                       , sessions = Dict.empty
-                                       , users = Dict.empty
-                                       , pollingJobs = Dict.empty
-                                       }
+                                Http.GoodStatus_ _ body ->
+                                    case bytesDecode Types.w3_decode_BackendModel body of
+                                        Just model ->
+                                            Ok model
+
+                                        Nothing ->
+                                            Err (Http.BadBody "Bytes decode failed")
 
                                 Http.BadStatus_ meta _ ->
                                     Err (Http.BadStatus meta.statusCode)

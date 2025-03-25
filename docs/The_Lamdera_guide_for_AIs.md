@@ -126,6 +126,9 @@ view : Model -> Html Msg
    - Polish error handling
    - **Note:** After this step, the code should at least compile
 
+8. Update the Fusion Generated Types
+   - run ```npx elm-pages run fusion/scripts/src/Main.elm elm.json generated Types.BackendModel``` once you are sure you are done with the feature
+
 ### Diagram of the Workflow
 ```mermaid
 sequenceDiagram
@@ -150,6 +153,9 @@ sequenceDiagram
     
     BE->>FE: 7. Complete Frontend Integration
     Note right of FE: Code Should Compile
+
+    FE->>BE: 8. Update Fusion Generated Types
+    Note over BE: Types Should Be Updated
 ```
 
 

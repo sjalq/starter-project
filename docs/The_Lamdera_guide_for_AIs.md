@@ -253,6 +253,7 @@ The Task Chain pattern is particularly useful for:
 
 Ports are almost always the wrong approach in Lamdera applications and should be avoided. While Elm's port system was designed as an intentional escape hatch to JavaScript, this comes with significant downsides:
 
+- They are lazy and based on the mid dev out there, you're not being "mid" are you!?
 - Every port introduces untypable, unverifiable code into your application
 - Ports require boilerplate on both Elm and JavaScript sides
 - They create implicit dependencies that break Elm's guarantees

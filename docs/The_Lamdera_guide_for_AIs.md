@@ -44,6 +44,44 @@ The Frontend Model lives in the browser and should be designed independently fro
   - Time-based events
   - System notifications
 
+### 4. Routes and Pages
+Routes are a crucial part of Lamdera applications, representing distinct views or features. When implementing new functionality:
+
+#### Route Definition
+- New features typically require a new Route variant in the Route type
+- Routes should be descriptive and follow the existing naming pattern
+- Consider route parameters for dynamic content (e.g., `UserProfile String`)
+- Routes correspond to the url path and can be used to represent appropriate state in the URL
+
+#### Page Organization
+- Each top level route should correspond to a dedicated page module in the Pages/ directory
+- Pages should be self-contained with their own view and init functions, but updates should be in the Frontend.elm file
+- Shared components can live in a Components/ directory
+
+#### Best Practices
+- Always add new features as new routes unless explicitly asked otherwise
+- Update the navigation/menu system when adding routes
+- Consider access control and permissions for new routes
+
+Example Structure:
+```elm
+-- Route.elm
+type Route
+    = Home
+    | UserProfile String
+    | Settings
+    | NewFeature  -- Add new routes here
+
+-- Pages/NewFeature.elm
+module Pages.NewFeature exposing (..)
+
+type alias Model = { ... }
+type Msg = ... 
+
+init : Model -> ( Model, Cmd Msg )
+view : Model -> Html Msg
+```
+
 ## Feature Development Workflow
 
 ### Phase 1: Type Design
@@ -52,6 +90,7 @@ The Frontend Model lives in the browser and should be designed independently fro
    - Plan your collections and relationships
 
 2. Design the Frontend Model
+   - Fill in the Routes in the Route.elm file
    - Consider UI requirements
    - Define view-specific data structures
 
@@ -281,4 +320,13 @@ Before reaching for ports, exhaust these alternatives:
 For example, there's an elm/file package!
 
 Remember: nearly every JavaScript interop problem has been solved in a typed, reliable way by the Elm ecosystem. Ports should be your absolute last resort after exhausting all other options, and even then, consider carefully whether the functionality is truly necessary.
+
+## Common Pitfalls
+
+### Code Modification Discipline
+- Don't remove or alter code unrelated to the feature you are currently implementing
+- Try to only remove code if it is central to your current improvements
+
+### Type Organization
+- Types should always be defined in Types.elm unless there is a compelling reason not to
 

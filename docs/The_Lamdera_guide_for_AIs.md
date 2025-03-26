@@ -315,7 +315,7 @@ Before reaching for ports, exhaust these alternatives:
 
 1. **Search the Elm Package Registry** for existing pure-Elm solutions:
    ```
-   lamdera install <package-name>
+   yes | lamdera install <package-name>
    ```
    
    Always use `lamdera install` rather than `elm install` to ensure compatibility with the Lamdera ecosystem.
@@ -345,3 +345,7 @@ Remember: nearly every JavaScript interop problem has been solved in a typed, re
 - Leverage Elm's type system for styling by using the `Html.Attributes` and `Html.Events` modules
 - Use Elm's CSS-in-Elm approach for type-safe styling
 
+# Checking the compiled output
+When you are done with the feature you can run 
+```lamdera make src/Backend.elm src/RPC.elm src/Frontend.elm```
+to see the output of the compiled code.

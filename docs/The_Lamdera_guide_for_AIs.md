@@ -56,6 +56,7 @@ Routes are a crucial part of Lamdera applications, representing distinct views o
 #### Page Organization
 - Each top level route should correspond to a dedicated page module in the Pages/ directory
 - Pages should be self-contained with their own view and init functions, but updates should be in the Frontend.elm file
+- Use discretion here as some system might need their own update function and sub model, but generally pages do not. But be smart about it.
 - Shared components can live in a Components/ directory
 
 #### Best Practices
@@ -104,6 +105,7 @@ view : Model -> Html Msg
    - Create UI components
    - Implement frontend logic
    - Use hardcoded data for testing
+   - Remember the to add the relevant changes to the PageFrame.elm file
    - **Note:** After this step, the code should at least compile
 
 5. Wire Up Backend Communication
@@ -334,5 +336,12 @@ Remember: nearly every JavaScript interop problem has been solved in a typed, re
 - Try to only remove code if it is central to your current improvements
 
 ### Type Organization
-- Types should always be defined in Types.elm unless there is a compelling reason not to
+- Types should preferably be defined in Types.elm
+- When there are clearly seperatable types, like in a game for instance where the game state and msgs needs to be defined, then you can define them in their own module. 
+
+### CSS Best Practices
+- Avoid using separate CSS files
+- Use Elm's built-in HTML and CSS functionality through the `elm/html` package
+- Leverage Elm's type system for styling by using the `Html.Attributes` and `Html.Events` modules
+- Use Elm's CSS-in-Elm approach for type-safe styling
 

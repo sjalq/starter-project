@@ -329,6 +329,13 @@ For example, there's an elm/file package!
 
 Remember: nearly every JavaScript interop problem has been solved in a typed, reliable way by the Elm ecosystem. Ports should be your absolute last resort after exhausting all other options, and even then, consider carefully whether the functionality is truly necessary.
 
+## Package Searching
+
+- Use **elm-search.org** to find functions across packages
+- Check **package.elm-lang.org** for official repositories
+- Always use `yes | lamdera install author/package-name` (not `elm install`) (remember the 'yes')
+- Prioritize official `elm/*` packages, then well-maintained community packages
+
 ## Common Pitfalls
 
 ### Code Modification Discipline
@@ -346,6 +353,8 @@ Remember: nearly every JavaScript interop problem has been solved in a typed, re
 - Use Elm's CSS-in-Elm approach for type-safe styling
 
 # Checking the compiled output
-When you are done with the feature you can run 
+- Periodically check the compiled output of your code by running
 ```lamdera make src/Backend.elm src/RPC.elm src/Frontend.elm```
-to see the output of the compiled code.
+- This will give you a list of errors and warnings that you can fix.
+- It will also show you how you are progressing.
+- Start every new feature session with a compile check.

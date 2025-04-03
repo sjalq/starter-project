@@ -1,0 +1,37 @@
+# Feature Checklist: Default Agent Picker
+
+- [x] **Phase 1: Type Design**
+    - [x] Add `defaultAgentId : Maybe AgentConfigId` to `User` or `UserAgentConfigs` in `Types.elm`.
+    - [x] Add `defaultAgentId : Maybe AgentConfigId` to `UserFrontend` in `Types.elm`.
+    - [x] Modify `UserAgentConfigs` to be a record: `{ configs : Dict AgentConfigId AgentConfig, defaultId : Maybe AgentConfigId }`.
+    - [x] Add `defaultAgentId : Maybe AgentConfigId` to `UserFrontend`.
+-   - [x] Define `ToBackend` message `SetDefaultAgent AgentConfigId`.
+-   - [x] Define `ToFrontend` message `ReceiveAgentData { configs : Dict AgentConfigId AgentConfigView, defaultId : Maybe AgentConfigId }` (replacing `ReceiveAgentConfigs` and removing `ReceiveDefaultAgent`).
+- [ ] **Phase 2: Implementation**
+    - [x] Update `Backend.elm`:
+        - [x] Modify `init` to initialize `UserAgentConfigs` record correctly (empty dict, `Nothing` default).
+        - [x] Handle `ToBackend.SetDefaultAgent` in `updateFromFrontend`:
+            - [x] Get user's `UserAgentConfigs` record.
+            - [x] Verify the provided `AgentConfigId` exists in the `configs` dict.
+            - [x] Update the `defaultId` field in the record.
+            - [x] Store updated `UserAgentConfigs` record.
+            - [x] Send `ToFrontend.ReceiveAgentData` back to the client with updated view configs and new default ID.
+        - [x] Modify `RequestAgentConfigs` handler to send the full `ReceiveAgentData` payload.
+        - [x] Modify `SendChatMsg` handler to retrieve the user's `defaultId` from their `UserAgentConfigs` (fallback if `Nothing`).
+        - [x] Modify `Rights.User.insertUser` to save `defaultAgentConfigs` for new users.
+        - [x] Modify `userToFrontend` helper in `Backend.elm` to include `defaultAgentId` from the `UserAgentConfigs` record.
+        - [x] Remove `addDefaultAgentConfigsIfEmpty` helper and simplify handlers.
+    - [ ] Update `Types.elm`: Implement the type changes defined in Phase 1.
+    - [x] Update `Frontend.elm`:
+        - [ ] Modify `init` if `defaultAgentId` is added to `FrontendModel` directly.
+        - [x] Handle `ToFrontend.ReceiveAgentData` in `updateFromBackend` to update `agentConfigs` dict and `currentUser.defaultAgentId`.
+        - [x] Modify `agentSettingsSubModel` to pass the `defaultAgentId` from `currentUser` to the page.
+    - [x] Update `Pages/AgentSettings.elm`:
+        - [x] Modify `Model` to receive `defaultAgentId : Maybe AgentConfigId`.
+        - [x] Modify `view` to display an indicator/button for the default agent based on the received `defaultAgentId`.
+        - [x] Add a "Set as Default" button next to each agent (conditionally enabled/styled).
+        - [x] Trigger `FrontendMsg -> DirectToBackend (SetDefaultAgent configId)` on button click.
+    - [x] Update `Rights/Permissions.elm`:
+        - [x] Add `SetDefaultAgent _` to `actionRoleMap` (likely `UserRole`).
+    - [x] Run `./generate_and_compile.sh` and fix any compilation errors.
+    - [x] Test setting and using the default agent. 

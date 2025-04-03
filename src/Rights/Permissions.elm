@@ -48,6 +48,13 @@ actionRoleMap msg =
         DeleteAgentConfig _ ->
             UserRole
 
+        -- Chat Permissions
+        SendChatMsg _ ->
+            UserRole
+
+        SetDefaultAgent _ ->
+            UserRole
+
 {-| Checks if a user has permission to perform a specific backend action
 -}
 canPerformAction : User -> ToBackend -> Bool

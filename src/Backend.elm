@@ -43,7 +43,8 @@ init =
       , sessions = Dict.empty
       , users = Dict.empty
       , pollingJobs = Dict.empty
-      , userAgentConfigs = Dict.empty
+      , userAgentConfigs = Dict.empty -- This remains Dict.empty, records are created on demand
+      , chatHistories = Dict.empty
       }
     , Cmd.none
     )
@@ -150,7 +151,10 @@ updateFromFrontend browserCookie connectionId msg model =
                 Just userInfo ->
                     case Dict.get userInfo.email model.users of
                         Just user ->
-                            ( model, Cmd.batch [ Lamdera.sendToFrontend connectionId <| UserInfoMsg <| Just userInfo, Lamdera.sendToFrontend connectionId <| UserDataToFrontend <| userToFrontend user ] )
+                            let
+                                userConfigs = Dict.get userInfo.email model.userAgentConfigs
+                            in
+                            ( model, Cmd.batch [ Lamdera.sendToFrontend connectionId <| UserInfoMsg <| Just userInfo, Lamdera.sendToFrontend connectionId <| UserDataToFrontend <| userToFrontend userConfigs user ] )
 
                         Nothing ->
                             let
@@ -159,8 +163,11 @@ updateFromFrontend browserCookie connectionId msg model =
 
                                 newModel =
                                     insertUser userInfo.email user model
+
+                                -- User has no configs yet, so defaultAgentId is Nothing
+                                userConfigs = Nothing
                             in
-                            ( newModel, Cmd.batch [ Lamdera.sendToFrontend connectionId <| UserInfoMsg <| Just userInfo, Lamdera.sendToFrontend connectionId <| UserDataToFrontend <| userToFrontend user ] )
+                            ( newModel, Cmd.batch [ Lamdera.sendToFrontend connectionId <| UserInfoMsg <| Just userInfo, Lamdera.sendToFrontend connectionId <| UserDataToFrontend <| userToFrontend userConfigs user ] )
 
                 Nothing ->
                     ( model, Lamdera.sendToFrontend connectionId <| UserInfoMsg Nothing )
@@ -201,19 +208,29 @@ updateFromFrontend browserCookie connectionId msg model =
                 
                 Just userEmail ->
                     let
-                        configs = Dict.get userEmail model.userAgentConfigs |> Maybe.withDefault Dict.empty
-                        configsWithDefaults = addDefaultAgentConfigs configs
+                        -- Directly fetch the user's config record, which should exist
+                        currentUserAgentRecord = 
+                            Dict.get userEmail model.userAgentConfigs 
+                                -- Provide a fallback just in case, but log it 
+                                |> Maybe.withDefault { configs = Dict.empty, defaultId = Nothing } 
+                                
+                        -- No need to add defaults anymore
+                        -- configsWithDefaultsRecord = addDefaultAgentConfigsIfEmpty currentUserAgentRecord
+                            
                         configsView : Dict.Dict AgentConfigId AgentConfigView
-                        configsView = Dict.map (\_ cfg -> agentConfigToView cfg) configsWithDefaults
+                        configsView = 
+                            Dict.map (\_ cfg -> agentConfigToView cfg) currentUserAgentRecord.configs
                         
-                        -- Update model if defaults were added
-                        newModel = 
-                            if Dict.isEmpty configs then
-                                { model | userAgentConfigs = Dict.insert userEmail configsWithDefaults model.userAgentConfigs }
-                            else
-                                model
+                        -- No model update needed here anymore
+                        newModel = model
+
+                        payload : { configs : Dict.Dict AgentConfigId AgentConfigView, defaultId : Maybe AgentConfigId }
+                        payload =
+                            { configs = configsView
+                            , defaultId = currentUserAgentRecord.defaultId
+                            }
                     in
-                    ( newModel, Lamdera.sendToFrontend connectionId (ReceiveAgentConfigs configsView) )
+                    ( newModel, Lamdera.sendToFrontend connectionId (ReceiveAgentData payload) )
 
         SaveAgentConfig agentConfig ->
             case getCurrentUserEmail model browserCookie of
@@ -222,32 +239,144 @@ updateFromFrontend browserCookie connectionId msg model =
                 
                 Just userEmail ->
                     let
-                        currentUserConfigs = Dict.get userEmail model.userAgentConfigs |> Maybe.withDefault Dict.empty
-                        configsWithDefaults = addDefaultAgentConfigs currentUserConfigs
+                        currentUserAgentRecord = 
+                            Dict.get userEmail model.userAgentConfigs 
+                            |> Maybe.withDefault { configs = Dict.empty, defaultId = Nothing } -- Should exist
+
+                        -- No need for defaults here either
                         
                         -- Use simple synchronous ID generation for new configs
-                        finalConfigSimpleId = 
+                        finalConfigSimpleId =
                              if agentConfig.id == "new-agent" then
                                  -- NOTE: This ID generation is very basic.
-                                 { agentConfig | id = userEmail ++ "-" ++ String.fromInt (10000 + Dict.size currentUserConfigs) } 
+                                { agentConfig | id = userEmail ++ "-" ++ String.fromInt (10000 + Dict.size currentUserAgentRecord.configs) } 
                              else
                                  agentConfig
 
-                        updatedUserConfigs = Dict.insert finalConfigSimpleId.id finalConfigSimpleId configsWithDefaults
+                        updatedConfigsDict = Dict.insert finalConfigSimpleId.id finalConfigSimpleId currentUserAgentRecord.configs
+                        
+                        -- Preserve existing default ID when saving
+                        updatedUserAgentRecord =
+                            { currentUserAgentRecord | configs = updatedConfigsDict }
                         
                         -- Update the main backend model
                         newModel =
-                            { model | userAgentConfigs = Dict.insert userEmail updatedUserConfigs model.userAgentConfigs }
+                            { model | userAgentConfigs = Dict.insert userEmail updatedUserAgentRecord model.userAgentConfigs }
                         
                         -- Create the view model to send back
-                        updatedConfigsView =
-                            Dict.map (\_ cfg -> agentConfigToView cfg) updatedUserConfigs
+                        payload : { configs : Dict.Dict AgentConfigId AgentConfigView, defaultId : Maybe AgentConfigId }
+                        payload =
+                            { configs = Dict.map (\_ cfg -> agentConfigToView cfg) updatedUserAgentRecord.configs
+                            , defaultId = updatedUserAgentRecord.defaultId
+                            }
                     in
-                    ( newModel, Lamdera.sendToFrontend connectionId (ReceiveAgentConfigs updatedConfigsView) )
+                    ( newModel, Lamdera.sendToFrontend connectionId (ReceiveAgentData payload) )
                         |> log ("Saved config " ++ finalConfigSimpleId.id ++ " for user " ++ userEmail)
+
+        SendChatMsg messageText ->
+            let
+                -- 1. Parse message for @mentions (placeholder)
+                targetAgentId : Maybe AgentId
+                targetAgentId =
+                    if String.startsWith "@@" messageText then
+                        -- Super basic parsing - takes the first word after @
+                        messageText
+                            |> String.split " "
+                            |> List.head
+                            |> Maybe.map (String.dropLeft 1)
+                    else
+                        Nothing
+
+                -- 2. Determine responding agent (placeholder - use default or mentioned)
+                maybeDefaultId = 
+                    getCurrentUserEmail model browserCookie
+                        |> Maybe.andThen (\email -> Dict.get email model.userAgentConfigs)
+                        |> Maybe.andThen (.defaultId)
+
+                respondingAgentId : AgentId
+                respondingAgentId =
+                    case targetAgentId of 
+                        Just mentionedId -> mentionedId -- Use @mention if present
+                        Nothing -> Maybe.withDefault "DefaultAgent" maybeDefaultId -- Otherwise use stored default, fallback to "DefaultAgent"
+
+                -- 3. Construct user message to store
+                userChatMessage : ChatMessage
+                userChatMessage =
+                    { sender = UserSender, text = messageText }
+
+                -- 4. Generate placeholder agent response
+                agentResponseText : String
+                agentResponseText =
+                    "Agent " ++ respondingAgentId ++ " received: '" ++ messageText ++ "' (placeholder response)"
+                
+                agentChatMessage : ChatMessage
+                agentChatMessage =
+                    { sender = AgentSender respondingAgentId, text = agentResponseText }
+
+                -- 5. Update chat history for the user session
+                currentHistory =
+                    Dict.get browserCookie model.chatHistories
+                        |> Maybe.withDefault []
+                
+                updatedHistory =
+                    currentHistory ++ [ userChatMessage, agentChatMessage ]
+
+                newModel =
+                    { model | chatHistories = Dict.insert browserCookie updatedHistory model.chatHistories }
+                
+                -- 6. Send only the agent's response back to the frontend
+                cmd =
+                    Lamdera.sendToFrontend connectionId (ReceiveChatMsg agentChatMessage)
+
+            in
+            ( newModel, cmd )
+                |> log ("Chat message from " ++ Debug.toString browserCookie ++ ": '" ++ messageText ++ "' -> Agent: " ++ respondingAgentId)
 
         DeleteAgentConfig configId ->
             ( model, Cmd.none )
+
+        SetDefaultAgent agentIdToSet ->
+            case getCurrentUserEmail model browserCookie of
+                Nothing ->
+                    ( model, Lamdera.sendToFrontend connectionId (PermissionDenied msg) )
+
+                Just userEmail ->
+                    let
+                        currentUserAgentRecord =
+                            Dict.get userEmail model.userAgentConfigs 
+                            |> Maybe.withDefault { configs = Dict.empty, defaultId = Nothing } -- Should exist
+
+                        -- Check if the agentId exists in the user's configurations
+                        agentExists =
+                            Dict.member agentIdToSet currentUserAgentRecord.configs
+
+                        ( updatedModel, cmdToSend ) =
+                            if agentExists then
+                                let
+                                    -- Update the record with the new defaultId
+                                    updatedUserAgentRecord = 
+                                        { currentUserAgentRecord | defaultId = Just agentIdToSet }
+                                    
+                                    newModel =
+                                         { model | userAgentConfigs = Dict.insert userEmail updatedUserAgentRecord model.userAgentConfigs }
+                                        
+                                    -- Prepare payload for frontend update
+                                    payload : { configs : Dict.Dict AgentConfigId AgentConfigView, defaultId : Maybe AgentConfigId }
+                                    payload =
+                                        { configs = Dict.map (\_ cfg -> agentConfigToView cfg) updatedUserAgentRecord.configs
+                                        , defaultId = updatedUserAgentRecord.defaultId
+                                        }
+                                in
+                                ( newModel, Lamdera.sendToFrontend connectionId (ReceiveAgentData payload) )
+
+                            else
+                                -- Agent ID doesn't exist, maybe log an error, don't change anything
+                                ( model, Cmd.none ) 
+                                    |> log ("Attempted to set non-existent agent ID as default: " ++ agentIdToSet ++ " for user " ++ userEmail)
+
+                    in
+                    ( updatedModel, cmdToSend )
+                        |> log ("Set default agent for " ++ userEmail ++ " to " ++ agentIdToSet)
 
 
 updateFromFrontendCheckingRights : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
@@ -282,11 +411,12 @@ log =
     Supplemental.log NoOpBackendMsg
 
 
-userToFrontend : User -> UserFrontend
-userToFrontend user =
+userToFrontend : Maybe UserAgentConfigs -> User -> UserFrontend
+userToFrontend maybeUserAgentConfigs user =
     { email = user.email
     , isSysAdmin = isSysAdmin user
     , role = getUserRole user |> roleToString
+    , defaultAgentId = maybeUserAgentConfigs |> Maybe.andThen (.defaultId)
     }
 
 
@@ -307,24 +437,6 @@ agentConfigToView config =
     , name = config.name
     , provider = config.provider
     , endpoint = config.endpoint
+    , apiKey = config.apiKey
     }
 
-defaultAgentConfigs : UserAgentConfigs
-defaultAgentConfigs =
-    let
-        openai = { id = "default-openai", name = "OpenAI (Default)", provider = OpenAI, endpoint = "https://api.openai.com/v1/chat/completions", apiKey = "" } -- API Key is empty for defaults
-        anthropic = { id = "default-anthropic", name = "Anthropic Claude (Default)", provider = Anthropic, endpoint = "https://api.anthropic.com/v1/messages", apiKey = "" }
-        gemini = { id = "default-gemini", name = "Google Gemini (Default)", provider = GoogleGemini, endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", apiKey = "" }
-    in
-    Dict.fromList
-        [ ( openai.id, openai )
-        , ( anthropic.id, anthropic )
-        , ( gemini.id, gemini )
-        ]
-
-addDefaultAgentConfigs : UserAgentConfigs -> UserAgentConfigs
-addDefaultAgentConfigs existingConfigs =
-    if Dict.isEmpty existingConfigs then
-        defaultAgentConfigs
-    else
-        existingConfigs

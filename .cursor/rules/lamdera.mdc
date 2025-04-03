@@ -95,7 +95,7 @@ This section outlines general interaction patterns and coding style preferences.
 -   **Communication:** Respond with minimal explanation; focus on writing code.
 -   **Simplicity:** Aim for simple, robust, and generic code, avoiding over-simplification. Simpler code is almost always more robust and more generic.
 -   **Comments:** Avoid comments; use descriptive variable names instead. The only exception is using comment separators (e.g., `-- MY TYPE GROUP`) for grouping related types in `Types.elm`.
--   **Imports:** When importing modules, prefer `exposing (..)` unless there's a specific, compelling reason to list specific functions or types.
+-   **Imports:** When importing modules, prefer `exposing (..)` unless there's a specific, compelling reason to list specific functions or types. Rather import and export everything than specify it all manually, that takes too long. 
 -   **File Structure:** Ignore the `/Evergreen/` folder and its subfolders completely.
 -   **JS/CSS:** Do not inject JavaScript into tags or CSS styles, as this is not possible in Elm. Use Elm's built-in HTML/CSS capabilities via `elm/html` and related packages. Avoid separate CSS files.
 -   **README:** Do not generate a `README.md` file unless explicitly asked.

@@ -30,6 +30,7 @@ type alias BrowserCookie =
 type Route
     = Default
     | AgentSettings
+    | Chat
     | Admin AdminRoute
     | NotFound
 
@@ -60,6 +61,8 @@ type alias FrontendModel =
     , fusionState : Fusion.Value
     , agentConfigs : Dict AgentConfigId AgentConfigView
     , agentSettingsPage : AgentSettingsPageModel
+    , chatInput : String
+    , chatMessages : List ChatMessage
     }
 
 
@@ -70,6 +73,7 @@ type alias BackendModel =
     , users : Dict Email User
     , pollingJobs : Dict PollingToken (PollingStatus PollData)
     , userAgentConfigs : Dict Email UserAgentConfigs
+    , chatHistories : Dict BrowserCookie (List ChatMessage)
     }
 
 
@@ -96,6 +100,10 @@ type FrontendMsg
     | AgentSettings_SaveConfig String
     | AgentSettings_CancelEdit
     | AgentSettings_DeleteConfig AgentConfigId
+    | AgentSettings_InternalMsg AgentSettingsMsg
+    --- Chat Page
+    | ChatInputChanged String
+    | SendChatMessage
 
 
 type ToBackend
@@ -113,6 +121,9 @@ type ToBackend
     | RequestAgentConfigs
     | SaveAgentConfig AgentConfig
     | DeleteAgentConfig AgentConfigId
+    | SetDefaultAgent AgentConfigId
+    --- Chat
+    | SendChatMsg String
 
 
 type BackendMsg
@@ -137,7 +148,9 @@ type ToFrontend
     | PermissionDenied ToBackend
     | Admin_FusionResponse Fusion.Value
     --- Agent Configs
-    | ReceiveAgentConfigs (Dict AgentConfigId AgentConfigView)
+    | ReceiveAgentData { configs : Dict AgentConfigId AgentConfigView, defaultId : Maybe AgentConfigId }
+    --- Chat
+    | ReceiveChatMsg ChatMessage
 
 
 type alias Email =
@@ -153,6 +166,7 @@ type alias UserFrontend =
     { email : Email
     , isSysAdmin : Bool
     , role : String
+    , defaultAgentId : Maybe AgentConfigId
     }
 
 
@@ -214,7 +228,9 @@ type alias AgentConfig =
 
 
 type alias UserAgentConfigs =
-    Dict AgentConfigId AgentConfig
+    { configs : Dict AgentConfigId AgentConfig
+    , defaultId : Maybe AgentConfigId
+    }
 
 
 -- Frontend view model for AgentConfig, might omit sensitive data like apiKey
@@ -223,6 +239,7 @@ type alias AgentConfigView =
     , name : String
     , provider : AgentProvider
     , endpoint : String
+    , apiKey : String -- Added to show API key when editing
     }
 
 
@@ -231,4 +248,43 @@ type alias AgentSettingsPageModel =
     { isLoading : Bool
     , error : Maybe String
     , editingConfig : Maybe AgentConfigView -- Holds the config being added/edited
+    , apiKeyInput : String -- Temporary storage for API key input
+    , saveSuccess : Bool -- Flag to indicate recent successful save
+    }
+
+
+-- Internal messages specific to the Agent Settings page logic
+type AgentSettingsMsg 
+    = UpdateApiKeyInput String
+
+
+-- CHAT TYPES
+
+type alias AgentId =
+    String
+
+type MessageSender
+    = UserSender
+    | AgentSender AgentId
+
+type alias ChatMessage =
+    { sender : MessageSender
+    , text : String
+    -- Add timestamp later if needed
+    }
+
+defaultAgentConfigs : UserAgentConfigs
+defaultAgentConfigs =
+    { configs = 
+        let
+            openai = { id = "default-openai", name = "OpenAI (Default)", provider = OpenAI, endpoint = "https://api.openai.com/v1/chat/completions", apiKey = "" } -- API Key is empty for defaults
+            anthropic = { id = "default-anthropic", name = "Anthropic Claude (Default)", provider = Anthropic, endpoint = "https://api.anthropic.com/v1/messages", apiKey = "" }
+            gemini = { id = "default-gemini", name = "Google Gemini (Default)", provider = GoogleGemini, endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", apiKey = "" }
+        in
+        Dict.fromList
+            [ ( openai.id, openai )
+            , ( anthropic.id, anthropic )
+            , ( gemini.id, gemini )
+            ]
+    , defaultId = Nothing -- No default ID for the template defaults
     }

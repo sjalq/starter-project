@@ -10,6 +10,7 @@ import Html.Events as HE
 import Lamdera
 import Pages.Admin
 import Pages.Default
+import Pages.Chat -- Added for Chat
 import Pages.PageFrame exposing (viewCurrentPage, viewTabs)
 import Pages.AgentSettings
 import Route exposing (..)
@@ -83,7 +84,11 @@ init url key =
                 { isLoading = False
                 , error = Nothing
                 , editingConfig = Nothing
+                , apiKeyInput = "" -- Initialize API key input
+                , saveSuccess = False -- Initialize save success flag
                 }
+            , chatInput = "" -- Added for Chat
+            , chatMessages = [] -- Added for Chat
             }
     in
     inits model route
@@ -106,6 +111,9 @@ inits model route =
             ( { model | agentSettingsPage = updatedPageModel }
             , Lamdera.sendToBackend RequestAgentConfigs
             )
+        
+        Chat -> -- Added for Chat
+            ( { model | chatInput = "" }, Cmd.none ) -- Reset input on page load
 
         _ ->
             ( model, Cmd.none )
@@ -187,18 +195,25 @@ update msg model =
                 configToEdit =
                     case maybeId of
                         Nothing ->
-                            Just
+                            Just -- For 'Add New Agent'
                                 { id = "new-agent" 
                                 , name = ""
                                 , provider = OpenAI
                                 , endpoint = Pages.AgentSettings.defaultEndpoint OpenAI
+                                , apiKey = "" 
                                 }
 
                         Just id ->
+                            -- For 'Edit'
                             Dict.get id model.agentConfigs
                 
+                -- Extract the API key IF we are editing an existing config
+                existingApiKey = 
+                    configToEdit |> Maybe.map .apiKey |> Maybe.withDefault ""
+
                 currentPageModel = model.agentSettingsPage -- Extract record
-                updatedPageModel = { currentPageModel | editingConfig = configToEdit, error = Nothing } -- Update extracted record
+                -- Update record, setting apiKeyInput from fetched config (or empty for new)
+                updatedPageModel = { currentPageModel | editingConfig = configToEdit, error = Nothing, apiKeyInput = existingApiKey, saveSuccess = False } 
             in
             ( { model | agentSettingsPage = updatedPageModel }, Cmd.none )
 
@@ -269,7 +284,7 @@ update msg model =
         AgentSettings_CancelEdit ->
             let
                 currentPageModel = model.agentSettingsPage
-                updatedPageModel = { currentPageModel | editingConfig = Nothing, error = Nothing }
+                updatedPageModel = { currentPageModel | editingConfig = Nothing, error = Nothing, saveSuccess = False } -- Clear success flag
             in
             ( { model | agentSettingsPage = updatedPageModel }, Cmd.none )
 
@@ -281,6 +296,40 @@ update msg model =
             ( { model | agentSettingsPage = updatedPageModel }
             , Lamdera.sendToBackend (DeleteAgentConfig id)
             )
+        
+        AgentSettings_InternalMsg subMsg ->
+            -- Handle internal messages for the Agent Settings page
+            case subMsg of
+                UpdateApiKeyInput newKey ->
+                    -- The update logic is now here, modifying the main model's page state
+                    let
+                        currentPageState = model.agentSettingsPage
+                        updatedPageModel = 
+                            { currentPageState | apiKeyInput = newKey } -- Using pipe syntax
+                    in
+                    ( { model | agentSettingsPage = updatedPageModel }, Cmd.none )
+        
+        -- Chat Page Messages -- Added for Chat
+        ChatInputChanged newInput ->
+            ( { model | chatInput = newInput }, Cmd.none )
+
+        SendChatMessage ->
+            if String.isEmpty model.chatInput then
+                ( model, Cmd.none ) -- Don't send empty messages
+            else
+                let
+                    -- Add user's message to the list immediately
+                    newUserMessage =
+                        { sender = UserSender, text = model.chatInput }
+                    
+                    updatedMessages =
+                        model.chatMessages ++ [ newUserMessage ]
+                    
+                    -- Send message to backend and clear input
+                    cmd =
+                        Lamdera.sendToBackend (SendChatMsg model.chatInput)
+                in
+                ( { model | chatMessages = updatedMessages, chatInput = "" }, cmd )
 
 
 updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
@@ -318,18 +367,37 @@ updateFromBackend msg model =
 
         PermissionDenied _ ->
             ( model, Cmd.none )
-
-        ReceiveAgentConfigs configs ->
+        
+        -- Renamed and updated for default agent
+        ReceiveAgentData payload -> 
             let 
+                -- Update agentConfigs dictionary
+                updatedAgentConfigs = payload.configs
+
+                -- Update defaultAgentId in currentUser if it exists
+                updatedCurrentUser = 
+                    model.currentUser
+                        |> Maybe.map (\user -> { user | defaultAgentId = payload.defaultId })
+
                 currentPageModel = model.agentSettingsPage
-                -- Important: If we were editing a 'new' config and save succeeded, 
-                -- the backend response won't include the apiKey. We should clear 
-                -- the editing state upon successful reception of the *list*.
-                -- Or, better, backend could send back the saved config (without key)
-                -- For now, just clear loading/error and update list.
-                updatedPageModel = { currentPageModel | isLoading = False, error = Nothing }
+                -- Simplified update, just clear loading/error
+                updatedPageModel = 
+                    { currentPageModel | 
+                        isLoading = False, 
+                        error = Nothing, 
+                        editingConfig = Nothing, -- Close edit form on success
+                        apiKeyInput = "", -- Clear temp key
+                        saveSuccess = True -- Set success flag
+                    }
             in
-            ( { model | agentConfigs = configs, agentSettingsPage = updatedPageModel }, Cmd.none )
+            ( { model | agentConfigs = updatedAgentConfigs, currentUser = updatedCurrentUser, agentSettingsPage = updatedPageModel }, Cmd.none )
+
+        ReceiveChatMsg chatMessage -> -- Added for Chat
+            let
+                updatedMessages =
+                    model.chatMessages ++ [ chatMessage ]
+            in
+            ( { model | chatMessages = updatedMessages }, Cmd.none )
 
 
 
@@ -349,6 +417,7 @@ pageTitle route =
     case route of
         Default -> "Home"
         AgentSettings -> "Agent Settings"
+        Chat -> "Chat" -- Added for Chat
         Admin _ -> "Admin Panel"
         NotFound -> "Not Found"
 
@@ -365,6 +434,9 @@ viewCurrentPage model =
         AgentSettings ->
             Html.map identity
                 (Pages.AgentSettings.view (agentSettingsSubModel model))
+        
+        Chat -> -- Added for Chat
+            Pages.Chat.view (chatSubModel model)
 
         NotFound ->
             div [] [ text "Page not found!" ]
@@ -375,7 +447,15 @@ viewCurrentPage model =
 -- Helper to create the sub-model for the AgentSettings page
 agentSettingsSubModel : Model -> Pages.AgentSettings.Model
 agentSettingsSubModel model =
-    Pages.AgentSettings.init model.agentConfigs model.agentSettingsPage
+    let
+        -- Extract the defaultAgentId from currentUser (Updated for default agent)
+        maybeDefaultId = 
+            model.currentUser |> Maybe.map .defaultAgentId |> Maybe.withDefault Nothing
+            
+        pageModelWithDefault = 
+            { pageState = model.agentSettingsPage, defaultId = maybeDefaultId }
+    in
+    Pages.AgentSettings.init model.agentConfigs pageModelWithDefault
 
 
 -- Helper function to update the currently editing agent configuration
@@ -390,6 +470,14 @@ updateEditingAgentConfig model updater =
         updatedPageModel = { currentPageModel | editingConfig = updatedEditingConfig } -- Update extracted record
     in
     ( { model | agentSettingsPage = updatedPageModel }, Cmd.none )
+
+
+-- Helper to create the sub-model for the Chat page -- Added for Chat
+chatSubModel : Model -> Pages.Chat.Model
+chatSubModel model =
+    { chatInput = model.chatInput
+    , messages = model.chatMessages
+    }
 
 
 callbackForAuth0Auth : FrontendModel -> Url.Url -> Nav.Key -> ( FrontendModel, Cmd FrontendMsg )

@@ -16,6 +16,7 @@ viewTabs model =
         [ div [ Attr.class "flex" ]
             (viewTab "Default" Default model.currentRoute
                 :: viewTab "Agent Settings" AgentSettings model.currentRoute
+                :: viewTab "Chat" Chat model.currentRoute
                 :: (case model.currentUser of
                         Just user ->
                             if user.isSysAdmin then
@@ -93,6 +94,9 @@ viewCurrentPage model =
         Admin _ ->
             Pages.Admin.view model
 
+        Chat ->
+            div [] [ text "Chat Page Content Goes Here" ]
+
         AgentSettings ->
             Html.map identity (Pages.AgentSettings.view (agentSettingsSubModel model))
 
@@ -111,4 +115,12 @@ viewNotFoundPage =
 -- Helper to create the sub-model for the AgentSettings page
 agentSettingsSubModel : FrontendModel -> Pages.AgentSettings.Model
 agentSettingsSubModel model =
-    Pages.AgentSettings.init model.agentConfigs model.agentSettingsPage
+    let
+        -- Extract the defaultAgentId from currentUser
+        maybeDefaultId = 
+            model.currentUser |> Maybe.map .defaultAgentId |> Maybe.withDefault Nothing
+            
+        pageModelWithDefault = 
+            { pageState = model.agentSettingsPage, defaultId = maybeDefaultId }
+    in
+    Pages.AgentSettings.init model.agentConfigs pageModelWithDefault

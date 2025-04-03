@@ -1,9 +1,9 @@
 module Rights.User exposing (createUser, getUserRole, insertUser, isSysAdmin)
 
 import Auth.Common
-import Dict
+import Dict exposing (Dict)
 import Env
-import Types exposing (BackendModel, Email, Role(..), User)
+import Types exposing (BackendModel, Email, Role(..), User, defaultAgentConfigs)
 
 
 isSysAdmin : User -> Bool
@@ -29,4 +29,13 @@ createUser userInfo =
 
 insertUser : Email -> User -> BackendModel -> BackendModel
 insertUser email newUser model =
-    { model | users = Dict.insert email newUser model.users }
+    -- Create new user record
+    let
+        updatedUsers = 
+            Dict.insert email newUser model.users
+            
+        -- Add default agent configs for the new user
+        updatedAgentConfigs = 
+            Dict.insert email defaultAgentConfigs model.userAgentConfigs
+    in
+    { model | users = updatedUsers, userAgentConfigs = updatedAgentConfigs }

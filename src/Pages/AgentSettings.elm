@@ -9,20 +9,26 @@ import Maybe.Extra
 import Set exposing (Set)
 import Task
 import Time
-import Types exposing (AgentConfigId, AgentConfigView, AgentProvider(..), AgentSettingsPageModel, FrontendMsg(..))
+import Types exposing (AgentConfigId, AgentConfigView, AgentProvider(..), AgentSettingsPageModel, FrontendMsg(..), ToBackend(..), AgentSettingsMsg(..))
 
 
 type alias Model =
     { agentConfigs : Dict AgentConfigId AgentConfigView
-    , pageModel : AgentSettingsPageModel
+    , pageModel : AgentSettingsPageModelWithDefault
     , apiKeyInput : String
     }
 
 
-init : Dict AgentConfigId AgentConfigView -> AgentSettingsPageModel -> Model
-init agentConfigs pageModel =
+type alias AgentSettingsPageModelWithDefault =
+    { pageState : AgentSettingsPageModel
+    , defaultId : Maybe AgentConfigId
+    }
+
+
+init : Dict AgentConfigId AgentConfigView -> AgentSettingsPageModelWithDefault -> Model
+init agentConfigs pageModelWithDefault =
     { agentConfigs = agentConfigs
-    , pageModel = pageModel
+    , pageModel = pageModelWithDefault
     , apiKeyInput = ""
     }
 
@@ -36,6 +42,7 @@ findConfig model maybeId =
                 , name = ""
                 , provider = OpenAI
                 , endpoint = defaultEndpoint OpenAI
+                , apiKey = ""
                 }
 
         Just id ->
@@ -47,6 +54,10 @@ view : Model -> Html FrontendMsg
 view model =
     div [ Attr.class "container mx-auto px-4 py-8" ]
         [ h1 [ Attr.class "text-3xl font-bold mb-4" ] [ text "AI Agent Settings" ]
+        , if model.pageModel.pageState.saveSuccess then
+            div [ Attr.class "mb-4 p-3 bg-green-100 text-green-700 border border-green-200 rounded" ] [ text "Configuration saved successfully!" ]
+          else
+            text ""
         , div [ Attr.class "space-y-6" ]
             [ viewAgentList model
             , viewEditForm model
@@ -64,16 +75,44 @@ viewAgentList model =
         , if Dict.isEmpty model.agentConfigs then
             p [ Attr.class "text-gray-500" ] [ text "No agents configured yet." ]
           else
-            ul [ Attr.class "space-y-3" ] (List.map viewAgentListItem (Dict.values model.agentConfigs))
+            ul [ Attr.class "space-y-3" ]
+                (List.map (viewAgentListItem model.pageModel.defaultId) (Dict.values model.agentConfigs))
         ]
 
 
-viewAgentListItem : AgentConfigView -> Html FrontendMsg
-viewAgentListItem config =
+viewAgentListItem : Maybe AgentConfigId -> AgentConfigView -> Html FrontendMsg
+viewAgentListItem maybeDefaultId config =
+    let
+        isDefault = maybeDefaultId == Just config.id
+        isPotentiallyDefault = String.startsWith "default-" config.id -- Handle built-in defaults
+    in
     li [ Attr.class "p-3 border border-gray-200 rounded-md flex items-center justify-between" ]
-        [ span [ Attr.class "text-gray-700 text-sm" ] [ text (config.name ++ " (" ++ providerToString config.provider ++ ") - " ++ config.endpoint) ]
-        , div [ Attr.class "flex space-x-2" ]
-            [ button [ onClick (AgentSettings_EditConfig (Just config.id)), Attr.class "bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-xs" ] [ text "Edit" ]
+        [ -- Div 1: Agent Info
+          div [ Attr.class "flex items-center" ]
+              [ span [ Attr.class "text-gray-700 text-sm" ]
+                  [ text (config.name ++ " (" ++ providerToString config.provider ++ ")") ]
+              , if isDefault then
+                  span [ Attr.class "ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full" ] [ text "Default" ]
+                else
+                  text "" -- Empty text node if not default
+              ]
+        , 
+          -- Div 2: Buttons
+          div [ Attr.class "flex space-x-2" ]
+            [ -- Set as Default Button
+              button 
+                [ onClick (DirectToBackend (SetDefaultAgent config.id))
+                , Attr.class "px-3 py-1 rounded text-xs"
+                , Attr.classList
+                    [ ("bg-green-500 hover:bg-green-600 text-white", not isDefault && not isPotentiallyDefault)
+                    , ("bg-gray-300 text-gray-500 cursor-not-allowed", isDefault || isPotentiallyDefault)
+                    ]
+                , Attr.disabled (isDefault || isPotentiallyDefault)
+                ]
+                [ text "Set Default" ]
+             -- Edit Button
+            , button [ onClick (AgentSettings_EditConfig (Just config.id)), Attr.class "bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-xs" ] [ text "Edit" ]
+            -- Delete Button
             , button [ onClick (AgentSettings_DeleteConfig config.id), Attr.class "bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" ] [ text "Delete" ]
             ]
         ]
@@ -81,46 +120,52 @@ viewAgentListItem config =
 
 viewEditForm : Model -> Html FrontendMsg
 viewEditForm model =
-    case model.pageModel.editingConfig of
+    case model.pageModel.pageState.editingConfig of
         Nothing ->
             Html.text ""
 
         Just config ->
             div [ Attr.class "p-4 bg-white rounded-lg shadow space-y-4" ]
                 [ h2 [ Attr.class "text-xl font-bold mb-4" ] [ text (if config.id == "new-agent" then "Add New Agent" else "Edit Agent: " ++ config.name) ]
-                , viewFormInput "Configuration Name" (Just config.name) model.apiKeyInput "text" "" AgentSettings_UpdateName
+                , viewFormInput "Configuration Name" (Just config.name) "text" "" AgentSettings_UpdateName
                 , viewFormSelect "Provider" config.provider (List.map (\p -> ( providerToString p, p )) allProviders) AgentSettings_UpdateProvider
-                , viewFormInput "API Endpoint URL" (Just config.endpoint) model.apiKeyInput "text" "" AgentSettings_UpdateEndpoint
-                , viewFormInput "API Key" Nothing model.apiKeyInput "password" "Will not be shown again" AgentSettings_UpdateApiKey
+                , viewFormInput "API Endpoint URL" (Just config.endpoint) "text" "" AgentSettings_UpdateEndpoint
+                , div [ Attr.class "mb-4" ]
+                    [ label [ Attr.class "block text-gray-700 text-sm font-bold mb-2" ] [ text "API Key" ]
+                    , input
+                        [ Attr.type_ "text"
+                        , Attr.placeholder "Will not be shown again after saving"
+                        , Attr.value model.pageModel.pageState.apiKeyInput
+                        , onInput (UpdateApiKeyInput >> AgentSettings_InternalMsg)
+                        , Attr.class "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        ]
+                        []
+                    ]
                 , div [ Attr.class "flex space-x-3 pt-2" ]
                     [ button
-                        [ onClick (AgentSettings_SaveConfig model.apiKeyInput)
-                        , classList
-                            [ ( "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline", not (isSaveDisabled config model.apiKeyInput) )
-                            , ( "bg-gray-300 text-gray-500 font-bold py-2 px-4 rounded cursor-not-allowed", isSaveDisabled config model.apiKeyInput )
+                        [ onClick (AgentSettings_SaveConfig model.pageModel.pageState.apiKeyInput)
+                        , Attr.classList
+                            [ ( "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline", not (isSaveDisabled config model.pageModel.pageState.apiKeyInput) )
+                            , ( "bg-gray-300 text-gray-500 font-bold py-2 px-4 rounded cursor-not-allowed", isSaveDisabled config model.pageModel.pageState.apiKeyInput )
                             ]
-                        , disabled (isSaveDisabled config model.apiKeyInput)
+                        , disabled (isSaveDisabled config model.pageModel.pageState.apiKeyInput)
                         ]
                         [ text "Save Configuration" ]
                     , button [ onClick AgentSettings_CancelEdit, Attr.class "bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded" ] [ text "Cancel" ]
                     ]
-                , Maybe.map (\err -> p [ Attr.class "text-sm text-red-600 mt-1" ] [ text err ]) model.pageModel.error |> Maybe.withDefault (text "")
+                , Maybe.map (\err -> p [ Attr.class "text-sm text-red-600 mt-1" ] [ text err ]) model.pageModel.pageState.error |> Maybe.withDefault (text "")
                 ]
 
 
 -- Helper produces Html FrontendMsg
-viewFormInput : String -> Maybe String -> String -> String -> String -> (String -> FrontendMsg) -> Html FrontendMsg
-viewFormInput labelText maybeValue apiKeyInputValue inputType placeholderText msgConstructor =
+viewFormInput : String -> Maybe String -> String -> String -> (String -> FrontendMsg) -> Html FrontendMsg
+viewFormInput labelText maybeValue inputType placeholderText msgConstructor =
     div [ Attr.class "mb-4" ]
         [ label [ Attr.class "block text-gray-700 text-sm font-bold mb-2" ] [ text labelText ]
         , input
             [ Attr.type_ inputType
             , Attr.placeholder placeholderText
-            , Attr.value
-                (case maybeValue of
-                    Nothing -> apiKeyInputValue
-                    Just val -> val
-                )
+            , Attr.value (Maybe.withDefault "" maybeValue)
             , onInput msgConstructor -- Expects String -> FrontendMsg
             , Attr.class "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             ]

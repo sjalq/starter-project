@@ -1,20 +1,26 @@
 module Fusion.Generated.Types exposing
-    ( build_AgentConfig, build_AgentConfigId, build_AgentProvider, build_BackendModel, build_Email, build_PollData
-    , build_PollingStatus, build_PollingToken, build_User, build_UserAgentConfigs, patch_AgentConfig, patch_AgentConfigId, patch_AgentProvider
-    , patch_BackendModel, patch_Email, patch_PollData, patch_PollingStatus, patch_PollingToken, patch_User, patch_UserAgentConfigs
-    , patcher_AgentConfig, patcher_AgentConfigId, patcher_AgentProvider, patcher_BackendModel, patcher_Email, patcher_PollData, patcher_PollingStatus
-    , patcher_PollingToken, patcher_User, patcher_UserAgentConfigs, toValue_AgentConfig, toValue_AgentConfigId, toValue_AgentProvider, toValue_BackendModel
-    , toValue_Email, toValue_PollData, toValue_PollingStatus, toValue_PollingToken, toValue_User, toValue_UserAgentConfigs
+    ( build_AgentConfig, build_AgentConfigId, build_AgentId, build_AgentProvider, build_BackendModel, build_BrowserCookie
+    , build_ChatMessage, build_Email, build_MessageSender, build_PollData, build_PollingStatus, build_PollingToken, build_User
+    , build_UserAgentConfigs, patch_AgentConfig, patch_AgentConfigId, patch_AgentId, patch_AgentProvider, patch_BackendModel, patch_BrowserCookie
+    , patch_ChatMessage, patch_Email, patch_MessageSender, patch_PollData, patch_PollingStatus, patch_PollingToken, patch_User
+    , patch_UserAgentConfigs, patcher_AgentConfig, patcher_AgentConfigId, patcher_AgentId, patcher_AgentProvider, patcher_BackendModel, patcher_BrowserCookie
+    , patcher_ChatMessage, patcher_Email, patcher_MessageSender, patcher_PollData, patcher_PollingStatus, patcher_PollingToken, patcher_User
+    , patcher_UserAgentConfigs, toValue_AgentConfig, toValue_AgentConfigId, toValue_AgentId, toValue_AgentProvider, toValue_BackendModel, toValue_BrowserCookie
+    , toValue_ChatMessage, toValue_Email, toValue_MessageSender, toValue_PollData, toValue_PollingStatus, toValue_PollingToken, toValue_User
+    , toValue_UserAgentConfigs
     )
 
 {-|
-@docs build_AgentConfig, build_AgentConfigId, build_AgentProvider, build_BackendModel, build_Email, build_PollData
-@docs build_PollingStatus, build_PollingToken, build_User, build_UserAgentConfigs, patch_AgentConfig, patch_AgentConfigId
-@docs patch_AgentProvider, patch_BackendModel, patch_Email, patch_PollData, patch_PollingStatus, patch_PollingToken
-@docs patch_User, patch_UserAgentConfigs, patcher_AgentConfig, patcher_AgentConfigId, patcher_AgentProvider, patcher_BackendModel
-@docs patcher_Email, patcher_PollData, patcher_PollingStatus, patcher_PollingToken, patcher_User, patcher_UserAgentConfigs
-@docs toValue_AgentConfig, toValue_AgentConfigId, toValue_AgentProvider, toValue_BackendModel, toValue_Email, toValue_PollData
-@docs toValue_PollingStatus, toValue_PollingToken, toValue_User, toValue_UserAgentConfigs
+@docs build_AgentConfig, build_AgentConfigId, build_AgentId, build_AgentProvider, build_BackendModel, build_BrowserCookie
+@docs build_ChatMessage, build_Email, build_MessageSender, build_PollData, build_PollingStatus, build_PollingToken
+@docs build_User, build_UserAgentConfigs, patch_AgentConfig, patch_AgentConfigId, patch_AgentId, patch_AgentProvider
+@docs patch_BackendModel, patch_BrowserCookie, patch_ChatMessage, patch_Email, patch_MessageSender, patch_PollData
+@docs patch_PollingStatus, patch_PollingToken, patch_User, patch_UserAgentConfigs, patcher_AgentConfig, patcher_AgentConfigId
+@docs patcher_AgentId, patcher_AgentProvider, patcher_BackendModel, patcher_BrowserCookie, patcher_ChatMessage, patcher_Email
+@docs patcher_MessageSender, patcher_PollData, patcher_PollingStatus, patcher_PollingToken, patcher_User, patcher_UserAgentConfigs
+@docs toValue_AgentConfig, toValue_AgentConfigId, toValue_AgentId, toValue_AgentProvider, toValue_BackendModel, toValue_BrowserCookie
+@docs toValue_ChatMessage, toValue_Email, toValue_MessageSender, toValue_PollData, toValue_PollingStatus, toValue_PollingToken
+@docs toValue_User, toValue_UserAgentConfigs
 -}
 
 
@@ -22,6 +28,7 @@ import Dict
 import Fusion
 import Fusion.Generated.Auth.Common
 import Fusion.Generated.Lamdera
+import Fusion.Generated.Maybe
 import Fusion.Generated.Result
 import Fusion.Patch
 import Result.Extra
@@ -68,6 +75,11 @@ build_AgentConfigId value =
     Fusion.Patch.build_String value
 
 
+build_AgentId : Fusion.Value -> Result Fusion.Patch.Error Types.AgentId
+build_AgentId value =
+    Fusion.Patch.build_String value
+
+
 build_AgentProvider :
     Fusion.Value -> Result Fusion.Patch.Error Types.AgentProvider
 build_AgentProvider value =
@@ -101,13 +113,14 @@ build_BackendModel value =
     Fusion.Patch.build_Record
         (\build_RecordUnpack ->
              Result.Ok
-                 (\logs pendingAuths sessions users pollingJobs userAgentConfigs ->
+                 (\logs pendingAuths sessions users pollingJobs userAgentConfigs chatHistories ->
                       { logs = logs
                       , pendingAuths = pendingAuths
                       , sessions = sessions
                       , users = users
                       , pollingJobs = pollingJobs
                       , userAgentConfigs = userAgentConfigs
+                      , chatHistories = chatHistories
                       }
                  ) |> Result.Extra.andMap
                               (Result.andThen
@@ -162,7 +175,42 @@ build_BackendModel value =
                                                                                                         (build_RecordUnpack
                                                                                                                  "userAgentConfigs"
                                                                                                         )
-                                                                                               )
+                                                                                               ) |> Result.Extra.andMap
+                                                                                                            (Result.andThen
+                                                                                                                     (Fusion.Patch.build_Dict
+                                                                                                                              patcher_BrowserCookie
+                                                                                                                              (Fusion.Patch.patcher_List
+                                                                                                                                       patcher_ChatMessage
+                                                                                                                              )
+                                                                                                                     )
+                                                                                                                     (build_RecordUnpack
+                                                                                                                              "chatHistories"
+                                                                                                                     )
+                                                                                                            )
+        )
+        value
+
+
+build_BrowserCookie :
+    Fusion.Value -> Result Fusion.Patch.Error Types.BrowserCookie
+build_BrowserCookie value =
+    Fusion.Generated.Lamdera.build_SessionId value
+
+
+build_ChatMessage : Fusion.Value -> Result Fusion.Patch.Error Types.ChatMessage
+build_ChatMessage value =
+    Fusion.Patch.build_Record
+        (\build_RecordUnpack ->
+             Result.map2
+                 (\sender text -> { sender = sender, text = text })
+                 (Result.andThen
+                      build_MessageSender
+                      (build_RecordUnpack "sender")
+                 )
+                 (Result.andThen
+                      Fusion.Patch.build_String
+                      (build_RecordUnpack "text")
+                 )
         )
         value
 
@@ -170,6 +218,25 @@ build_BackendModel value =
 build_Email : Fusion.Value -> Result Fusion.Patch.Error Types.Email
 build_Email value =
     Fusion.Patch.build_String value
+
+
+build_MessageSender :
+    Fusion.Value -> Result Fusion.Patch.Error Types.MessageSender
+build_MessageSender value =
+    Fusion.Patch.build_Custom
+        (\name params ->
+             case ( name, params ) of
+                 ( "UserSender", [] ) ->
+                     Result.Ok Types.UserSender
+
+                 ( "AgentSender", [ patch0 ] ) ->
+                     Result.map Types.AgentSender (build_AgentId patch0)
+
+                 _ ->
+                     Result.Err
+                         (Fusion.Patch.WrongType "buildCustom last branch")
+        )
+        value
 
 
 build_PollData : Fusion.Value -> Result Fusion.Patch.Error Types.PollData
@@ -230,7 +297,25 @@ build_User value =
 build_UserAgentConfigs :
     Fusion.Value -> Result Fusion.Patch.Error Types.UserAgentConfigs
 build_UserAgentConfigs value =
-    Fusion.Patch.build_Dict patcher_AgentConfigId patcher_AgentConfig value
+    Fusion.Patch.build_Record
+        (\build_RecordUnpack ->
+             Result.map2
+                 (\configs defaultId ->
+                      { configs = configs, defaultId = defaultId }
+                 )
+                 (Result.andThen
+                      (Fusion.Patch.build_Dict
+                           patcher_AgentConfigId
+                           patcher_AgentConfig
+                      )
+                      (build_RecordUnpack "configs")
+                 )
+                 (Result.andThen
+                      (Fusion.Generated.Maybe.build_Maybe patcher_AgentConfigId)
+                      (build_RecordUnpack "defaultId")
+                 )
+        )
+        value
 
 
 patch_AgentConfig :
@@ -288,6 +373,15 @@ patch_AgentConfigId :
     -> Types.AgentConfigId
     -> Result Fusion.Patch.Error Types.AgentConfigId
 patch_AgentConfigId options patch value =
+    Fusion.Patch.patch_String options patch value
+
+
+patch_AgentId :
+    { force : Bool }
+    -> Fusion.Patch.Patch
+    -> Types.AgentId
+    -> Result Fusion.Patch.Error Types.AgentId
+patch_AgentId options patch value =
     Fusion.Patch.patch_String options patch value
 
 
@@ -476,6 +570,54 @@ patch_BackendModel options patch value =
                               acc.userAgentConfigs
                          )
 
+                 "chatHistories" ->
+                     Result.map
+                         (\chatHistories ->
+                              { acc | chatHistories = chatHistories }
+                         )
+                         (Fusion.Patch.patch_Dict
+                              patcher_BrowserCookie
+                              (Fusion.Patch.patcher_List patcher_ChatMessage)
+                              options
+                              fieldPatch
+                              acc.chatHistories
+                         )
+
+                 _ ->
+                     Result.Err (Fusion.Patch.UnexpectedField fieldName)
+        )
+        patch
+        value
+
+
+patch_BrowserCookie :
+    { force : Bool }
+    -> Fusion.Patch.Patch
+    -> Types.BrowserCookie
+    -> Result Fusion.Patch.Error Types.BrowserCookie
+patch_BrowserCookie options patch value =
+    Fusion.Generated.Lamdera.patch_SessionId options patch value
+
+
+patch_ChatMessage :
+    { force : Bool }
+    -> Fusion.Patch.Patch
+    -> Types.ChatMessage
+    -> Result Fusion.Patch.Error Types.ChatMessage
+patch_ChatMessage options patch value =
+    Fusion.Patch.patch_Record
+        (\fieldName fieldPatch acc ->
+             case fieldName of
+                 "sender" ->
+                     Result.map
+                         (\sender -> { acc | sender = sender })
+                         (patch_MessageSender options fieldPatch acc.sender)
+
+                 "text" ->
+                     Result.map
+                         (\text -> { acc | text = text })
+                         (Fusion.Patch.patch_String options fieldPatch acc.text)
+
                  _ ->
                      Result.Err (Fusion.Patch.UnexpectedField fieldName)
         )
@@ -490,6 +632,71 @@ patch_Email :
     -> Result Fusion.Patch.Error Types.Email
 patch_Email options patch value =
     Fusion.Patch.patch_String options patch value
+
+
+patch_MessageSender :
+    { force : Bool }
+    -> Fusion.Patch.Patch
+    -> Types.MessageSender
+    -> Result Fusion.Patch.Error Types.MessageSender
+patch_MessageSender options patch value =
+    let
+        isCorrectVariant expected =
+            case ( value, expected ) of
+                ( Types.UserSender, "UserSender" ) ->
+                    True
+
+                ( Types.AgentSender _, "AgentSender" ) ->
+                    True
+
+                _ ->
+                    False
+    in
+    case ( value, patch, options.force ) of
+        ( Types.UserSender, Fusion.Patch.PCustomSame "UserSender" [], _ ) ->
+            Result.Ok Types.UserSender
+
+        ( _, Fusion.Patch.PCustomSame "UserSender" _, False ) ->
+            Result.Err Fusion.Patch.Conflict
+
+        ( _, Fusion.Patch.PCustomSame "UserSender" [], _ ) ->
+            Result.Ok Types.UserSender
+
+        ( Types.AgentSender arg0, Fusion.Patch.PCustomSame "AgentSender" [ patch0 ], _ ) ->
+            Result.map
+                Types.AgentSender
+                (Fusion.Patch.maybeApply patcher_AgentId options patch0 arg0)
+
+        ( _, Fusion.Patch.PCustomSame "AgentSender" _, False ) ->
+            Result.Err Fusion.Patch.Conflict
+
+        ( _, Fusion.Patch.PCustomSame "AgentSender" [ (Just patch0) ], _ ) ->
+            Result.map
+                Types.AgentSender
+                (Fusion.Patch.buildFromPatch build_AgentId patch0)
+
+        ( _, Fusion.Patch.PCustomSame "AgentSender" _, _ ) ->
+            Result.Err Fusion.Patch.CouldNotBuildValueFromPatch
+
+        ( _, Fusion.Patch.PCustomSame _ _, _ ) ->
+            Result.Err (Fusion.Patch.WrongType "patchCustom.wrongSame")
+
+        ( _, Fusion.Patch.PCustomChange expectedVariant "UserSender" [], _ ) ->
+            if options.force || isCorrectVariant expectedVariant then
+                Result.Ok Types.UserSender
+
+            else
+                Result.Err Fusion.Patch.Conflict
+
+        ( _, Fusion.Patch.PCustomChange expectedVariant "AgentSender" [ arg0 ], _ ) ->
+            if options.force || isCorrectVariant expectedVariant then
+                Result.map Types.AgentSender (build_AgentId arg0)
+
+            else
+                Result.Err Fusion.Patch.Conflict
+
+        _ ->
+            Result.Err (Fusion.Patch.WrongType "patchCustom.lastBranch")
 
 
 patch_PollData :
@@ -655,10 +862,34 @@ patch_UserAgentConfigs :
     -> Types.UserAgentConfigs
     -> Result Fusion.Patch.Error Types.UserAgentConfigs
 patch_UserAgentConfigs options patch value =
-    Fusion.Patch.patch_Dict
-        patcher_AgentConfigId
-        patcher_AgentConfig
-        options
+    Fusion.Patch.patch_Record
+        (\fieldName fieldPatch acc ->
+             case fieldName of
+                 "configs" ->
+                     Result.map
+                         (\configs -> { acc | configs = configs })
+                         (Fusion.Patch.patch_Dict
+                              patcher_AgentConfigId
+                              patcher_AgentConfig
+                              options
+                              fieldPatch
+                              acc.configs
+                         )
+
+                 "defaultId" ->
+                     Result.map
+                         (\defaultId -> { acc | defaultId = defaultId })
+                         ((Fusion.Generated.Maybe.patch_Maybe
+                               patcher_AgentConfigId
+                          )
+                              options
+                              fieldPatch
+                              acc.defaultId
+                         )
+
+                 _ ->
+                     Result.Err (Fusion.Patch.UnexpectedField fieldName)
+        )
         patch
         value
 
@@ -679,6 +910,11 @@ patcher_AgentConfigId =
     }
 
 
+patcher_AgentId : Fusion.Patch.Patcher Types.AgentId
+patcher_AgentId =
+    { patch = patch_AgentId, build = build_AgentId, toValue = toValue_AgentId }
+
+
 patcher_AgentProvider : Fusion.Patch.Patcher Types.AgentProvider
 patcher_AgentProvider =
     { patch = patch_AgentProvider
@@ -695,9 +931,33 @@ patcher_BackendModel =
     }
 
 
+patcher_BrowserCookie : Fusion.Patch.Patcher Types.BrowserCookie
+patcher_BrowserCookie =
+    { patch = patch_BrowserCookie
+    , build = build_BrowserCookie
+    , toValue = toValue_BrowserCookie
+    }
+
+
+patcher_ChatMessage : Fusion.Patch.Patcher Types.ChatMessage
+patcher_ChatMessage =
+    { patch = patch_ChatMessage
+    , build = build_ChatMessage
+    , toValue = toValue_ChatMessage
+    }
+
+
 patcher_Email : Fusion.Patch.Patcher Types.Email
 patcher_Email =
     { patch = patch_Email, build = build_Email, toValue = toValue_Email }
+
+
+patcher_MessageSender : Fusion.Patch.Patcher Types.MessageSender
+patcher_MessageSender =
+    { patch = patch_MessageSender
+    , build = build_MessageSender
+    , toValue = toValue_MessageSender
+    }
 
 
 patcher_PollData : Fusion.Patch.Patcher Types.PollData
@@ -756,6 +1016,11 @@ toValue_AgentConfigId value =
     Fusion.VString value
 
 
+toValue_AgentId : Types.AgentId -> Fusion.Value
+toValue_AgentId value =
+    Fusion.VString value
+
+
 toValue_AgentProvider : Types.AgentProvider -> Fusion.Value
 toValue_AgentProvider value =
     case value of
@@ -811,6 +1076,27 @@ toValue_BackendModel value =
                      patcher_UserAgentConfigs
                      value.userAgentConfigs
                )
+             , ( "chatHistories"
+               , Fusion.Patch.toValue_Dict
+                     patcher_BrowserCookie
+                     (Fusion.Patch.patcher_List patcher_ChatMessage)
+                     value.chatHistories
+               )
+             ]
+        )
+
+
+toValue_BrowserCookie : Types.BrowserCookie -> Fusion.Value
+toValue_BrowserCookie value =
+    Fusion.Generated.Lamdera.toValue_SessionId value
+
+
+toValue_ChatMessage : Types.ChatMessage -> Fusion.Value
+toValue_ChatMessage value =
+    Fusion.VRecord
+        (Dict.fromList
+             [ ( "sender", toValue_MessageSender value.sender )
+             , ( "text", Fusion.VString value.text )
              ]
         )
 
@@ -818,6 +1104,16 @@ toValue_BackendModel value =
 toValue_Email : Types.Email -> Fusion.Value
 toValue_Email value =
     Fusion.VString value
+
+
+toValue_MessageSender : Types.MessageSender -> Fusion.Value
+toValue_MessageSender value =
+    case value of
+        Types.UserSender ->
+            Fusion.VCustom "UserSender" []
+
+        Types.AgentSender arg0 ->
+            Fusion.VCustom "AgentSender" [ toValue_AgentId arg0 ]
 
 
 toValue_PollData : Types.PollData -> Fusion.Value
@@ -858,4 +1154,17 @@ toValue_User value =
 
 toValue_UserAgentConfigs : Types.UserAgentConfigs -> Fusion.Value
 toValue_UserAgentConfigs value =
-    Fusion.Patch.toValue_Dict patcher_AgentConfigId patcher_AgentConfig value
+    Fusion.VRecord
+        (Dict.fromList
+             [ ( "configs"
+               , Fusion.Patch.toValue_Dict
+                     patcher_AgentConfigId
+                     patcher_AgentConfig
+                     value.configs
+               )
+             , ( "defaultId"
+               , (Fusion.Generated.Maybe.toValue_Maybe patcher_AgentConfigId)
+                     value.defaultId
+               )
+             ]
+        )

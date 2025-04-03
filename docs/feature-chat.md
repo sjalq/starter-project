@@ -1,0 +1,28 @@
+# Feature Checklist: Chat Page
+
+- [x] **Phase 1: Type Design**
+    - [x] Define `Chat` route in `Route.elm`.
+    - [x] Define chat-related types (`ChatMessage`, `AgentId`, etc.) in `Types.elm`.
+    - [x] Define `FrontendMsg` variants for chat interactions (e.g., `UpdateChatInput`, `SendChatMessage`).
+    - [x] Define `ToBackend` message for sending chat messages (e.g., `SendChatMsg`).
+    - [x] Define `ToFrontend` message for receiving chat messages (e.g., `ReceiveChatMsg`).
+    - [x] Update `FrontendModel` to store chat input and conversation history.
+    - [x] Update `BackendModel` to store conversation history per user/session, and potentially agent information/state.
+- [x] **Phase 2: Implementation**
+    - [x] Create `Pages/Chat.elm` module.
+    - [x] Implement `Pages.Chat.init` function (potentially empty or basic setup).
+    - [x] Implement `Pages.Chat.view` function with input field, send button, and message display area (using mock data).
+    - [x] Update `Frontend.elm`:
+        - [x] Add `Chat` route handling in `init`, `update`, `view`.
+        - [x] Handle `FrontendMsg` chat variants in `update`.
+    - [x] Update `PageFrame.elm` to include `Chat` in navigation (if applicable).
+    - [x] Implement sending `ToBackend.SendChatMsg` from the frontend when the user clicks send.
+    - [x] Implement handling `ToFrontend.ReceiveChatMsg` in `Frontend.elm` update to add messages to the state.
+    - [x] Update `Backend.elm`:
+        - [x] Handle `ToBackend.SendChatMsg` in `update`.
+        - [x] Implement logic to parse message, identify target agent (@mention or default).
+        - [x] Implement placeholder agent response logic.
+        - [x] Send `ToFrontend.ReceiveChatMsg` back to the originating client using `Lamdera.sendToFrontend`.
+    - [x] Replace mock data in `Pages.Chat.view` with data from `FrontendModel`.
+    - [x] Run `./generate_and_compile.sh` and fix any compilation errors.
+    - [x] Test chat functionality.

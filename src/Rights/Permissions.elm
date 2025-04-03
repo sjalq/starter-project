@@ -38,6 +38,16 @@ actionRoleMap msg =
         Fusion_Query _ ->
             SysAdmin
 
+        -- Agent Config Permissions
+        RequestAgentConfigs ->
+            UserRole
+        
+        SaveAgentConfig _ ->
+            UserRole
+        
+        DeleteAgentConfig _ ->
+            UserRole
+
 {-| Checks if a user has permission to perform a specific backend action
 -}
 canPerformAction : User -> ToBackend -> Bool

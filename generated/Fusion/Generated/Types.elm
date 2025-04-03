@@ -1,15 +1,20 @@
 module Fusion.Generated.Types exposing
-    ( build_BackendModel, build_Email, build_PollData, build_PollingStatus, build_PollingToken, build_User
-    , patch_BackendModel, patch_Email, patch_PollData, patch_PollingStatus, patch_PollingToken, patch_User, patcher_BackendModel
-    , patcher_Email, patcher_PollData, patcher_PollingStatus, patcher_PollingToken, patcher_User, toValue_BackendModel, toValue_Email
-    , toValue_PollData, toValue_PollingStatus, toValue_PollingToken, toValue_User
+    ( build_AgentConfig, build_AgentConfigId, build_AgentProvider, build_BackendModel, build_Email, build_PollData
+    , build_PollingStatus, build_PollingToken, build_User, build_UserAgentConfigs, patch_AgentConfig, patch_AgentConfigId, patch_AgentProvider
+    , patch_BackendModel, patch_Email, patch_PollData, patch_PollingStatus, patch_PollingToken, patch_User, patch_UserAgentConfigs
+    , patcher_AgentConfig, patcher_AgentConfigId, patcher_AgentProvider, patcher_BackendModel, patcher_Email, patcher_PollData, patcher_PollingStatus
+    , patcher_PollingToken, patcher_User, patcher_UserAgentConfigs, toValue_AgentConfig, toValue_AgentConfigId, toValue_AgentProvider, toValue_BackendModel
+    , toValue_Email, toValue_PollData, toValue_PollingStatus, toValue_PollingToken, toValue_User, toValue_UserAgentConfigs
     )
 
 {-|
-@docs build_BackendModel, build_Email, build_PollData, build_PollingStatus, build_PollingToken, build_User
-@docs patch_BackendModel, patch_Email, patch_PollData, patch_PollingStatus, patch_PollingToken, patch_User
-@docs patcher_BackendModel, patcher_Email, patcher_PollData, patcher_PollingStatus, patcher_PollingToken, patcher_User
-@docs toValue_BackendModel, toValue_Email, toValue_PollData, toValue_PollingStatus, toValue_PollingToken, toValue_User
+@docs build_AgentConfig, build_AgentConfigId, build_AgentProvider, build_BackendModel, build_Email, build_PollData
+@docs build_PollingStatus, build_PollingToken, build_User, build_UserAgentConfigs, patch_AgentConfig, patch_AgentConfigId
+@docs patch_AgentProvider, patch_BackendModel, patch_Email, patch_PollData, patch_PollingStatus, patch_PollingToken
+@docs patch_User, patch_UserAgentConfigs, patcher_AgentConfig, patcher_AgentConfigId, patcher_AgentProvider, patcher_BackendModel
+@docs patcher_Email, patcher_PollData, patcher_PollingStatus, patcher_PollingToken, patcher_User, patcher_UserAgentConfigs
+@docs toValue_AgentConfig, toValue_AgentConfigId, toValue_AgentProvider, toValue_BackendModel, toValue_Email, toValue_PollData
+@docs toValue_PollingStatus, toValue_PollingToken, toValue_User, toValue_UserAgentConfigs
 -}
 
 
@@ -19,7 +24,75 @@ import Fusion.Generated.Auth.Common
 import Fusion.Generated.Lamdera
 import Fusion.Generated.Result
 import Fusion.Patch
+import Result.Extra
 import Types
+
+
+build_AgentConfig : Fusion.Value -> Result Fusion.Patch.Error Types.AgentConfig
+build_AgentConfig value =
+    Fusion.Patch.build_Record
+        (\build_RecordUnpack ->
+             Result.map5
+                 (\id name provider endpoint apiKey ->
+                      { id = id
+                      , name = name
+                      , provider = provider
+                      , endpoint = endpoint
+                      , apiKey = apiKey
+                      }
+                 )
+                 (Result.andThen build_AgentConfigId (build_RecordUnpack "id"))
+                 (Result.andThen
+                      Fusion.Patch.build_String
+                      (build_RecordUnpack "name")
+                 )
+                 (Result.andThen
+                      build_AgentProvider
+                      (build_RecordUnpack "provider")
+                 )
+                 (Result.andThen
+                      Fusion.Patch.build_String
+                      (build_RecordUnpack "endpoint")
+                 )
+                 (Result.andThen
+                      Fusion.Patch.build_String
+                      (build_RecordUnpack "apiKey")
+                 )
+        )
+        value
+
+
+build_AgentConfigId :
+    Fusion.Value -> Result Fusion.Patch.Error Types.AgentConfigId
+build_AgentConfigId value =
+    Fusion.Patch.build_String value
+
+
+build_AgentProvider :
+    Fusion.Value -> Result Fusion.Patch.Error Types.AgentProvider
+build_AgentProvider value =
+    Fusion.Patch.build_Custom
+        (\name params ->
+             case ( name, params ) of
+                 ( "OpenAI", [] ) ->
+                     Result.Ok Types.OpenAI
+
+                 ( "Anthropic", [] ) ->
+                     Result.Ok Types.Anthropic
+
+                 ( "GoogleGemini", [] ) ->
+                     Result.Ok Types.GoogleGemini
+
+                 ( "OtherProvider", [ patch0 ] ) ->
+                     Result.map
+                         Types.OtherProvider
+                         (Fusion.Patch.build_String patch0)
+
+                 _ ->
+                     Result.Err
+                         (Fusion.Patch.WrongType "buildCustom last branch")
+        )
+        value
 
 
 build_BackendModel :
@@ -27,44 +100,69 @@ build_BackendModel :
 build_BackendModel value =
     Fusion.Patch.build_Record
         (\build_RecordUnpack ->
-             Result.map5
-                 (\logs pendingAuths sessions users pollingJobs ->
+             Result.Ok
+                 (\logs pendingAuths sessions users pollingJobs userAgentConfigs ->
                       { logs = logs
                       , pendingAuths = pendingAuths
                       , sessions = sessions
                       , users = users
                       , pollingJobs = pollingJobs
+                      , userAgentConfigs = userAgentConfigs
                       }
-                 )
-                 (Result.andThen
-                      (Fusion.Patch.build_List Fusion.Patch.patcher_String)
-                      (build_RecordUnpack "logs")
-                 )
-                 (Result.andThen
-                      (Fusion.Patch.build_Dict
-                           Fusion.Generated.Lamdera.patcher_SessionId
-                           Fusion.Generated.Auth.Common.patcher_PendingAuth
-                      )
-                      (build_RecordUnpack "pendingAuths")
-                 )
-                 (Result.andThen
-                      (Fusion.Patch.build_Dict
-                           Fusion.Generated.Lamdera.patcher_SessionId
-                           Fusion.Generated.Auth.Common.patcher_UserInfo
-                      )
-                      (build_RecordUnpack "sessions")
-                 )
-                 (Result.andThen
-                      (Fusion.Patch.build_Dict patcher_Email patcher_User)
-                      (build_RecordUnpack "users")
-                 )
-                 (Result.andThen
-                      (Fusion.Patch.build_Dict
-                           patcher_PollingToken
-                           (patcher_PollingStatus patcher_PollData)
-                      )
-                      (build_RecordUnpack "pollingJobs")
-                 )
+                 ) |> Result.Extra.andMap
+                              (Result.andThen
+                                       (Fusion.Patch.build_List
+                                                Fusion.Patch.patcher_String
+                                       )
+                                       (build_RecordUnpack "logs")
+                              ) |> Result.Extra.andMap
+                                           (Result.andThen
+                                                    (Fusion.Patch.build_Dict
+                                                             Fusion.Generated.Lamdera.patcher_SessionId
+                                                             Fusion.Generated.Auth.Common.patcher_PendingAuth
+                                                    )
+                                                    (build_RecordUnpack
+                                                             "pendingAuths"
+                                                    )
+                                           ) |> Result.Extra.andMap
+                                                        (Result.andThen
+                                                                 (Fusion.Patch.build_Dict
+                                                                          Fusion.Generated.Lamdera.patcher_SessionId
+                                                                          Fusion.Generated.Auth.Common.patcher_UserInfo
+                                                                 )
+                                                                 (build_RecordUnpack
+                                                                          "sessions"
+                                                                 )
+                                                        ) |> Result.Extra.andMap
+                                                                     (Result.andThen
+                                                                              (Fusion.Patch.build_Dict
+                                                                                       patcher_Email
+                                                                                       patcher_User
+                                                                              )
+                                                                              (build_RecordUnpack
+                                                                                       "users"
+                                                                              )
+                                                                     ) |> Result.Extra.andMap
+                                                                                  (Result.andThen
+                                                                                           (Fusion.Patch.build_Dict
+                                                                                                    patcher_PollingToken
+                                                                                                    (patcher_PollingStatus
+                                                                                                             patcher_PollData
+                                                                                                    )
+                                                                                           )
+                                                                                           (build_RecordUnpack
+                                                                                                    "pollingJobs"
+                                                                                           )
+                                                                                  ) |> Result.Extra.andMap
+                                                                                               (Result.andThen
+                                                                                                        (Fusion.Patch.build_Dict
+                                                                                                                 patcher_Email
+                                                                                                                 patcher_UserAgentConfigs
+                                                                                                        )
+                                                                                                        (build_RecordUnpack
+                                                                                                                 "userAgentConfigs"
+                                                                                                        )
+                                                                                               )
         )
         value
 
@@ -129,6 +227,178 @@ build_User value =
         value
 
 
+build_UserAgentConfigs :
+    Fusion.Value -> Result Fusion.Patch.Error Types.UserAgentConfigs
+build_UserAgentConfigs value =
+    Fusion.Patch.build_Dict patcher_AgentConfigId patcher_AgentConfig value
+
+
+patch_AgentConfig :
+    { force : Bool }
+    -> Fusion.Patch.Patch
+    -> Types.AgentConfig
+    -> Result Fusion.Patch.Error Types.AgentConfig
+patch_AgentConfig options patch value =
+    Fusion.Patch.patch_Record
+        (\fieldName fieldPatch acc ->
+             case fieldName of
+                 "id" ->
+                     Result.map
+                         (\id -> { acc | id = id })
+                         (patch_AgentConfigId options fieldPatch acc.id)
+
+                 "name" ->
+                     Result.map
+                         (\name -> { acc | name = name })
+                         (Fusion.Patch.patch_String options fieldPatch acc.name)
+
+                 "provider" ->
+                     Result.map
+                         (\provider -> { acc | provider = provider })
+                         (patch_AgentProvider options fieldPatch acc.provider)
+
+                 "endpoint" ->
+                     Result.map
+                         (\endpoint -> { acc | endpoint = endpoint })
+                         (Fusion.Patch.patch_String
+                              options
+                              fieldPatch
+                              acc.endpoint
+                         )
+
+                 "apiKey" ->
+                     Result.map
+                         (\apiKey -> { acc | apiKey = apiKey })
+                         (Fusion.Patch.patch_String
+                              options
+                              fieldPatch
+                              acc.apiKey
+                         )
+
+                 _ ->
+                     Result.Err (Fusion.Patch.UnexpectedField fieldName)
+        )
+        patch
+        value
+
+
+patch_AgentConfigId :
+    { force : Bool }
+    -> Fusion.Patch.Patch
+    -> Types.AgentConfigId
+    -> Result Fusion.Patch.Error Types.AgentConfigId
+patch_AgentConfigId options patch value =
+    Fusion.Patch.patch_String options patch value
+
+
+patch_AgentProvider :
+    { force : Bool }
+    -> Fusion.Patch.Patch
+    -> Types.AgentProvider
+    -> Result Fusion.Patch.Error Types.AgentProvider
+patch_AgentProvider options patch value =
+    let
+        isCorrectVariant expected =
+            case ( value, expected ) of
+                ( Types.OpenAI, "OpenAI" ) ->
+                    True
+
+                ( Types.Anthropic, "Anthropic" ) ->
+                    True
+
+                ( Types.GoogleGemini, "GoogleGemini" ) ->
+                    True
+
+                ( Types.OtherProvider _, "OtherProvider" ) ->
+                    True
+
+                _ ->
+                    False
+    in
+    case ( value, patch, options.force ) of
+        ( Types.OpenAI, Fusion.Patch.PCustomSame "OpenAI" [], _ ) ->
+            Result.Ok Types.OpenAI
+
+        ( _, Fusion.Patch.PCustomSame "OpenAI" _, False ) ->
+            Result.Err Fusion.Patch.Conflict
+
+        ( _, Fusion.Patch.PCustomSame "OpenAI" [], _ ) ->
+            Result.Ok Types.OpenAI
+
+        ( Types.Anthropic, Fusion.Patch.PCustomSame "Anthropic" [], _ ) ->
+            Result.Ok Types.Anthropic
+
+        ( _, Fusion.Patch.PCustomSame "Anthropic" _, False ) ->
+            Result.Err Fusion.Patch.Conflict
+
+        ( _, Fusion.Patch.PCustomSame "Anthropic" [], _ ) ->
+            Result.Ok Types.Anthropic
+
+        ( Types.GoogleGemini, Fusion.Patch.PCustomSame "GoogleGemini" [], _ ) ->
+            Result.Ok Types.GoogleGemini
+
+        ( _, Fusion.Patch.PCustomSame "GoogleGemini" _, False ) ->
+            Result.Err Fusion.Patch.Conflict
+
+        ( _, Fusion.Patch.PCustomSame "GoogleGemini" [], _ ) ->
+            Result.Ok Types.GoogleGemini
+
+        ( Types.OtherProvider arg0, Fusion.Patch.PCustomSame "OtherProvider" [ patch0 ], _ ) ->
+            Result.map
+                Types.OtherProvider
+                (Fusion.Patch.maybeApply
+                     Fusion.Patch.patcher_String
+                     options
+                     patch0
+                     arg0
+                )
+
+        ( _, Fusion.Patch.PCustomSame "OtherProvider" _, False ) ->
+            Result.Err Fusion.Patch.Conflict
+
+        ( _, Fusion.Patch.PCustomSame "OtherProvider" [ (Just patch0) ], _ ) ->
+            Result.map
+                Types.OtherProvider
+                (Fusion.Patch.buildFromPatch Fusion.Patch.build_String patch0)
+
+        ( _, Fusion.Patch.PCustomSame "OtherProvider" _, _ ) ->
+            Result.Err Fusion.Patch.CouldNotBuildValueFromPatch
+
+        ( _, Fusion.Patch.PCustomSame _ _, _ ) ->
+            Result.Err (Fusion.Patch.WrongType "patchCustom.wrongSame")
+
+        ( _, Fusion.Patch.PCustomChange expectedVariant "OpenAI" [], _ ) ->
+            if options.force || isCorrectVariant expectedVariant then
+                Result.Ok Types.OpenAI
+
+            else
+                Result.Err Fusion.Patch.Conflict
+
+        ( _, Fusion.Patch.PCustomChange expectedVariant "Anthropic" [], _ ) ->
+            if options.force || isCorrectVariant expectedVariant then
+                Result.Ok Types.Anthropic
+
+            else
+                Result.Err Fusion.Patch.Conflict
+
+        ( _, Fusion.Patch.PCustomChange expectedVariant "GoogleGemini" [], _ ) ->
+            if options.force || isCorrectVariant expectedVariant then
+                Result.Ok Types.GoogleGemini
+
+            else
+                Result.Err Fusion.Patch.Conflict
+
+        ( _, Fusion.Patch.PCustomChange expectedVariant "OtherProvider" [ arg0 ], _ ) ->
+            if options.force || isCorrectVariant expectedVariant then
+                Result.map Types.OtherProvider (Fusion.Patch.build_String arg0)
+
+            else
+                Result.Err Fusion.Patch.Conflict
+
+        _ ->
+            Result.Err (Fusion.Patch.WrongType "patchCustom.lastBranch")
+
+
 patch_BackendModel :
     { force : Bool }
     -> Fusion.Patch.Patch
@@ -191,6 +461,19 @@ patch_BackendModel options patch value =
                               options
                               fieldPatch
                               acc.pollingJobs
+                         )
+
+                 "userAgentConfigs" ->
+                     Result.map
+                         (\userAgentConfigs ->
+                              { acc | userAgentConfigs = userAgentConfigs }
+                         )
+                         (Fusion.Patch.patch_Dict
+                              patcher_Email
+                              patcher_UserAgentConfigs
+                              options
+                              fieldPatch
+                              acc.userAgentConfigs
                          )
 
                  _ ->
@@ -366,6 +649,44 @@ patch_User options patch value =
         value
 
 
+patch_UserAgentConfigs :
+    { force : Bool }
+    -> Fusion.Patch.Patch
+    -> Types.UserAgentConfigs
+    -> Result Fusion.Patch.Error Types.UserAgentConfigs
+patch_UserAgentConfigs options patch value =
+    Fusion.Patch.patch_Dict
+        patcher_AgentConfigId
+        patcher_AgentConfig
+        options
+        patch
+        value
+
+
+patcher_AgentConfig : Fusion.Patch.Patcher Types.AgentConfig
+patcher_AgentConfig =
+    { patch = patch_AgentConfig
+    , build = build_AgentConfig
+    , toValue = toValue_AgentConfig
+    }
+
+
+patcher_AgentConfigId : Fusion.Patch.Patcher Types.AgentConfigId
+patcher_AgentConfigId =
+    { patch = patch_AgentConfigId
+    , build = build_AgentConfigId
+    , toValue = toValue_AgentConfigId
+    }
+
+
+patcher_AgentProvider : Fusion.Patch.Patcher Types.AgentProvider
+patcher_AgentProvider =
+    { patch = patch_AgentProvider
+    , build = build_AgentProvider
+    , toValue = toValue_AgentProvider
+    }
+
+
 patcher_BackendModel : Fusion.Patch.Patcher Types.BackendModel
 patcher_BackendModel =
     { patch = patch_BackendModel
@@ -409,6 +730,48 @@ patcher_User =
     { patch = patch_User, build = build_User, toValue = toValue_User }
 
 
+patcher_UserAgentConfigs : Fusion.Patch.Patcher Types.UserAgentConfigs
+patcher_UserAgentConfigs =
+    { patch = patch_UserAgentConfigs
+    , build = build_UserAgentConfigs
+    , toValue = toValue_UserAgentConfigs
+    }
+
+
+toValue_AgentConfig : Types.AgentConfig -> Fusion.Value
+toValue_AgentConfig value =
+    Fusion.VRecord
+        (Dict.fromList
+             [ ( "id", toValue_AgentConfigId value.id )
+             , ( "name", Fusion.VString value.name )
+             , ( "provider", toValue_AgentProvider value.provider )
+             , ( "endpoint", Fusion.VString value.endpoint )
+             , ( "apiKey", Fusion.VString value.apiKey )
+             ]
+        )
+
+
+toValue_AgentConfigId : Types.AgentConfigId -> Fusion.Value
+toValue_AgentConfigId value =
+    Fusion.VString value
+
+
+toValue_AgentProvider : Types.AgentProvider -> Fusion.Value
+toValue_AgentProvider value =
+    case value of
+        Types.OpenAI ->
+            Fusion.VCustom "OpenAI" []
+
+        Types.Anthropic ->
+            Fusion.VCustom "Anthropic" []
+
+        Types.GoogleGemini ->
+            Fusion.VCustom "GoogleGemini" []
+
+        Types.OtherProvider arg0 ->
+            Fusion.VCustom "OtherProvider" [ Fusion.VString arg0 ]
+
+
 toValue_BackendModel : Types.BackendModel -> Fusion.Value
 toValue_BackendModel value =
     Fusion.VRecord
@@ -441,6 +804,12 @@ toValue_BackendModel value =
                      patcher_PollingToken
                      (patcher_PollingStatus patcher_PollData)
                      value.pollingJobs
+               )
+             , ( "userAgentConfigs"
+               , Fusion.Patch.toValue_Dict
+                     patcher_Email
+                     patcher_UserAgentConfigs
+                     value.userAgentConfigs
                )
              ]
         )
@@ -485,3 +854,8 @@ toValue_PollingToken value =
 toValue_User : Types.User -> Fusion.Value
 toValue_User value =
     Fusion.VRecord (Dict.fromList [ ( "email", toValue_Email value.email ) ])
+
+
+toValue_UserAgentConfigs : Types.UserAgentConfigs -> Fusion.Value
+toValue_UserAgentConfigs value =
+    Fusion.Patch.toValue_Dict patcher_AgentConfigId patcher_AgentConfig value

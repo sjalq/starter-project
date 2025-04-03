@@ -12,6 +12,7 @@ import Rights.Role exposing (roleToString)
 import Rights.User exposing (createUser, getUserRole, insertUser, isSysAdmin)
 import Supplemental exposing (..)
 import Task
+import Time exposing (Posix, millisToPosix)
 import Types exposing (..)
 
 
@@ -42,6 +43,7 @@ init =
       , sessions = Dict.empty
       , users = Dict.empty
       , pollingJobs = Dict.empty
+      , userAgentConfigs = Dict.empty
       }
     , Cmd.none
     )
@@ -191,6 +193,61 @@ updateFromFrontend browserCookie connectionId msg model =
             ( model
             , Lamdera.sendToFrontend connectionId (Admin_FusionResponse (Fusion.Generated.Types.toValue_BackendModel model))
             )
+        
+        RequestAgentConfigs ->
+            case getCurrentUserEmail model browserCookie of
+                Nothing ->
+                    ( model, Lamdera.sendToFrontend connectionId (PermissionDenied RequestAgentConfigs) ) 
+                
+                Just userEmail ->
+                    let
+                        configs = Dict.get userEmail model.userAgentConfigs |> Maybe.withDefault Dict.empty
+                        configsWithDefaults = addDefaultAgentConfigs configs
+                        configsView : Dict.Dict AgentConfigId AgentConfigView
+                        configsView = Dict.map (\_ cfg -> agentConfigToView cfg) configsWithDefaults
+                        
+                        -- Update model if defaults were added
+                        newModel = 
+                            if Dict.isEmpty configs then
+                                { model | userAgentConfigs = Dict.insert userEmail configsWithDefaults model.userAgentConfigs }
+                            else
+                                model
+                    in
+                    ( newModel, Lamdera.sendToFrontend connectionId (ReceiveAgentConfigs configsView) )
+
+        SaveAgentConfig agentConfig ->
+            case getCurrentUserEmail model browserCookie of
+                Nothing ->
+                    ( model, Lamdera.sendToFrontend connectionId (PermissionDenied msg) )
+                
+                Just userEmail ->
+                    let
+                        currentUserConfigs = Dict.get userEmail model.userAgentConfigs |> Maybe.withDefault Dict.empty
+                        configsWithDefaults = addDefaultAgentConfigs currentUserConfigs
+                        
+                        -- Use simple synchronous ID generation for new configs
+                        finalConfigSimpleId = 
+                             if agentConfig.id == "new-agent" then
+                                 -- NOTE: This ID generation is very basic.
+                                 { agentConfig | id = userEmail ++ "-" ++ String.fromInt (10000 + Dict.size currentUserConfigs) } 
+                             else
+                                 agentConfig
+
+                        updatedUserConfigs = Dict.insert finalConfigSimpleId.id finalConfigSimpleId configsWithDefaults
+                        
+                        -- Update the main backend model
+                        newModel =
+                            { model | userAgentConfigs = Dict.insert userEmail updatedUserConfigs model.userAgentConfigs }
+                        
+                        -- Create the view model to send back
+                        updatedConfigsView =
+                            Dict.map (\_ cfg -> agentConfigToView cfg) updatedUserConfigs
+                    in
+                    ( newModel, Lamdera.sendToFrontend connectionId (ReceiveAgentConfigs updatedConfigsView) )
+                        |> log ("Saved config " ++ finalConfigSimpleId.id ++ " for user " ++ userEmail)
+
+        DeleteAgentConfig configId ->
+            ( model, Cmd.none )
 
 
 updateFromFrontendCheckingRights : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
@@ -231,3 +288,43 @@ userToFrontend user =
     , isSysAdmin = isSysAdmin user
     , role = getUserRole user |> roleToString
     }
+
+
+-- Helper Functions --
+
+generateUniqueIdForUser : Email -> Posix -> AgentConfigId
+generateUniqueIdForUser email time =
+    email ++ "-" ++ String.fromInt (Time.posixToMillis time)
+
+getCurrentUserEmail : BackendModel -> BrowserCookie -> Maybe Email
+getCurrentUserEmail model browserCookie =
+    Dict.get browserCookie model.sessions
+        |> Maybe.map (\userInfo -> userInfo.email)
+
+agentConfigToView : AgentConfig -> AgentConfigView
+agentConfigToView config =
+    { id = config.id
+    , name = config.name
+    , provider = config.provider
+    , endpoint = config.endpoint
+    }
+
+defaultAgentConfigs : UserAgentConfigs
+defaultAgentConfigs =
+    let
+        openai = { id = "default-openai", name = "OpenAI (Default)", provider = OpenAI, endpoint = "https://api.openai.com/v1/chat/completions", apiKey = "" } -- API Key is empty for defaults
+        anthropic = { id = "default-anthropic", name = "Anthropic Claude (Default)", provider = Anthropic, endpoint = "https://api.anthropic.com/v1/messages", apiKey = "" }
+        gemini = { id = "default-gemini", name = "Google Gemini (Default)", provider = GoogleGemini, endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", apiKey = "" }
+    in
+    Dict.fromList
+        [ ( openai.id, openai )
+        , ( anthropic.id, anthropic )
+        , ( gemini.id, gemini )
+        ]
+
+addDefaultAgentConfigs : UserAgentConfigs -> UserAgentConfigs
+addDefaultAgentConfigs existingConfigs =
+    if Dict.isEmpty existingConfigs then
+        defaultAgentConfigs
+    else
+        existingConfigs

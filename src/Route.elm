@@ -9,6 +9,7 @@ parser : Parser (Route -> a) a
 parser =
     oneOf
         [ Parser.map Default Parser.top
+        , Parser.map AgentSettings (s "agent-settings")
         , Parser.map (Admin AdminDefault) (s "admin")
         , Parser.map (Admin AdminLogs) (s "admin" </> s "logs")
         , Parser.map (Admin AdminFetchModel) (s "admin" </> s "fetch-model")
@@ -27,6 +28,9 @@ toString route =
     case route of
         Default ->
             "/"
+
+        AgentSettings ->
+            "/agent-settings"
 
         Admin AdminDefault ->
             "/admin"

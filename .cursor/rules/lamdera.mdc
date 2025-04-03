@@ -149,6 +149,7 @@ This section outlines general interaction patterns and coding style preferences.
    - Handle ToFrontend messages
    - Create necessary frontend functions
      - Initially implemented with mock data in step 4
+     - Make sure the mock data is no longer used
      - Now updated to work with real backend data
    - Update UI based on backend responses
    - Polish error handling
@@ -373,6 +374,7 @@ This section highlights common mistakes and specific patterns to follow or avoid
 ### Working with Existing Code
 -   **Assumption:** When adding new functionality, assume the existing codebase is immaculate at the beginning of the session.
 -   **Modification:** Only remove or alter existing code if asked to fix something or if the code is *central* to the improvements being made for the current feature request.
+    - Do not for instance decide to randomly remove defualts in case statements like ` _ -> `
 -   **Scope:** Never remove code unrelated to the essential changes needed for the current session of prompts.
 
 ### Type Organization
@@ -384,7 +386,8 @@ This section highlights common mistakes and specific patterns to follow or avoid
 - Avoid using separate CSS files
 - Use Elm's built-in HTML and CSS functionality through the `elm/html` package
 - Leverage Elm's type system for styling by using the `Html.Attributes` and `Html.Events` modules
-- Use Elm's CSS-in-Elm approach for type-safe styling
+- Style new features consistent with old features.
+- Use tailwind and look at the existing stuff to see how.
 
 ### Lamdera/Elm Specific Patterns
 -   **Ports:** Avoid using Ports. They introduce untyped code and complexity. Exhaust pure Elm options first.

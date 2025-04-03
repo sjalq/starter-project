@@ -5,6 +5,7 @@ import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Pages.Admin
 import Pages.Default
+import Pages.AgentSettings
 import Route exposing (..)
 import Types exposing (..)
 
@@ -14,6 +15,7 @@ viewTabs model =
     div [ Attr.class "flex justify-between mb-5 px-4" ]
         [ div [ Attr.class "flex" ]
             (viewTab "Default" Default model.currentRoute
+                :: viewTab "Agent Settings" AgentSettings model.currentRoute
                 :: (case model.currentUser of
                         Just user ->
                             if user.isSysAdmin then
@@ -91,6 +93,9 @@ viewCurrentPage model =
         Admin _ ->
             Pages.Admin.view model
 
+        AgentSettings ->
+            Html.map identity (Pages.AgentSettings.view (agentSettingsSubModel model))
+
         NotFound ->
             viewNotFoundPage
 
@@ -99,3 +104,11 @@ viewNotFoundPage : Html FrontendMsg
 viewNotFoundPage =
     div [ Attr.class "text-center p-4" ]
         [ text "404 - Page Not Found" ]
+
+
+-- Helper Functions needed by PageFrame (copied from Frontend.elm)
+
+-- Helper to create the sub-model for the AgentSettings page
+agentSettingsSubModel : FrontendModel -> Pages.AgentSettings.Model
+agentSettingsSubModel model =
+    Pages.AgentSettings.init model.agentConfigs model.agentSettingsPage

@@ -1,11 +1,11 @@
 module Fusion.Generated.TypeDict.Types exposing
-    ( typeDict, type_BackendModel, type_Email, type_PollData, type_PollingStatus, type_PollingToken
-    , type_User
+    ( typeDict, type_AgentConfig, type_AgentConfigId, type_AgentProvider, type_BackendModel, type_Email
+    , type_PollData, type_PollingStatus, type_PollingToken, type_User, type_UserAgentConfigs
     )
 
 {-|
-@docs typeDict, type_BackendModel, type_Email, type_PollData, type_PollingStatus, type_PollingToken
-@docs type_User
+@docs typeDict, type_AgentConfig, type_AgentConfigId, type_AgentProvider, type_BackendModel, type_Email
+@docs type_PollData, type_PollingStatus, type_PollingToken, type_User, type_UserAgentConfigs
 -}
 
 
@@ -16,12 +16,52 @@ import Fusion
 typeDict : Dict.Dict String ( Fusion.Type, List String )
 typeDict =
     Dict.fromList
-        [ ( "PollData", ( type_PollData, [] ) )
+        [ ( "AgentProvider", ( type_AgentProvider, [] ) )
+        , ( "AgentConfig", ( type_AgentConfig, [] ) )
+        , ( "AgentConfigId", ( type_AgentConfigId, [] ) )
+        , ( "UserAgentConfigs", ( type_UserAgentConfigs, [] ) )
+        , ( "PollData", ( type_PollData, [] ) )
         , ( "PollingStatus", ( type_PollingStatus, [ "a" ] ) )
         , ( "PollingToken", ( type_PollingToken, [] ) )
         , ( "User", ( type_User, [] ) )
         , ( "Email", ( type_Email, [] ) )
         , ( "BackendModel", ( type_BackendModel, [] ) )
+        ]
+
+
+type_AgentConfig : Fusion.Type
+type_AgentConfig =
+    Fusion.TRecord
+        [ ( "id", Fusion.TNamed [ "Types" ] "AgentConfigId" [] Nothing )
+        , ( "name"
+          , Fusion.TNamed [ "String" ] "String" [] (Just Fusion.TString)
+          )
+        , ( "provider", Fusion.TNamed [ "Types" ] "AgentProvider" [] Nothing )
+        , ( "endpoint"
+          , Fusion.TNamed [ "String" ] "String" [] (Just Fusion.TString)
+          )
+        , ( "apiKey"
+          , Fusion.TNamed [ "String" ] "String" [] (Just Fusion.TString)
+          )
+        ]
+
+
+type_AgentConfigId : Fusion.Type
+type_AgentConfigId =
+    Fusion.TNamed [ "String" ] "String" [] (Just Fusion.TString)
+
+
+type_AgentProvider : Fusion.Type
+type_AgentProvider =
+    Fusion.TCustom
+        "AgentProvider"
+        []
+        [ ( "OpenAI", [] )
+        , ( "Anthropic", [] )
+        , ( "GoogleGemini", [] )
+        , ( "OtherProvider"
+          , [ Fusion.TNamed [ "String" ] "String" [] (Just Fusion.TString) ]
+          )
         ]
 
 
@@ -120,6 +160,25 @@ type_BackendModel =
                      )
                 )
           )
+        , ( "userAgentConfigs"
+          , Fusion.TNamed
+                [ "Dict" ]
+                "Dict"
+                [ Fusion.TNamed [ "Types" ] "Email" [] Nothing
+                , Fusion.TNamed [ "Types" ] "UserAgentConfigs" [] Nothing
+                ]
+                (Just
+                     (Fusion.TDict
+                          (Fusion.TNamed [ "Types" ] "Email" [] Nothing)
+                          (Fusion.TNamed
+                               [ "Types" ]
+                               "UserAgentConfigs"
+                               []
+                               Nothing
+                          )
+                     )
+                )
+          )
         ]
 
 
@@ -173,3 +232,19 @@ type_PollingToken =
 type_User : Fusion.Type
 type_User =
     Fusion.TRecord [ ( "email", Fusion.TNamed [ "Types" ] "Email" [] Nothing ) ]
+
+
+type_UserAgentConfigs : Fusion.Type
+type_UserAgentConfigs =
+    Fusion.TNamed
+        [ "Dict" ]
+        "Dict"
+        [ Fusion.TNamed [ "Types" ] "AgentConfigId" [] Nothing
+        , Fusion.TNamed [ "Types" ] "AgentConfig" [] Nothing
+        ]
+        (Just
+             (Fusion.TDict
+                  (Fusion.TNamed [ "Types" ] "AgentConfigId" [] Nothing)
+                  (Fusion.TNamed [ "Types" ] "AgentConfig" [] Nothing)
+             )
+        )

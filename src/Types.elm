@@ -29,6 +29,7 @@ type alias BrowserCookie =
 
 type Route
     = Default
+    | AgentSettings
     | Admin AdminRoute
     | NotFound
 
@@ -57,6 +58,8 @@ type alias FrontendModel =
     , currentUser : Maybe UserFrontend
     , pendingAuth : Bool
     , fusionState : Fusion.Value
+    , agentConfigs : Dict AgentConfigId AgentConfigView
+    , agentSettingsPage : AgentSettingsPageModel
     }
 
 
@@ -66,6 +69,7 @@ type alias BackendModel =
     , sessions : Dict Lamdera.SessionId Auth.Common.UserInfo
     , users : Dict Email User
     , pollingJobs : Dict PollingToken (PollingStatus PollData)
+    , userAgentConfigs : Dict Email UserAgentConfigs
     }
 
 
@@ -83,6 +87,15 @@ type FrontendMsg
     --- Fusion
     | Admin_FusionPatch Fusion.Patch.Patch
     | Admin_FusionQuery Fusion.Query
+    --- Agent Settings Page
+    | AgentSettings_EditConfig (Maybe AgentConfigId)
+    | AgentSettings_UpdateName String
+    | AgentSettings_UpdateProvider AgentProvider
+    | AgentSettings_UpdateEndpoint String
+    | AgentSettings_UpdateApiKey String
+    | AgentSettings_SaveConfig String
+    | AgentSettings_CancelEdit
+    | AgentSettings_DeleteConfig AgentConfigId
 
 
 type ToBackend
@@ -96,6 +109,10 @@ type ToBackend
     --- Fusion
     | Fusion_PersistPatch Fusion.Patch.Patch
     | Fusion_Query Fusion.Query
+    --- Agent Configs
+    | RequestAgentConfigs
+    | SaveAgentConfig AgentConfig
+    | DeleteAgentConfig AgentConfigId
 
 
 type BackendMsg
@@ -119,6 +136,8 @@ type ToFrontend
     | UserDataToFrontend UserFrontend
     | PermissionDenied ToBackend
     | Admin_FusionResponse Fusion.Value
+    --- Agent Configs
+    | ReceiveAgentConfigs (Dict AgentConfigId AgentConfigView)
 
 
 type alias Email =
@@ -170,3 +189,46 @@ type PollingStatus a
 
 type alias PollData =
     String
+
+
+-- AGENT CONFIG TYPES
+
+type AgentProvider
+    = OpenAI
+    | Anthropic
+    | GoogleGemini
+    | OtherProvider String -- For custom/other providers
+
+
+type alias AgentConfigId =
+    String
+
+
+type alias AgentConfig =
+    { id : AgentConfigId
+    , name : String
+    , provider : AgentProvider
+    , endpoint : String
+    , apiKey : String -- NOTE: Stored plain text, consider encryption/secure storage later
+    }
+
+
+type alias UserAgentConfigs =
+    Dict AgentConfigId AgentConfig
+
+
+-- Frontend view model for AgentConfig, might omit sensitive data like apiKey
+type alias AgentConfigView =
+    { id : AgentConfigId
+    , name : String
+    , provider : AgentProvider
+    , endpoint : String
+    }
+
+
+-- Model for the Agent Settings page state
+type alias AgentSettingsPageModel =
+    { isLoading : Bool
+    , error : Maybe String
+    , editingConfig : Maybe AgentConfigView -- Holds the config being added/edited
+    }

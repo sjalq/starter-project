@@ -60,9 +60,12 @@ Routes are a crucial part of Lamdera applications, representing distinct views o
 
 #### Page Organization
 - Each top level route should correspond to a dedicated page module in the Pages/ directory
-- Pages should be self-contained with their own view and init functions, but updates should be in the Frontend.elm file
-- Use discretion here as some system might need their own update function and sub model, but generally pages do not. But be smart about it.
+- Pages should be self-contained with their own view functions ONLY
+- Types and update functions should be centralized in Types.elm and Frontend.elm respectively
+- The ONLY exception to this rule is when a component has a clear, self-contained UI that can be easily extracted (e.g., a Tetris game or chat windows when there are multiple instances)
 - Shared components can live in a Components/ directory
+- Pages should NOT have their own Model or Msg types unless they are truly self-contained components (like the exceptions mentioned above)
+- When in doubt, put types in Types.elm and update functions in Frontend.elm
 
 #### Best Practices
 - Always add new features as new routes unless explicitly asked otherwise
@@ -408,65 +411,3 @@ This section highlights common mistakes and specific patterns to follow or avoid
 - Run this script:
   - At the start of every new feature session
   - When you complete a feature
-
-# Page Organization in Lamdera Applications
-
-## Core Principles
-
-The core principle is to keep types and update logic centralized, while allowing views to be modular. This makes the application easier to maintain and reason about.
-
-## Standard Structure
-
-### Pages Directory
-- Each top level route corresponds to a dedicated page module in the `Pages/` directory
-- Pages should ONLY contain:
-  - `view` functions
-  - Helper functions used by the view
-  - NO types
-  - NO update functions
-  - NO model definitions
-
-### Centralized Types and Updates
-- All types should be defined in `Types.elm`
-- All update functions should be in `Frontend.elm`
-- All message definitions should be in `Types.elm`
-- Model definitions belong in `Types.elm`
-
-## The Exception Rule
-
-There is ONE exception to this rule: When you have a truly self-contained component with a clear UI boundary. Examples include:
-
-- A Tetris game component
-- Chat windows when there are multiple instances
-- A complex data visualization widget
-- A self-contained form wizard
-
-These components should:
-- Have a clear visual boundary
-- Be potentially reusable
-- Have minimal interaction with the rest of the application
-- Manage their own internal state
-
-## When in Doubt
- 
-If you're unsure whether something qualifies as an exception:
-
-1. Default to putting types in `Types.elm`
-2. Default to putting update functions in `Frontend.elm`
-3. Ask yourself: "Could this component be its own mini-application?"
-   - If NO: Follow the standard structure
-   - If YES: It might be an exception
-
-## Anti-Patterns to Avoid
-
-❌ Don't create page-specific:
-- Message types
-- Model types
-- Update functions
-- State management
-
-✅ Instead:
-- Add your types to `Types.elm`
-- Add your update logic to `Frontend.elm`
-- Keep pages focused on view logic only 
-

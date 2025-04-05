@@ -448,7 +448,7 @@ These components should:
 - Manage their own internal state
 
 ## When in Doubt
-
+ 
 If you're unsure whether something qualifies as an exception:
 
 1. Default to putting types in `Types.elm`

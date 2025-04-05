@@ -7,8 +7,8 @@ import Dict exposing (Dict)
 import Http
 import Lamdera
 import Url exposing (Url)
-import Fusion.Patch
-import Fusion
+-- import Fusion.Patch
+-- import Fusion
 
 
 
@@ -39,7 +39,7 @@ type AdminRoute
     = AdminDefault
     | AdminLogs
     | AdminFetchModel
-    | AdminFusion
+    -- | AdminFusion
 
 
 type alias AdminPageModel =
@@ -58,7 +58,7 @@ type alias FrontendModel =
     , login : LoginState
     , currentUser : Maybe UserFrontend
     , pendingAuth : Bool
-    , fusionState : Fusion.Value
+    --, fusionState : Fusion.Value
     , agentConfigs : Dict AgentConfigId AgentConfigView
     , agentSettingsPage : AgentSettingsPageModel
     , chatInput : String
@@ -89,8 +89,8 @@ type FrontendMsg
     | Auth0SigninRequested
     | Logout
     --- Fusion
-    | Admin_FusionPatch Fusion.Patch.Patch
-    | Admin_FusionQuery Fusion.Query
+    -- | Admin_FusionPatch Fusion.Patch.Patch
+    -- | Admin_FusionQuery Fusion.Query
     --- Agent Settings Page
     | AgentSettings_EditConfig (Maybe AgentConfigId)
     | AgentSettings_UpdateName String
@@ -115,8 +115,8 @@ type ToBackend
     | GetUserToBackend
     | LoggedOut
     --- Fusion
-    | Fusion_PersistPatch Fusion.Patch.Patch
-    | Fusion_Query Fusion.Query
+    -- | Fusion_PersistPatch Fusion.Patch.Patch
+    -- | Fusion_Query Fusion.Query
     --- Agent Configs
     | RequestAgentConfigs
     | SaveAgentConfig AgentConfig
@@ -146,7 +146,7 @@ type ToFrontend
     | UserInfoMsg (Maybe Auth.Common.UserInfo)
     | UserDataToFrontend UserFrontend
     | PermissionDenied ToBackend
-    | Admin_FusionResponse Fusion.Value
+    -- | Admin_FusionResponse Fusion.Value
     --- Agent Configs
     | ReceiveAgentData { configs : Dict AgentConfigId AgentConfigView, defaultId : Maybe AgentConfigId }
     --- Chat

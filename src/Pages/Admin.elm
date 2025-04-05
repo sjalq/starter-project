@@ -6,9 +6,9 @@ import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Lamdera
 import Types exposing (..)
-import Fusion.Editor
-import Fusion.Generated.TypeDict
-import Fusion.Generated.TypeDict.Types
+-- import Fusion.Editor
+-- import Fusion.Generated.TypeDict
+-- import Fusion.Generated.TypeDict.Types
 
 init : FrontendModel -> AdminRoute -> ( FrontendModel, Cmd FrontendMsg )
 init model adminRoute =
@@ -100,7 +100,7 @@ viewTabs model =
         [ viewTab AdminDefault model "Default"
         , viewTab AdminLogs model "Logs"
         , viewTab AdminFetchModel model "Fetch Model"
-        , viewTab AdminFusion model "Fusion"
+        -- , viewTab AdminFusion model "Fusion"
         ]
 
 
@@ -125,8 +125,8 @@ viewTab tab model label =
                 AdminFetchModel ->
                     "/admin/fetch-model"
 
-                AdminFusion ->
-                    "/admin/fusion"
+                -- AdminFusion ->
+                --     "/admin/fusion"
     in
     a
         [ Attr.href route
@@ -147,8 +147,8 @@ viewTabContent model =
         Admin AdminFetchModel ->
             viewFetchModelTab model
 
-        Admin AdminFusion ->
-            viewFusionTab model
+        -- Admin AdminFusion ->
+        --     viewFusionTab model
 
         _ ->
             text "Not found"
@@ -207,18 +207,18 @@ viewFetchModelTab model =
         ]
 
 
-viewFusionTab : FrontendModel -> Html FrontendMsg
-viewFusionTab model =
-    div [ Attr.class "p-4 bg-black text-white" ]
-        [ h2 [ Attr.class "text-xl font-bold mb-4" ] [ text "Fusion Editor" ]
-        , Fusion.Editor.value
-            { typeDict = Fusion.Generated.TypeDict.typeDict
-            , type_ = Just Fusion.Generated.TypeDict.Types.type_BackendModel
-            , editMsg = Admin_FusionPatch
-            , queryMsg = Admin_FusionQuery
-            }
-            model.fusionState
-        ]
+-- viewFusionTab : FrontendModel -> Html FrontendMsg
+-- viewFusionTab model =
+--     div [ Attr.class "p-4 bg-black text-white" ]
+--         [ h2 [ Attr.class "text-xl font-bold mb-4" ] [ text "Fusion Editor" ]
+        -- , Fusion.Editor.value
+        --     { typeDict = Fusion.Generated.TypeDict.typeDict
+        --     , type_ = Just Fusion.Generated.TypeDict.Types.type_BackendModel
+        --     , editMsg = Admin_FusionPatch
+        --     , queryMsg = Admin_FusionQuery
+        --     }
+        --     model.fusionState
+--         ]
 
 
 viewLogEntry : Int -> String -> Html FrontendMsg

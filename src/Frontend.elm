@@ -18,8 +18,8 @@ import Supplemental exposing (..)
 import Time exposing (..)
 import Types exposing (..)
 import Url exposing (Url)
-import Fusion.Patch
-import Fusion
+-- import Fusion.Patch
+-- import Fusion
 import Dict
 
 type alias Model =
@@ -78,7 +78,7 @@ init url key =
             , login = NotLogged False
             , currentUser = Nothing
             , pendingAuth = False
-            , fusionState = Fusion.VUnloaded
+            --, fusionState = Fusion.VUnloaded
             , agentConfigs = Dict.empty -- Re-add agentConfigs initialization
             , agentSettingsPage = -- Re-add agentSettingsPage initialization
                 { isLoading = False
@@ -177,17 +177,17 @@ update msg model =
             Auth.Flow.signInRequested "OAuthAuth0" { model | login = NotLogged True, pendingAuth = True } Nothing
                 |> Tuple.mapSecond (AuthToBackend >> Lamdera.sendToBackend)
 
-        Admin_FusionPatch patch ->
-            ( { model
-                | fusionState =
-                    Fusion.Patch.patch { force = False } patch model.fusionState
-                        |> Result.withDefault model.fusionState
-              }
-            , Lamdera.sendToBackend (Fusion_PersistPatch patch)
-            )
+        -- Admin_FusionPatch patch ->
+        --     ( { model
+        --         | fusionState =
+        --             Fusion.Patch.patch { force = False } patch model.fusionState
+        --                 |> Result.withDefault model.fusionState
+        --       }
+        --     , Lamdera.sendToBackend (Fusion_PersistPatch patch)
+        --     )
 
-        Admin_FusionQuery query ->
-            ( model, Lamdera.sendToBackend (Fusion_Query query) )
+        -- Admin_FusionQuery query ->
+        --     ( model, Lamdera.sendToBackend (Fusion_Query query) )
 
         -- Agent Settings Page Messages (Ensure these are present)
         AgentSettings_EditConfig maybeId ->
@@ -362,8 +362,8 @@ updateFromBackend msg model =
         UserDataToFrontend currentUser ->
             ( { model | currentUser = Just currentUser }, Cmd.none )
 
-        Admin_FusionResponse value ->
-            ( { model | fusionState = value }, Cmd.none )
+        -- Admin_FusionResponse value ->
+        --     ( { model | fusionState = value }, Cmd.none )
 
         PermissionDenied _ ->
             ( model, Cmd.none )

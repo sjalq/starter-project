@@ -14,7 +14,7 @@ parser =
         , Parser.map (Admin AdminDefault) (s "admin")
         , Parser.map (Admin AdminLogs) (s "admin" </> s "logs")
         , Parser.map (Admin AdminFetchModel) (s "admin" </> s "fetch-model")
-        , Parser.map (Admin AdminFusion) (s "admin" </> s "fusion")
+        -- , Parser.map (Admin AdminFusion) (s "admin" </> s "fusion")
         ]
 
 
@@ -45,8 +45,8 @@ toString route =
         Admin AdminFetchModel ->
             "/admin/fetch-model"
 
-        Admin AdminFusion ->
-            "/admin/fusion"
+        -- Admin AdminFusion ->
+        --     "/admin/fusion"
 
         NotFound ->
             "/not-found"

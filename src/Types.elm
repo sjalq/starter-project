@@ -7,8 +7,8 @@ import Dict exposing (Dict)
 import Http
 import Lamdera
 import Url exposing (Url)
-import Fusion.Patch
-import Fusion
+-- import Fusion.Patch
+-- import Fusion
 
 
 
@@ -37,7 +37,7 @@ type AdminRoute
     = AdminDefault
     | AdminLogs
     | AdminFetchModel
-    | AdminFusion
+    -- | AdminFusion
 
 
 type alias AdminPageModel =
@@ -56,7 +56,7 @@ type alias FrontendModel =
     , login : LoginState
     , currentUser : Maybe UserFrontend
     , pendingAuth : Bool
-    , fusionState : Fusion.Value
+    -- , fusionState : Fusion.Value
     }
 
 
@@ -68,7 +68,7 @@ type alias BackendModel =
     , pollingJobs : Dict PollingToken (PollingStatus PollData)
     }
 
-
+    
 type FrontendMsg
     = UrlClicked UrlRequest
     | UrlChanged Url
@@ -81,8 +81,8 @@ type FrontendMsg
     | Auth0SigninRequested
     | Logout
     --- Fusion
-    | Admin_FusionPatch Fusion.Patch.Patch
-    | Admin_FusionQuery Fusion.Query
+    -- | Admin_FusionPatch Fusion.Patch.Patch
+    -- | Admin_FusionQuery Fusion.Query
 
 
 type ToBackend
@@ -94,8 +94,8 @@ type ToBackend
     | GetUserToBackend
     | LoggedOut
     --- Fusion
-    | Fusion_PersistPatch Fusion.Patch.Patch
-    | Fusion_Query Fusion.Query
+    -- | Fusion_PersistPatch Fusion.Patch.Patch
+    -- | Fusion_Query Fusion.Query
 
 
 type BackendMsg
@@ -118,7 +118,7 @@ type ToFrontend
     | UserInfoMsg (Maybe Auth.Common.UserInfo)
     | UserDataToFrontend UserFrontend
     | PermissionDenied ToBackend
-    | Admin_FusionResponse Fusion.Value
+    -- | Admin_FusionResponse Fusion.Value
 
 
 type alias Email =

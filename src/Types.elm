@@ -57,6 +57,7 @@ type alias FrontendModel =
     , currentUser : Maybe UserFrontend
     , pendingAuth : Bool
     -- , fusionState : Fusion.Value
+    , preferences : Preferences
     }
 
 
@@ -80,6 +81,7 @@ type FrontendMsg
     | GoogleSigninRequested
     | Auth0SigninRequested
     | Logout
+    | ToggleDarkMode
     --- Fusion
     -- | Admin_FusionPatch Fusion.Patch.Patch
     -- | Admin_FusionQuery Fusion.Query
@@ -93,6 +95,7 @@ type ToBackend
     | AuthToBackend Auth.Common.ToBackend
     | GetUserToBackend
     | LoggedOut
+    | SetDarkModePreference Bool
     --- Fusion
     -- | Fusion_PersistPatch Fusion.Patch.Patch
     -- | Fusion_Query Fusion.Query
@@ -127,6 +130,7 @@ type alias Email =
 
 type alias User =
     { email : Email
+    , preferences : Preferences
     }
 
 
@@ -134,6 +138,7 @@ type alias UserFrontend =
     { email : Email
     , isSysAdmin : Bool
     , role : String
+    , preferences : Preferences
     }
 
 
@@ -170,3 +175,9 @@ type PollingStatus a
 
 type alias PollData =
     String
+
+
+-- USER RELATED TYPES
+type alias Preferences =
+    { darkMode : Bool
+    }

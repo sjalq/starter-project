@@ -3,7 +3,7 @@ module Rights.User exposing (createUser, getUserRole, insertUser, isSysAdmin)
 import Auth.Common
 import Dict
 import Env
-import Types exposing (BackendModel, Email, Role(..), User)
+import Types exposing (BackendModel, Email, Preferences, Role(..), User)
 
 
 isSysAdmin : User -> Bool
@@ -21,9 +21,10 @@ getUserRole user =
         UserRole
 
 
-createUser : Auth.Common.UserInfo -> User
-createUser userInfo =
+createUser : Auth.Common.UserInfo -> Preferences -> User
+createUser userInfo initialPreferences =
     { email = userInfo.email
+    , preferences = initialPreferences
     }
 
 

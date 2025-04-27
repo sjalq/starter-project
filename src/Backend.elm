@@ -137,23 +137,22 @@ updateFromFrontend browserCookie connectionId msg model =
             )
 
         AuthToBackend authToBackend ->
-            let
-                _ =
-                    Debug.log "AuthToBackend" authToBackend
-            in
             Auth.Flow.updateFromFrontend (backendConfig model) connectionId browserCookie authToBackend model
 
         GetUserToBackend ->
             case Dict.get browserCookie model.sessions of
                 Just userInfo ->
-                    case Dict.get userInfo.email model.users of
+                    case getUserFromCookie browserCookie model of
                         Just user ->
                             ( model, Cmd.batch [ Lamdera.sendToFrontend connectionId <| UserInfoMsg <| Just userInfo, Lamdera.sendToFrontend connectionId <| UserDataToFrontend <| userToFrontend user ] )
 
                         Nothing ->
                             let
+                                initialPreferences =
+                                    { darkMode = False } -- Default dark mode
+                                
                                 user =
-                                    createUser userInfo
+                                    createUser userInfo initialPreferences
 
                                 newModel =
                                     insertUser userInfo.email user model
@@ -165,6 +164,25 @@ updateFromFrontend browserCookie connectionId msg model =
 
         LoggedOut ->
             ( { model | sessions = Dict.remove browserCookie model.sessions }, Cmd.none )
+
+        SetDarkModePreference preference ->
+            case getUserFromCookie browserCookie model of
+                Just user ->
+                    let
+                        updatedPreferences =
+                            { user.preferences | darkMode = preference }
+                        
+                        updatedUser =
+                            { user | preferences = updatedPreferences }
+
+                        updatedUsers =
+                            Dict.insert user.email updatedUser model.users
+                    in
+                    ( { model | users = updatedUsers }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+                        |> log "User or session not found for SetDarkModePreference"
 
         -- Fusion_PersistPatch patch ->
         --     let
@@ -195,7 +213,6 @@ updateFromFrontend browserCookie connectionId msg model =
 
 updateFromFrontendCheckingRights : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
 updateFromFrontendCheckingRights browserCookie connectionId msg model =
-    -- Check permission first before processing the message
     if
         case msg of
             NoOpToBackend ->
@@ -209,16 +226,23 @@ updateFromFrontendCheckingRights browserCookie connectionId msg model =
 
             GetUserToBackend ->
                 True
+            
+            SetDarkModePreference _ -> -- Allow everyone to set their own preference
+                True
 
             _ ->
                 sessionCanPerformAction model browserCookie msg
     then
-        -- User has permission, process the message
         updateFromFrontend browserCookie connectionId msg model
 
     else
-        -- User doesn't have permission, send PermissionDenied message
         ( model, Lamdera.sendToFrontend connectionId (PermissionDenied msg) )
+
+
+getUserFromCookie : BrowserCookie -> Model -> Maybe User
+getUserFromCookie browserCookie model =
+    Dict.get browserCookie model.sessions
+        |> Maybe.andThen (\userInfo -> Dict.get userInfo.email model.users)
 
 
 log =
@@ -230,4 +254,5 @@ userToFrontend user =
     { email = user.email
     , isSysAdmin = isSysAdmin user
     , role = getUserRole user |> roleToString
+    , preferences = user.preferences
     }

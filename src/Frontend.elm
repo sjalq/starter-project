@@ -60,6 +60,9 @@ init url key =
     let
         route =
             Route.fromUrl url
+        
+        initialPreferences =
+            { darkMode = False }
 
         model =
             { key = key
@@ -74,7 +77,7 @@ init url key =
             , login = NotLogged False
             , currentUser = Nothing
             , pendingAuth = False
-            --, fusionState = Fusion.VUnloaded
+            , preferences = initialPreferences
             }
     in
     inits model route
@@ -141,16 +144,24 @@ update msg model =
             ( { model | adminPage = { oldAdminPage | remoteUrl = url } }, Cmd.none )
 
         GoogleSigninRequested ->
-            --Auth.Flow.signInRequested "OAuthGoogle" { model | login = NotLogged True } Nothing
             Auth.Flow.signInRequested "OAuthGoogle" { model | login = NotLogged True, pendingAuth = True } Nothing
                 |> Tuple.mapSecond (AuthToBackend >> Lamdera.sendToBackend)
 
         Logout ->
-            ( { model | login = NotLogged False, pendingAuth = False }, Lamdera.sendToBackend LoggedOut )
+            ( { model | login = NotLogged False, pendingAuth = False, preferences = { darkMode = False } }, Lamdera.sendToBackend LoggedOut )
 
         Auth0SigninRequested ->
             Auth.Flow.signInRequested "OAuthAuth0" { model | login = NotLogged True, pendingAuth = True } Nothing
                 |> Tuple.mapSecond (AuthToBackend >> Lamdera.sendToBackend)
+
+        ToggleDarkMode ->
+            let
+                newPreferences =
+                    { model.preferences | darkMode = not model.preferences.darkMode }
+            in
+            ( { model | preferences = newPreferences }
+            , Lamdera.sendToBackend (SetDarkModePreference newPreferences.darkMode)
+            )
 
         -- Admin_FusionPatch patch ->
         --     ( { model
@@ -190,10 +201,10 @@ updateFromBackend msg model =
                     ( { model | login = LoggedIn userInfo, pendingAuth = False }, Cmd.none )
 
                 Nothing ->
-                    ( { model | login = NotLogged False, pendingAuth = False }, Cmd.none )
+                    ( { model | login = NotLogged False, pendingAuth = False, preferences = { darkMode = False } }, Cmd.none )
 
         UserDataToFrontend currentUser ->
-            ( { model | currentUser = Just currentUser }, Cmd.none )
+            ( { model | currentUser = Just currentUser, preferences = currentUser.preferences }, Cmd.none )
 
         -- Admin_FusionResponse value ->
         --     ( { model | fusionState = value }, Cmd.none )
@@ -207,8 +218,10 @@ view : Model -> Browser.Document FrontendMsg
 view model =
     { title = "Dashboard"
     , body =
-        [ viewTabs model
-        , viewCurrentPage model
+        [ div [ Attr.styles (Pages.PageFrame.darkModeStyles model.preferences) ]
+            [ viewTabs model
+            , viewCurrentPage model
+            ]
         ]
     }
 

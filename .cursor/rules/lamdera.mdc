@@ -396,7 +396,7 @@ This section highlights common mistakes and specific patterns to follow or avoid
 # Checking the compiled output
 - Always use the `./compile.sh` script to check your code compiles and to generate Fusion types:
   ```
-  ./generate_and_compile.sh
+  ./compile.sh
   ```
 - This script will:
   1. Generate Fusion types using elm-pages

@@ -150,7 +150,7 @@ This section outlines general interaction patterns and coding style preferences.
    - **Note:** After this step, the code should at least compile
 
 8. Update the Fusion Generated Types and Compile
-   - Always use the `./generate_and_compile.sh` script to:
+   - Always use the `./compile.sh` script to:
      - Generate fusion types
      - Compile all necessary files
      - Verify that your code compiles correctly
@@ -389,9 +389,9 @@ This section highlights common mistakes and specific patterns to follow or avoid
 -   **`sendToFrontend`:** The pattern `_ = Lamdera.sendToFrontend msg` will **not** work. It discards the command necessary to send the message. Ensure `Lamdera.sendToFrontend` is used correctly within the TEA loop, typically returned as part of the `( model, Cmd msg )` tuple in `update` functions where appropriate.
 
 # Checking the compiled output
-- Always use the `./generate_and_compile.sh` script to check your code compiles and to generate Fusion types:
+- Always use the `./compile.sh` script to check your code compiles and to generate Fusion types:
   ```
-  ./generate_and_compile.sh
+  ./compile.sh
   ```
 - This script will:
   1. Generate Fusion types using elm-pages

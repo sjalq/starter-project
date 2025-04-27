@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Lamdera
+import Theme
 import Types exposing (..)
 -- import Fusion.Editor
 -- import Fusion.Generated.TypeDict
@@ -51,68 +52,85 @@ init model adminRoute =
                 ( model, Cmd.none )
 
 
-view : FrontendModel -> Html FrontendMsg
-view model =
+view : FrontendModel -> Theme.Colors -> Html FrontendMsg
+view model colors =
     -- Check if user is logged in and has admin permissions
     case model.currentUser of
         Just user ->
             if user.isSysAdmin then
-                div [ Attr.class "bg-gray-100 min-h-screen" ]
+                div [ Attr.style "background-color" colors.primaryBg, Attr.class "min-h-screen" ]
                     [ div [ Attr.class "container mx-auto px-4 py-8" ]
-                        [ h1 [ Attr.class "text-3xl font-bold mb-4" ]
+                        [ h1 [ Attr.class "text-3xl font-bold mb-4", Attr.style "color" colors.primaryText ]
                             [ text "Admin Page" ]
-                        , viewTabs model
-                        , viewTabContent model
+                        , viewTabs model colors
+                        , viewTabContent model colors
                         ]
                     ]
 
             else
-                viewNoAccess model
+                viewNoAccess model colors
 
         _ ->
-            viewLogin model
+            viewLogin model colors
 
 
-viewNoAccess : FrontendModel -> Html FrontendMsg
-viewNoAccess _ =
-    div [ Attr.class "min-h-screen flex items-center justify-center bg-gray-100" ]
-        [ div [ Attr.class "bg-white p-8 rounded-lg shadow-md w-96" ]
-            [ h2 [ Attr.class "text-2xl font-bold mb-4" ] [ text "Access Denied" ]
-            , p [ Attr.class "text-red-600 mb-4" ]
+viewNoAccess : FrontendModel -> Theme.Colors -> Html FrontendMsg
+viewNoAccess _ colors =
+    div [ Attr.class "min-h-screen flex items-center justify-center", Attr.style "background-color" colors.primaryBg ]
+        [ div [ Attr.class "p-8 rounded-lg shadow-md w-96", Attr.style "background-color" colors.secondaryBg ]
+            [ h2 [ Attr.class "text-2xl font-bold mb-4", Attr.style "color" colors.primaryText ] [ text "Access Denied" ]
+            , p [ Attr.class "mb-4", Attr.style "color" colors.dangerBg ]
                 [ text "Your account does not have administrative privileges." ]
             , button
                 [ onClick Logout
-                , Attr.class "w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mb-2"
+                , Attr.class "w-full py-2 px-4 rounded mb-2"
+                , Attr.style "background-color" colors.buttonBg
+                , Attr.style "color" colors.buttonText
                 ]
                 [ text "Logout" ]
             , a
                 [ Attr.href "/"
-                , Attr.class "block text-center text-blue-500 hover:underline"
+                , Attr.class "block text-center hover:underline"
+                , Attr.style "color" colors.accent
                 ]
                 [ text "Return to Home" ]
             ]
         ]
 
 
-viewTabs : FrontendModel -> Html FrontendMsg
-viewTabs model =
-    div [ Attr.class "flex border-b border-gray-200 mb-4" ]
-        [ viewTab AdminDefault model "Default"
-        , viewTab AdminLogs model "Logs"
-        , viewTab AdminFetchModel model "Fetch Model"
+viewTabs : FrontendModel -> Theme.Colors -> Html FrontendMsg
+viewTabs model colors =
+    div [ Attr.class "flex border-b mb-4", Attr.style "border-color" colors.border ]
+        [ viewTab AdminDefault model colors "Default"
+        , viewTab AdminLogs model colors "Logs"
+        , viewTab AdminFetchModel model colors "Fetch Model"
         -- , viewTab AdminFusion model "Fusion"
         ]
 
 
-viewTab : AdminRoute -> FrontendModel -> String -> Html FrontendMsg
-viewTab tab model label =
+viewTab : AdminRoute -> FrontendModel -> Theme.Colors -> String -> Html FrontendMsg
+viewTab tab model colors label =
     let
-        activeClass =
-            if Admin tab == model.currentRoute then
-                "border-b-2 border-blue-500 text-blue-600"
-
+        isActive =
+             Admin tab == model.currentRoute
+        
+        activeClasses =
+            if isActive then
+                "border-b-2"
             else
-                "text-gray-600"
+                ""
+        
+        activeBorderStyle =
+            if isActive then
+                 Attr.style "border-color" colors.accent
+            else
+                Attr.style "border-color" "transparent"
+
+        textColorStyle =
+             if isActive then
+                 Attr.style "color" colors.accent
+             else
+                 Attr.style "color" colors.secondaryText
 
         route =
             case tab of
@@ -130,22 +148,24 @@ viewTab tab model label =
     in
     a
         [ Attr.href route
-        , Attr.class ("py-2 px-4 " ++ activeClass)
+        , Attr.class ("py-2 px-4 " ++ activeClasses)
+        , activeBorderStyle
+        , textColorStyle
         ]
         [ text label ]
 
 
-viewTabContent : FrontendModel -> Html FrontendMsg
-viewTabContent model =
+viewTabContent : FrontendModel -> Theme.Colors -> Html FrontendMsg
+viewTabContent model colors =
     case model.currentRoute of
         Admin AdminDefault ->
-            viewDefaultTab model
+            viewDefaultTab model colors
 
         Admin AdminLogs ->
-            viewLogsTab model
+            viewLogsTab model colors
 
         Admin AdminFetchModel ->
-            viewFetchModelTab model
+            viewFetchModelTab model colors
 
         -- Admin AdminFusion ->
         --     viewFusionTab model
@@ -154,26 +174,28 @@ viewTabContent model =
             text "Not found"
 
 
-viewDefaultTab : FrontendModel -> Html FrontendMsg
-viewDefaultTab _ =
-    div [ Attr.class "p-4 bg-white rounded-lg shadow" ]
-        [ h2 [ Attr.class "text-xl font-bold mb-4" ] [ text "Default Admin" ]
-        , div [] [ text "Default admin content" ]
+viewDefaultTab : FrontendModel -> Theme.Colors -> Html FrontendMsg
+viewDefaultTab _ colors =
+    div [ Attr.class "p-4 rounded-lg shadow", Attr.style "background-color" colors.secondaryBg ]
+        [ h2 [ Attr.class "text-xl font-bold mb-4", Attr.style "color" colors.primaryText ] [ text "Default Admin" ]
+        , div [Attr.style "color" colors.primaryText] [ text "Default admin content" ]
         ]
 
 
-viewLogsTab : FrontendModel -> Html FrontendMsg
-viewLogsTab model =
-    div [ Attr.class "p-4 bg-white rounded-lg shadow" ]
+viewLogsTab : FrontendModel -> Theme.Colors -> Html FrontendMsg
+viewLogsTab model colors =
+    div [ Attr.class "p-4 rounded-lg shadow", Attr.style "background-color" colors.secondaryBg ]
         [ div [ Attr.class "flex justify-between items-center mb-4" ]
-            [ h2 [ Attr.class "text-xl font-bold" ] [ text "System Logs" ]
+            [ h2 [ Attr.class "text-xl font-bold", Attr.style "color" colors.primaryText ] [ text "System Logs" ]
             , button
                 [ onClick (DirectToBackend Admin_ClearLogs)
-                , Attr.class "bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                , Attr.class "px-3 py-1 rounded"
+                , Attr.style "background-color" colors.dangerBg
+                , Attr.style "color" colors.buttonText
                 ]
                 [ text "Clear Logs" ]
             ]
-        , div [ Attr.class "bg-black text-yellow-100 font-mono p-4 rounded space-y-1" ]
+        , div [ Attr.class "bg-black text-gray-200 font-mono p-4 rounded space-y-1", Attr.style "color" "#e2e8f0" ]
             (model.adminPage.logs
                 |> List.reverse
                 |> List.indexedMap viewLogEntry
@@ -181,26 +203,31 @@ viewLogsTab model =
         ]
 
 
-viewFetchModelTab : FrontendModel -> Html FrontendMsg
-viewFetchModelTab model =
-    div [ Attr.class "p-4 bg-white rounded-lg shadow" ]
-        [ h2 [ Attr.class "text-xl font-bold mb-4" ] [ text "Fetch Model" ]
+viewFetchModelTab : FrontendModel -> Theme.Colors -> Html FrontendMsg
+viewFetchModelTab model colors =
+    div [ Attr.class "p-4 rounded-lg shadow", Attr.style "background-color" colors.secondaryBg ]
+        [ h2 [ Attr.class "text-xl font-bold mb-4", Attr.style "color" colors.primaryText ] [ text "Fetch Model" ]
         , div []
             [ div [ Attr.class "mb-4" ]
-                [ label [ Attr.class "block text-gray-700 text-sm font-bold mb-2" ]
+                [ label [ Attr.class "block text-sm font-bold mb-2", Attr.style "color" colors.primaryText ]
                     [ text "Remote URL" ]
                 , input
                     [ Attr.type_ "text"
                     , Attr.placeholder "Enter remote URL"
                     , Attr.value model.adminPage.remoteUrl
                     , Html.Events.onInput Admin_RemoteUrlChanged
-                    , Attr.class "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    , Attr.class "shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                    , Attr.style "color" colors.primaryText
+                    , Attr.style "background-color" colors.primaryBg
+                    , Attr.style "border-color" colors.border
                     ]
                     []
                 ]
             , button
                 [ onClick (DirectToBackend (Admin_FetchRemoteModel model.adminPage.remoteUrl))
-                , Attr.class "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                , Attr.class "font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                , Attr.style "background-color" colors.buttonBg
+                , Attr.style "color" colors.buttonText
                 ]
                 [ text "Fetch Model" ]
             ]
@@ -225,25 +252,28 @@ viewLogEntry : Int -> String -> Html FrontendMsg
 viewLogEntry index log =
     div []
         [ span [ Attr.class "pr-2" ] [ text (String.fromInt index) ]
-        , span [ Attr.class "text-green-200" ] [ text log ]
+        , span [ Attr.style "color" "#a0aec0" ] [ text log ]
         ]
 
 
-viewLogin : FrontendModel -> Html FrontendMsg
-viewLogin _ =
-    div [ Attr.class "min-h-screen flex items-center justify-center bg-gray-100" ]
-        [ div [ Attr.class "bg-white p-8 rounded-lg shadow-md w-96" ]
-            [ h2 [ Attr.class "text-2xl font-bold mb-4" ] [ text "Admin Login Required" ]
-            , p [ Attr.class "text-gray-600 mb-4" ]
+viewLogin : FrontendModel -> Theme.Colors -> Html FrontendMsg
+viewLogin _ colors =
+    div [ Attr.class "min-h-screen flex items-center justify-center", Attr.style "background-color" colors.primaryBg ]
+        [ div [ Attr.class "p-8 rounded-lg shadow-md w-96", Attr.style "background-color" colors.secondaryBg ]
+            [ h2 [ Attr.class "text-2xl font-bold mb-4", Attr.style "color" colors.primaryText ] [ text "Admin Login Required" ]
+            , p [ Attr.class "mb-4", Attr.style "color" colors.secondaryText ]
                 [ text "Please log in to access the admin area." ]
             , button
                 [ onClick Auth0SigninRequested
-                , Attr.class "w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mb-2"
+                , Attr.class "w-full py-2 px-4 rounded mb-2"
+                , Attr.style "background-color" colors.buttonBg
+                , Attr.style "color" colors.buttonText
                 ]
                 [ text "Login" ]
             , a
                 [ Attr.href "/"
-                , Attr.class "block text-center text-blue-500 hover:underline"
+                , Attr.class "block text-center hover:underline"
+                , Attr.style "color" colors.accent
                 ]
                 [ text "Return to Home" ]
             ]

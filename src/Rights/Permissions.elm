@@ -32,6 +32,9 @@ actionRoleMap msg =
         LoggedOut ->
             Anonymous
 
+        SetDarkModePreference _ ->
+            Anonymous -- Allow anyone to set their own preference
+
         -- Fusion_PersistPatch _ ->
         --     SysAdmin
 

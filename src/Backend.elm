@@ -149,7 +149,7 @@ updateFromFrontend browserCookie connectionId msg model =
                         Nothing ->
                             let
                                 initialPreferences =
-                                    { darkMode = False } -- Default dark mode
+                                    { darkMode = True } -- Default new users to dark mode
                                 
                                 user =
                                     createUser userInfo initialPreferences
@@ -169,11 +169,17 @@ updateFromFrontend browserCookie connectionId msg model =
             case getUserFromCookie browserCookie model of
                 Just user ->
                     let
-                        updatedPreferences =
-                            { user.preferences | darkMode = preference }
+                        -- Explicitly alias the nested record
+                        currentPreferences = 
+                            user.preferences
                         
+                        updatedUserPreferences : Preferences
+                        updatedUserPreferences =
+                            { currentPreferences | darkMode = preference } -- Update the alias
+                        
+                        updatedUser : User
                         updatedUser =
-                            { user | preferences = updatedPreferences }
+                            { user | preferences = updatedUserPreferences }
 
                         updatedUsers =
                             Dict.insert user.email updatedUser model.users

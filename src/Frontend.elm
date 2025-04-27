@@ -2,10 +2,10 @@ module Frontend exposing (..)
 
 import Auth.Common
 import Auth.Flow
-import Browser exposing (UrlRequest(..))
+import Browser exposing (UrlRequest(..), Document)
 import Browser.Navigation as Nav
 import Html exposing (..)
-import Html.Attributes exposing (style)
+import Html.Attributes as Attr exposing (style)
 import Html.Events as HE
 import Lamdera
 import Pages.Admin
@@ -16,6 +16,7 @@ import Supplemental exposing (..)
 import Time exposing (..)
 import Types exposing (..)
 import Url exposing (Url)
+import Theme
 -- import Fusion.Patch
 -- import Fusion
 
@@ -62,7 +63,7 @@ init url key =
             Route.fromUrl url
         
         initialPreferences =
-            { darkMode = False }
+            { darkMode = True }
 
         model =
             { key = key
@@ -156,11 +157,19 @@ update msg model =
 
         ToggleDarkMode ->
             let
-                newPreferences =
-                    { model.preferences | darkMode = not model.preferences.darkMode }
+                newDarkModeState =
+                    not model.preferences.darkMode
+
+                -- Explicitly alias the nested record
+                currentFrontendPreferences =
+                    model.preferences
+
+                updatedFrontendPreferences : Preferences
+                updatedFrontendPreferences =
+                    { currentFrontendPreferences | darkMode = newDarkModeState } -- Update the alias
             in
-            ( { model | preferences = newPreferences }
-            , Lamdera.sendToBackend (SetDarkModePreference newPreferences.darkMode)
+            ( { model | preferences = updatedFrontendPreferences }
+            , Lamdera.sendToBackend (SetDarkModePreference newDarkModeState)
             )
 
         -- Admin_FusionPatch patch ->
@@ -218,7 +227,12 @@ view : Model -> Browser.Document FrontendMsg
 view model =
     { title = "Dashboard"
     , body =
-        [ div [ Attr.styles (Pages.PageFrame.darkModeStyles model.preferences) ]
+        [ div 
+            [ Theme.primaryBg model.preferences.darkMode
+            , Theme.primaryText model.preferences.darkMode
+            , Attr.style "min-height" "100vh"
+            , Attr.class "p-4"
+            ]
             [ viewTabs model
             , viewCurrentPage model
             ]
@@ -281,60 +295,72 @@ initWithAuth url key =
 
 viewWithAuth : Model -> Browser.Document FrontendMsg
 viewWithAuth model =
+    let
+        isDark =
+            model.preferences.darkMode
+        
+        colors =
+            Theme.getColors isDark
+    in
     { title = "View Auth Test"
     , body =
         [ div
-            [ style "margin" "20px"
-            , style "font-family" "Arial, sans-serif"
+            [ Attr.style "margin" "20px"
+            , Attr.style "font-family" "Arial, sans-serif"
+            , Theme.primaryBg isDark
+            , Theme.primaryText isDark
             ]
             [ h1
-                [ style "color" "#333" ]
+                [ Theme.primaryText isDark ]
                 [ text "Auth0 Test" ]
             , case model.login of
                 LoggedIn userInfo ->
                     div
-                        [ style "padding" "20px"
-                        , style "border" "1px solid #ccc"
-                        , style "border-radius" "5px"
-                        , style "background-color" "#f8f8f8"
-                        , style "max-width" "400px"
+                        [ Attr.style "padding" "20px"
+                        , Attr.style "border" ("1px solid " ++ colors.border)
+                        , Attr.style "border-radius" "5px"
+                        , Attr.style "background-color" colors.secondaryBg
+                        , Attr.style "max-width" "400px"
                         ]
                         [ div
-                            [ style "margin-bottom" "15px"
-                            , style "font-size" "16px"
+                            [ Attr.style "margin-bottom" "15px"
+                            , Attr.style "font-size" "16px"
+                            , Attr.style "color" colors.primaryText
                             ]
                             [ text ("👤 Logged in as: " ++ userInfo.email) ]
                         , button
                             [ HE.onClick Logout
-                            , style "background-color" "#f44336"
-                            , style "color" "white"
-                            , style "padding" "10px 15px"
-                            , style "border" "none"
-                            , style "border-radius" "4px"
-                            , style "cursor" "pointer"
+                            , Attr.style "background-color" colors.dangerBg
+                            , Attr.style "color" colors.buttonText
+                            , Attr.style "padding" "10px 15px"
+                            , Attr.style "border" "none"
+                            , Attr.style "border-radius" "4px"
+                            , Attr.style "cursor" "pointer"
                             ]
                             [ text "Logout" ]
                         ]
 
                 _ ->
                     div
-                        [ style "padding" "20px"
-                        , style "border" "1px solid #ccc"
-                        , style "border-radius" "5px"
-                        , style "background-color" "#f8f8f8"
-                        , style "max-width" "400px"
+                        [ Attr.style "padding" "20px"
+                        , Attr.style "border" ("1px solid " ++ colors.border)
+                        , Attr.style "border-radius" "5px"
+                        , Attr.style "background-color" colors.secondaryBg
+                        , Attr.style "max-width" "400px"
                         ]
                         [ p
-                            [ style "margin-bottom" "15px" ]
+                            [ Attr.style "margin-bottom" "15px"
+                            , Attr.style "color" colors.primaryText 
+                            ]
                             [ text "Please sign in to continue" ]
                         , button
                             [ HE.onClick Auth0SigninRequested
-                            , style "background-color" "#4CAF50"
-                            , style "color" "white"
-                            , style "padding" "10px 15px"
-                            , style "border" "none"
-                            , style "border-radius" "4px"
-                            , style "cursor" "pointer"
+                            , Attr.style "background-color" colors.buttonBg
+                            , Attr.style "color" colors.buttonText
+                            , Attr.style "padding" "10px 15px"
+                            , Attr.style "border" "none"
+                            , Attr.style "border-radius" "4px"
+                            , Attr.style "cursor" "pointer"
                             ]
                             [ text "Sign in with Auth0" ]
                         ]

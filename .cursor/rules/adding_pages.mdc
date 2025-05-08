@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 # The Lamdera Guide for AIs
 
@@ -107,7 +107,7 @@ This section outlines general interaction patterns and coding style preferences.
 
 **Before starting implementation (Phase 1):**
 
-0.  Create a feature checklist document in the `docs/` folder named `feature-<feature_name>.md`.
+0.  Create a feature checklist document in the `plans/` folder named `feature-<feature_name>.md`.
     *   List verifiable and concrete TODO items required to complete the new feature.
     *   Ensure the TODOs follow logically.
     *   **Crucially:** Update this checklist by ticking off items (`- [x] Item`) as you implement the feature.
@@ -401,7 +401,6 @@ This section highlights common mistakes and specific patterns to follow or avoid
 -  Typically you can't import project moduble stuff that isn't in another API. module without risking a circular dependancy
 -  Circular dependancies don't work in Elm / Lamdera, so don't do that.
 
-
 ### Date / Time / DateTime
 -  Use only Elm's default Date field for actually working and calculating times.
 -  Use the rtfeldman/elm-iso8601 lib for working with date strings
@@ -420,6 +419,12 @@ This section highlights common mistakes and specific patterns to follow or avoid
 
 ### Do not write comments
 -  I cannot stress this strongly enough, do not comment code unless asked
+
+### Error in the linter you should ignore
+-  Types.w3_encode_BackendModel related errors.
+-  However if, and ONLY IF, you see this error when running the compile script, you need to run `./reset.sh`
+
+### Confusing ToBackend msgs and Backend msgs
 
 # Checking the compiled output
 - Always use the `./compile.sh` script to check your code compiles and to generate Fusion types:

@@ -30,7 +30,7 @@ stillTesting =
 
 auth0AppClientId : String
 auth0AppClientId =
-    "qqkzut4gKyC6Y2lB3nlPsOBwnLmTQxfx"
+    "---------------------------------------"
 
 
 auth0AppClientSecret : String
@@ -40,7 +40,7 @@ auth0AppClientSecret =
 
 auth0AppTenant : String
 auth0AppTenant =
-    "dev-ioeftjgqbnfyd4lp.us.auth0.com"
+    "your-app-gibberish-here.us.auth0.com"
 
 
 sysAdminEmail : String

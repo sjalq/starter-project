@@ -35,7 +35,7 @@ auth0AppClientId =
 
 auth0AppClientSecret : String
 auth0AppClientSecret =
-    "-2bRUV-1JXwO9sqCuTdKziBYG1Rn83bfRvB9LPBqsp5yFcVClx19G-6dI0XtDmEU"
+    "---------------------------------------"
 
 
 auth0AppTenant : String

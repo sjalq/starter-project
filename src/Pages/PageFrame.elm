@@ -36,69 +36,111 @@ viewTabs model =
                             []
                    )
             )
-        , div [ Attr.class "flex items-center" ]
-            [ button
-                [ onClick ToggleDarkMode
-                , Attr.class "mr-4 px-2 py-1 rounded border"
-                , Theme.primaryBorder isDark
-                , Theme.primaryText isDark
-                ]
-                [ text (if isDark then
-                            "☀️"
-                       else
-                            "🌙"
-                       )
-                ]
-
-            , case model.login of
-                LoggedIn userInfo ->
-                    div [ Attr.class "flex items-center" ]
-                        [ span [ Attr.class "mr-2", Attr.style "color" colors.secondaryText ]
-                            [ text userInfo.email ]
-                        , button
-                            [ onClick Logout
-                            , Attr.class "px-4 py-1 rounded"
-                            , Attr.style "background-color" colors.dangerBg
-                            , Attr.style "color" colors.buttonText
-                            ]
-                            [ text "Logout" ]
-                        ]
-
-                LoginTokenSent ->
-                    div [ Attr.class "flex items-center" ]
-                        [ span [ Attr.class "mr-2 animate-pulse", Attr.style "color" colors.secondaryText ]
-                            [ text "Authenticating..." ]
-                        ]
-
-                NotLogged pendingAuth ->
-                    if pendingAuth then
-                        button
-                            [ Attr.disabled True
-                            , Attr.class "px-4 py-1 rounded cursor-wait"
-                             , Attr.style "background-color" colors.buttonBg
-                             , Attr.style "color" colors.buttonText
-                            , Attr.style "opacity" "0.7"
-                            ]
-                            [ text "Authenticating..." ]
-                    else
-                        button
-                            [ onClick Auth0SigninRequested
-                            , Attr.class "px-4 py-1 rounded"
-                            , Attr.style "background-color" colors.buttonBg
-                            , Attr.style "color" colors.buttonText
-                            ]
-                            [ text "Login" ]
-
-                JustArrived ->
-                    button
-                        [ onClick Auth0SigninRequested
-                        , Attr.class "px-4 py-1 rounded"
-                        , Attr.style "background-color" colors.buttonBg
-                        , Attr.style "color" colors.buttonText
-                        ]
-                        [ text "Login" ]
-            ]
+        , viewPillControl model
         ]
+
+
+viewPillControl : FrontendModel -> Html FrontendMsg
+viewPillControl model =
+    let
+        isDark = model.preferences.darkMode
+        colors = Theme.getColors isDark
+    in
+    div 
+        [ Attr.class "flex items-center" 
+        , Attr.style "border-radius" "9999px"
+        , Attr.style "overflow" "hidden"
+        , Attr.style "border" ("1px solid " ++ colors.border)
+        , Attr.style "background-color" colors.secondaryBg
+        , Attr.style "transition" "all 0.3s ease"
+        ]
+        [ button
+            [ onClick ToggleDarkMode
+            , Attr.class "px-3 py-2"
+            , Attr.style "background-color" colors.secondaryBg
+            , Attr.style "color" colors.primaryText
+            , Attr.style "transition" "all 0.3s ease"
+            , Attr.style "border-right" ("1px solid " ++ colors.border)
+            ]
+            [ text (if isDark then "☀️" else "🌙") ]
+        , viewAuthSection model
+        ]
+
+
+viewAuthSection : FrontendModel -> Html FrontendMsg
+viewAuthSection model =
+    let
+        isDark = model.preferences.darkMode
+        colors = Theme.getColors isDark
+        
+        loginButtonStyles =
+            [ Attr.class "px-4 py-2"
+            , Attr.style "transition" "all 0.3s ease"
+            , Attr.style "background-color" "#38a169" -- Green color
+            , Attr.style "color" "#ffffff"
+            ]
+            
+        logoutButtonStyles =
+            [ Attr.class "px-4 py-2"
+            , Attr.style "transition" "all 0.3s ease"
+            , Attr.style "background-color" colors.dangerBg
+            , Attr.style "color" "#ffffff"
+            ]
+            
+        loadingStyles =
+            [ Attr.class "px-4 py-2"
+            , Attr.style "transition" "all 0.3s ease"
+            , Attr.style "background-color" colors.secondaryBg
+            , Attr.style "color" colors.primaryText
+            ]
+        
+        userEmail = 
+            case model.login of
+                LoggedIn info -> Just info.email
+                _ -> Nothing
+    in
+    case model.login of
+        LoggedIn userInfo ->
+            div 
+                [ Attr.class "relative group"
+                , Attr.style "transition" "all 0.3s ease"
+                ]
+                [ button
+                    (logoutButtonStyles ++ [ onClick Logout ])
+                    [ text "Logout" ]
+                , div 
+                    [ Attr.class "absolute right-0 top-full mt-1 px-3 py-2 rounded hidden group-hover:block"
+                    , Attr.style "background-color" colors.primaryBg
+                    , Attr.style "color" colors.primaryText
+                    , Attr.style "border" ("1px solid " ++ colors.border)
+                    , Attr.style "min-width" "max-content"
+                    , Attr.style "z-index" "10"
+                    ]
+                    [ text userInfo.email ]
+                ]
+
+        LoginTokenSent ->
+            div (loadingStyles ++ [ Attr.class "animate-pulse" ])
+                [ text "Authenticating..." ]
+
+        NotLogged pendingAuth ->
+            if pendingAuth then
+                button
+                    (loadingStyles ++ 
+                    [ Attr.disabled True
+                    , Attr.class "cursor-wait"
+                    , Attr.style "opacity" "0.7"
+                    ])
+                    [ text "Authenticating..." ]
+            else
+                button
+                    (loginButtonStyles ++ [ onClick Auth0SigninRequested ])
+                    [ text "Login" ]
+
+        JustArrived ->
+            button
+                (loginButtonStyles ++ [ onClick Auth0SigninRequested ])
+                [ text "Login" ]
 
 
 viewTab : String -> Route -> Route -> Preferences -> Html FrontendMsg

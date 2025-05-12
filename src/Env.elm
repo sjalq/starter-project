@@ -30,17 +30,17 @@ stillTesting =
 
 auth0AppClientId : String
 auth0AppClientId =
-    "---------------------------------------"
+    "qqkzut4gKyC6Y2lB3nlPsOBwnLmTQxfx"
 
 
 auth0AppClientSecret : String
 auth0AppClientSecret =
-    "---------------------------------------"
+    "-2bRUV-1JXwO9sqCuTdKziBYG1Rn83bfRvB9LPBqsp5yFcVClx19G-6dI0XtDmEU"
 
 
 auth0AppTenant : String
 auth0AppTenant =
-    "your-app-gibberish-here.us.auth0.com"
+    "dev-ioeftjgqbnfyd4lp.us.auth0.com"
 
 
 sysAdminEmail : String
@@ -51,6 +51,11 @@ sysAdminEmail =
 openAiApiKey : String
 openAiApiKey =
     ""
+
+
+openRouterApiKey : String
+openRouterApiKey =
+    "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"
 
 
 type Mode

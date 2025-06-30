@@ -149,7 +149,7 @@ update msg model =
                 |> Tuple.mapSecond (AuthToBackend >> Lamdera.sendToBackend)
 
         Logout ->
-            ( { model | login = NotLogged False, pendingAuth = False, preferences = { darkMode = False } }, Lamdera.sendToBackend LoggedOut )
+            ( { model | login = NotLogged False, pendingAuth = False, preferences = { darkMode = True } }, Lamdera.sendToBackend LoggedOut )
 
         Auth0SigninRequested ->
             Auth.Flow.signInRequested "OAuthAuth0" { model | login = NotLogged True, pendingAuth = True } Nothing
@@ -210,7 +210,7 @@ updateFromBackend msg model =
                     ( { model | login = LoggedIn userInfo, pendingAuth = False }, Cmd.none )
 
                 Nothing ->
-                    ( { model | login = NotLogged False, pendingAuth = False, preferences = { darkMode = False } }, Cmd.none )
+                    ( { model | login = NotLogged False, pendingAuth = False, preferences = { darkMode = True } }, Cmd.none )
 
         UserDataToFrontend currentUser ->
             ( { model | currentUser = Just currentUser, preferences = currentUser.preferences }, Cmd.none )

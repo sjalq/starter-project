@@ -21,23 +21,48 @@ viewTabs model =
         colors =
             Theme.getColors isDark
     in
-    div [ Attr.class "flex justify-between mb-5 px-4 items-center" ]
-        [ div [ Attr.class "flex" ]
-            (viewTab "Default" Default model.currentRoute model.preferences
-                :: (case model.currentUser of
+    div 
+        [ Attr.class "text-center py-8 px-4 border-b"
+        , Theme.headerBg isDark
+        , Attr.style "border-color" colors.headerBorder
+        ] 
+        [ div [ Attr.class "container mx-auto" ]
+            [ h1 
+                [ Attr.class "text-4xl font-bold mb-2"
+                , Attr.style "color" colors.accent
+                ] 
+                [ text "Starter Project Dashboard" ]
+            , p 
+                [ Attr.class "mb-8"
+                , Theme.headerText isDark
+                ] 
+                [ text "Your starting point" ]
+            , div [ Attr.class "flex justify-center space-x-8 mt-4" ]
+                ([ viewTab "Home" Default model.currentRoute model.preferences ] ++
+                    (case model.currentUser of
                         Just user ->
                             if user.isSysAdmin then
                                 [ viewTab "Admin" (Admin AdminDefault) model.currentRoute model.preferences ]
-
                             else
                                 []
-
                         Nothing ->
                             []
-                   )
-            )
-        , viewPillControl model
+                    )
+                )
+            ]
+        , viewAccountControls model
         ]
+
+
+viewAccountControls : FrontendModel -> Html FrontendMsg
+viewAccountControls model =
+    let
+        isDark = model.preferences.darkMode
+        colors = Theme.getColors isDark
+    in
+    div 
+        [ Attr.class "absolute top-6 right-6 flex items-center" ]
+        [ viewPillControl model ]
 
 
 viewPillControl : FrontendModel -> Html FrontendMsg
@@ -109,14 +134,21 @@ viewAuthSection model =
                     (logoutButtonStyles ++ [ onClick Logout ])
                     [ text "Logout" ]
                 , div 
-                    [ Attr.class "absolute right-0 top-full mt-1 px-3 py-2 rounded hidden group-hover:block"
+                    [ Attr.class "absolute right-0 top-full mt-2 px-4 py-2 rounded shadow-lg opacity-0 group-hover:opacity-100"
                     , Attr.style "background-color" colors.primaryBg
                     , Attr.style "color" colors.primaryText
                     , Attr.style "border" ("1px solid " ++ colors.border)
                     , Attr.style "min-width" "max-content"
                     , Attr.style "z-index" "10"
+                    , Attr.style "transform" "translateY(-5px)"
+                    , Attr.style "transition" "all 0.3s ease"
+                    , Attr.style "pointer-events" "none"
                     ]
-                    [ text userInfo.email ]
+                    [ div [ Attr.class "flex items-center" ]
+                        [ span [ Attr.class "mr-2" ] [ text "👤" ]
+                        , text userInfo.email
+                        ]
+                    ]
                 ]
 
         LoginTokenSent ->
@@ -149,27 +181,18 @@ viewTab label page currentPage preferences =
         isDark =
             preferences.darkMode
         
-        isActive =
-            page == currentPage
-        
         colors =
             Theme.getColors isDark
-        
-        bgColor =
-            if isActive then
-                colors.secondaryBg
-            else
-                colors.primaryBg
-
-        textColor =
-            colors.primaryText
+            
+        isActive =
+            page == currentPage
     in
     a
         [ Attr.href (Route.toString page)
-        , Attr.class "px-4 py-2 mx-2 border cursor-pointer rounded"
-        , Attr.style "background-color" bgColor
-        , Attr.style "color" textColor
-        , Attr.style "border-color" colors.border
+        , Attr.class "px-3 py-2 text-lg font-medium transition-colors duration-200"
+        , Attr.style "color" (if isActive then colors.activeTabText else colors.inactiveTabText)
+        , Attr.style "border-bottom" (if isActive then "2px solid " ++ colors.activeTabText else "none")
+        , Attr.style "text-decoration" "none"
         ]
         [ text label ]
 
@@ -182,7 +205,8 @@ viewCurrentPage model =
     in
     div
         [ Attr.class "px-4 pt-8 pb-4"
-        , Attr.style "min-height" "calc(100vh - 100px)"
+        , Attr.style "min-height" "calc(100vh - 200px)"
+        , Attr.style "background-color" colors.primaryBg
         ]
         [ case model.currentRoute of
             Default ->

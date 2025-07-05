@@ -30,6 +30,7 @@ type alias BrowserCookie =
 type Route
     = Default
     | Admin AdminRoute
+    | Examples
     | NotFound
 
 
@@ -82,6 +83,10 @@ type FrontendMsg
     | Auth0SigninRequested
     | Logout
     | ToggleDarkMode
+    | ConsoleLogClicked
+    | ConsoleLogReceived String
+    | CopyToClipboard String
+    | ClipboardResult (Result String String)
     --- Fusion
     -- | Admin_FusionPatch Fusion.Patch.Patch
     -- | Admin_FusionQuery Fusion.Query

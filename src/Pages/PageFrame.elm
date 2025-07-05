@@ -5,6 +5,7 @@ import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Pages.Admin
 import Pages.Default
+import Pages.Examples
 import Route exposing (..)
 import Theme -- Import the new Theme module
 import Types exposing (..)
@@ -38,7 +39,9 @@ viewTabs model =
                 ] 
                 [ text "Your starting point" ]
             , div [ Attr.class "flex justify-center space-x-8 mt-4" ]
-                ([ viewTab "Home" Default model.currentRoute model.preferences ] ++
+                ([ viewTab "Home" Default model.currentRoute model.preferences
+                 , viewTab "Examples" Examples model.currentRoute model.preferences
+                 ] ++
                     (case model.currentUser of
                         Just user ->
                             if user.isSysAdmin then
@@ -214,6 +217,9 @@ viewCurrentPage model =
 
             Admin _ ->
                 Pages.Admin.view model colors
+
+            Examples ->
+                Pages.Examples.view model colors
 
             NotFound ->
                 viewNotFoundPage colors

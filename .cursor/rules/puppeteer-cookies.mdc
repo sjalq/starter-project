@@ -1,0 +1,284 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Puppeteer Cookie Management Guide
+
+## MCP Configuration
+
+Your Puppeteer MCP is already configured with persistent cookies! The configuration in `~/.cursor/mcp.json` includes:
+
+```json
+"puppeteer": {
+  "args": [
+    "--user-data-dir=/tmp/puppeteer-bathroom-sync"
+  ]
+}
+```
+
+This means:
+- All cookies persist between sessions in `/tmp/puppeteer-bathroom-sync`
+- Login sessions are maintained automatically
+- Multiple browser instances share the same profile
+
+## Cookie Management via JavaScript
+
+### 1. Clear All Cookies
+Use `mcp_puppeteer_puppeteer_evaluate` with this script:
+```javascript
+// Clear all cookies for current domain
+document.cookie.split(";").forEach(function(c) { 
+    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+});
+
+// Clear localStorage and sessionStorage
+localStorage.clear();
+sessionStorage.clear();
+
+"Cookies cleared!"
+```
+
+### 2. Clear Specific Cookie
+```javascript
+// Replace 'sessionId' with your cookie name
+const cookieName = 'sessionId';
+document.cookie = cookieName + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
+"Cookie " + cookieName + " cleared"
+```
+
+### 3. List All Cookies
+```javascript
+// Get all cookies as array
+const cookies = document.cookie.split(';').map(c => {
+    const [name, value] = c.trim().split('=');
+    return { name, value };
+});
+JSON.stringify(cookies, null, 2)
+```
+
+### 4. Check Login Status
+```javascript
+// Generic login check
+const isLoggedIn = 
+    document.cookie.includes('session') ||
+    document.cookie.includes('auth') ||
+    document.querySelector('[class*="logout"]') !== null ||
+    document.querySelector('[href*="/logout"]') !== null ||
+    localStorage.getItem('user') !== null;
+
+isLoggedIn ? "Logged in" : "Not logged in"
+```
+
+### 5. Get Specific Cookie Value
+```javascript
+// Get value of specific cookie
+const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+};
+
+getCookie('sessionId') || "Cookie not found"
+```
+
+## Complete Cookie Reset
+
+To completely reset the browser profile:
+
+### Option 1: Clear via Terminal
+```bash
+rm -rf /tmp/puppeteer-bathroom-sync
+```
+
+### Option 2: Clear via Puppeteer
+```javascript
+// This clears everything for ALL domains
+await (async () => {
+    const cookies = await page.cookies();
+    for (const cookie of cookies) {
+        await page.deleteCookie(cookie);
+    }
+})();
+"All cookies deleted"
+```
+
+## Best Practices
+
+1. **Check Before Login**: Always check if already logged in before attempting login
+2. **Domain-Specific**: Cookie operations are domain-specific
+3. **Security**: The profile directory contains sensitive data
+4. **Debugging**: Use the list cookies script to debug authentication issues
+
+## Quick Reference Commands
+
+```javascript
+// Quick clear all
+document.cookie.split(";").forEach(c => document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"));localStorage.clear();sessionStorage.clear();"Cleared!"
+
+// Quick check login
+document.cookie.includes('session') || document.querySelector('[href*="/logout"]') !== null ? "Logged in" : "Not logged in"
+
+// Quick list cookies
+document.cookie.split(';').map(c => c.trim())
+```
+
+## Troubleshooting
+
+If cookies aren't persisting:
+1. Check the user-data-dir exists: `ls -la /tmp/puppeteer-bathroom-sync`
+2. Ensure write permissions: `chmod -R 755 /tmp/puppeteer-bathroom-sync`
+3. Verify MCP is using the correct args with `ps aux | grep puppeteer`
+
+## Robust Form Filling Techniques
+
+Form filling often fails due to timing or JavaScript framework issues. Here are battle-tested solutions:
+
+### 1. Wait for Element Before Filling
+```javascript
+// Use with mcp_puppeteer_puppeteer_evaluate
+const waitAndFill = async (selector, value) => {
+    // Wait for element to exist
+    let element = null;
+    for (let i = 0; i < 30; i++) {
+        element = document.querySelector(selector);
+        if (element) break;
+        await new Promise(r => setTimeout(r, 100));
+    }
+    
+    if (!element) return "Element not found: " + selector;
+    
+    // Clear existing value
+    element.value = '';
+    element.focus();
+    
+    // Trigger events that frameworks listen to
+    element.dispatchEvent(new Event('focus', { bubbles: true }));
+    element.dispatchEvent(new Event('click', { bubbles: true }));
+    
+    // Type character by character
+    for (const char of value) {
+        element.value += char;
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new KeyboardEvent('keydown', { key: char, bubbles: true }));
+        element.dispatchEvent(new KeyboardEvent('keypress', { key: char, bubbles: true }));
+        element.dispatchEvent(new KeyboardEvent('keyup', { key: char, bubbles: true }));
+    }
+    
+    // Final events
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+    element.dispatchEvent(new Event('blur', { bubbles: true }));
+    
+    return "Filled: " + selector;
+};
+
+// Usage
+await waitAndFill('#model-key-input', 'your-api-key');
+```
+
+### 2. Force Fill with Direct Property Setting
+```javascript
+// When normal filling fails, try this aggressive approach
+const forceFill = (selector, value) => {
+    const el = document.querySelector(selector);
+    if (!el) return "Element not found";
+    
+    // Try multiple value setting methods
+    el.value = value;
+    el.setAttribute('value', value);
+    el.innerHTML = value;
+    
+    // For React/Vue
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype, 
+        "value"
+    ).set;
+    nativeInputValueSetter.call(el, value);
+    
+    // Trigger React
+    const ev1 = new Event('input', { bubbles: true });
+    const ev2 = new Event('change', { bubbles: true });
+    el.dispatchEvent(ev1);
+    el.dispatchEvent(ev2);
+    
+    return "Force filled: " + selector;
+};
+
+forceFill('#api-key', 'sk-123456');
+```
+
+### 3. Debug Why Filling Fails
+```javascript
+// Diagnostic script to understand the element
+const diagnoseElement = (selector) => {
+    const el = document.querySelector(selector);
+    if (!el) return "Element not found: " + selector;
+    
+    return {
+        tagName: el.tagName,
+        type: el.type,
+        value: el.value,
+        disabled: el.disabled,
+        readonly: el.readOnly,
+        hidden: el.hidden,
+        display: window.getComputedStyle(el).display,
+        visibility: window.getComputedStyle(el).visibility,
+        opacity: window.getComputedStyle(el).opacity,
+        hasReactProps: !!el._reactProps,
+        hasVueInstance: !!el.__vue__,
+        handlers: Object.keys(el).filter(k => k.startsWith('on')),
+        parent: el.parentElement?.tagName,
+        placeholder: el.placeholder,
+        id: el.id,
+        classes: el.className
+    };
+};
+
+JSON.stringify(diagnoseElement('#model-key'), null, 2);
+```
+
+### 4. Click and Type Pattern
+Sometimes you need to click first, then type:
+```javascript
+// Click to focus
+document.querySelector('#input-field')?.click();
+
+// Wait a moment
+await new Promise(r => setTimeout(r, 500));
+
+// Then use fill
+mcp_puppeteer_puppeteer_fill: {
+    "selector": "#input-field",
+    "value": "your-value"
+}
+```
+
+### 5. Handle Dynamic Forms
+```javascript
+// For forms that load dynamically
+const waitForFormAndFill = async () => {
+    // Wait for form to be ready
+    let attempts = 0;
+    while (attempts < 50) {
+        const form = document.querySelector('form');
+        const input = document.querySelector('#api-key-input');
+        
+        if (form && input && !input.disabled) {
+            // Form is ready
+            input.focus();
+            input.click();
+            
+            // Use the forceFill method from above
+            return forceFill('#api-key-input', 'your-api-key');
+        }
+        
+        await new Promise(r => setTimeout(r, 200));
+        attempts++;
+    }
+    
+    return "Form not ready after 10 seconds";
+};
+
+await waitForFormAndFill();
+```

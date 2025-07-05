@@ -13,6 +13,7 @@ parser =
         , Parser.map (Admin AdminLogs) (s "admin" </> s "logs")
         , Parser.map (Admin AdminFetchModel) (s "admin" </> s "fetch-model")
         --, Parser.map (Admin AdminFusion) (s "admin" </> s "fusion")
+        , Parser.map Examples (s "examples")
         ]
 
 
@@ -39,6 +40,9 @@ toString route =
 
         -- Admin AdminFusion ->
         --     "/admin/fusion"
+
+        Examples ->
+            "/examples"
 
         NotFound ->
             "/not-found"

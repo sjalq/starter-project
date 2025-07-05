@@ -4,12 +4,15 @@ import Auth.Common
 import Auth.Flow
 import Browser exposing (UrlRequest(..), Document)
 import Browser.Navigation as Nav
+import Ports.ConsoleLogger
+import Ports.Clipboard
 import Html exposing (..)
 import Html.Attributes as Attr exposing (style)
 import Html.Events as HE
 import Lamdera
 import Pages.Admin
 import Pages.Default
+import Pages.Examples
 import Pages.PageFrame exposing (viewCurrentPage, viewTabs)
 import Route exposing (..)
 import Supplemental exposing (..)
@@ -53,7 +56,10 @@ app =
 
 subscriptions : FrontendModel -> Sub FrontendMsg
 subscriptions _ =
-    Sub.none
+    Sub.batch
+        [ Ports.ConsoleLogger.logReceived ConsoleLogReceived
+        , Ports.Clipboard.copyResult ClipboardResult
+        ]
 
 
 init : Url -> Nav.Key -> ( FrontendModel, Cmd FrontendMsg )
@@ -92,6 +98,9 @@ inits model route =
 
         Default ->
             Pages.Default.init model
+
+        Examples ->
+            Pages.Examples.init model
 
         _ ->
             ( model, Cmd.none )
@@ -171,6 +180,28 @@ update msg model =
             ( { model | preferences = updatedFrontendPreferences }
             , Lamdera.sendToBackend (SetDarkModePreference newDarkModeState)
             )
+
+        ConsoleLogClicked ->
+            ( model, Ports.ConsoleLogger.log "Hello from Elm!" )
+
+        ConsoleLogReceived message ->
+            let
+                _ = Debug.log "Received from JS" message
+            in
+            ( model, Cmd.none )
+
+        CopyToClipboard text ->
+            ( model, Ports.Clipboard.copyToClipboard text )
+
+        ClipboardResult result ->
+            let
+                _ = case result of
+                    Ok message ->
+                        Debug.log "Clipboard success" message
+                    Err error ->
+                        Debug.log "Clipboard error" error
+            in
+            ( model, Cmd.none )
 
         -- Admin_FusionPatch patch ->
         --     ( { model

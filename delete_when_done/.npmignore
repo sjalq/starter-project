@@ -1,0 +1,11 @@
+src/
+build-*.js
+tsconfig.json
+.git
+*.log
+node_modules
+test/
+tests/
+.env*
+.vscode/
+.idea/ 

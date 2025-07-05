@@ -253,6 +253,13 @@ updateFromBackend msg model =
             -- Simply ignore the denied action without any UI notification
             ( model, Cmd.none )
 
+        WS_Send message ->
+            -- Log websocket messages for debugging
+            let
+                _ = Debug.log "WS_Outgoing" message
+            in
+            ( model, Cmd.none )
+
 
 view : Model -> Browser.Document FrontendMsg
 view model =

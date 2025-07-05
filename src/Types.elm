@@ -94,6 +94,8 @@ type FrontendMsg
 
 type ToBackend
     = NoOpToBackend
+    | WS_Receive String
+    -- Admin
     | Admin_FetchLogs
     | Admin_ClearLogs
     | Admin_FetchRemoteModel String
@@ -119,6 +121,7 @@ type BackendMsg
 
 type ToFrontend
     = NoOpToFrontend
+    | WS_Send String
       -- Admin page
     | Admin_Logs_ToFrontend (List String)
     | AuthToFrontend Auth.Common.ToFrontend

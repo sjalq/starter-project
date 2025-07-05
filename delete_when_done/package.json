@@ -1,0 +1,53 @@
+{
+  "name": "lamdera-websocket",
+  "version": "1.1.0",
+  "description": "Pure functional WebSocket library for Lamdera with transparent wire format handling",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "npm run build:cjs && npm run build:esm",
+    "build:cjs": "node build-cjs.js",
+    "build:esm": "node build-esm.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "lamdera",
+    "websocket",
+    "functional",
+    "elm",
+    "wire-format"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "peerDependencies": {
+    "ws": "^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ws": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "ws": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "your-repo-url"
+  }
+} 

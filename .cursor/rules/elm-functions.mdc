@@ -1,0 +1,269 @@
+---
+description: This file contains all the existing functions in the project. It is included so that you can find code faster and aren't tempted to reinvent wheels. Always consult the src/Types.elm file to see the structure of the app.
+globs: ["**/*.elm"]
+---
+
+# Elm Functions Reference
+
+## src/AsyncRPC.elm
+### AsyncRPC
+27 handleTaskChain _ model _ _ config
+52 handleTaskResult token encoder result
+68 handleTimeResult token result
+79 handlePollingResult _ model _ json
+
+## src/Backend.elm
+### Backend
+22 app
+32 subscriptions _
+39 init
+51 update msg model
+117 updateFromFrontend browserCookie connectionId msg model
+225 updateFromFrontendCheckingRights browserCookie connectionId msg model
+253 getUserFromCookie browserCookie model
+258 log
+263 userToFrontend user
+
+## src/Components/AuthControls.elm
+### Components.AuthControls
+21 view config
+37 darkModeToggle config
+52 authSection config
+
+## src/Components/Button.elm
+### Components.Button
+33 view config label
+108 primary colors onClick label
+120 secondary colors onClick label
+132 danger colors onClick label
+144 success colors onClick label
+156 loading colors label
+
+## src/Components/Card.elm
+### Components.Card
+17 view config children
+52 getPaddingClass padding
+68 simple colors children
+79 withTitle colors title children
+90 compact colors children
+
+## src/Components/Header.elm
+### Components.Header
+23 view config
+72 pageHeader colors title subtitle
+82 sectionHeader colors title
+92 cardHeader colors title
+
+## src/Components/Tab.elm
+### Components.Tab
+17 view config
+39 tabBar colors tabs
+
+## src/EndpointExample/Price.elm
+### EndpointExample.Price
+21 getPrice sessionId model headers json
+36 getPriceResult sessionId model headers json
+45 fetchEthPriceInZar
+97 fetchEthPrice
+118 fetchZarRate
+139 fetchJokeAboutEthPrice price
+181 openAiResponseDecoder responseBody
+
+## src/Env.elm
+### Env
+7 dummyConfigItem
+11 modelKey
+15 slackApiToken
+19 slackChannel
+23 logSize
+27 stillTesting
+32 auth0AppClientId
+37 auth0AppClientSecret
+42 auth0AppTenant
+47 sysAdminEmail
+52 openAiApiKey
+57 openRouterApiKey
+66 mode
+
+## src/Frontend.elm
+### Frontend
+45 app
+58 subscriptions _
+66 init url key
+94 inits model route
+110 update msg model
+219 updateFromBackend msg model
+265 view model
+282 callbackForAuth0Auth model url key
+295 callbackForGoogleAuth model url key
+308 authCallbackCmd model url key
+325 initWithAuth url key
+335 viewWithAuth model
+411 authUpdateFromBackend authToFrontendMsg model
+
+## src/LamderaRPC.elm
+### LamderaRPC
+25 fail string
+43 resultWith statusCode body
+48 failWith statusCode stringBody
+63 bodyTypeToString body
+105 requestDecoder
+120 rawBody rawReq
+130 rawBodyDecoder
+147 process log rpcOut rawReq handler model
+209 asTask encoder decoder requestValue endpoint
+245 asTaskJson json endpoint
+266 asTaskString requestBody endpoint
+278 customResolver fn response
+304 handleEndpointBytes fn decoder encoder args model
+333 handleEndpoint fn args model
+342 handleEndpointJson fn args model
+366 handleEndpointJsonRaw fn args model
+390 handleEndpointString fn args model
+410 httpErrorToString err
+445 methodString method
+544 statusToInt code
+731 statusToString statusCode
+
+## src/Pages/Admin.elm
+### Pages.Admin
+15 init model adminRoute
+56 view model colors
+78 viewNoAccess _ colors
+102 viewTabs model colors
+112 viewTab tab model colors label
+159 viewTabContent model colors
+178 viewDefaultTab _ colors
+186 viewLogsTab model colors
+207 viewFetchModelTab model colors
+238 viewFusionTab model
+252 viewLogEntry index log
+260 viewLogin _ colors
+
+## src/Pages/Default.elm
+### Pages.Default
+13 init model
+18 view model colors
+
+## src/Pages/Examples.elm
+### Pages.Examples
+14 init model
+19 view model colors
+
+## src/Pages/PageFrame.elm
+### Pages.PageFrame
+18 viewTabs model
+67 viewAccountControls model
+86 viewCurrentPage model
+112 viewNotFoundPage colors
+
+## src/Ports/Clipboard.elm
+### 
+14 copyToClipboard text
+19 copyResult toMsg
+
+## src/Ports/ConsoleLogger.elm
+### 
+14 log message
+19 logReceived toMsg
+
+## src/RPC.elm
+### RPC
+23 lamdera_handleEndpoints rawReq args model
+62 getLogs _ model headers _
+83 getModel _ _ model headers _
+97 makeModelImportUrl remoteLamderaUrl
+103 fetchImportedModel remoteLamderaUrl modelKey
+150 rpcLog
+
+## src/Rights/Auth0.elm
+### Rights.Auth0
+14 renewSession _ _ model
+27 handleAuthSuccess backendModel sessionId clientId userInfo _ _ _
+43 logout sessionId _ model
+48 backendConfig model
+62 config
+76 customizeAuth0Method method
+
+## src/Rights/Permissions.elm
+### Rights.Permissions
+12 actionRoleMap msg
+50 canPerformAction user action
+64 sessionCanPerformAction model browserCookie action
+
+## src/Rights/Role.elm
+### Rights.Role
+7 roleToString role
+22 roleHasAccess userRole requiredRole
+
+## src/Rights/User.elm
+### Rights.User
+10 isSysAdmin user
+16 getUserRole user
+25 createUser userInfo initialPreferences
+32 insertUser email newUser model
+
+## src/Route.elm
+### Route
+9 parser
+21 fromUrl url
+27 toString route
+
+## src/Supplemental.elm
+### Supplemental
+20 addProxy url
+29 responseStringToResult response
+48 handleHttpResponse decoder response
+67 responseToString response
+86 httpErrorToString error
+105 handleJsonResponse decoder response
+169 performNow msg
+174 getTime msg
+179 waitThenPerform ms msg
+190 at_ path decoder
+195 requiredAt_ path decoder
+200 optionalAt_ path valDecoder fallback decoder
+211 slackApiUrl
+216 sendSlackMessage token channel message
+254 formatFloat decimals value
+298 formatPrice currency price
+312 formatPercent percent
+328 formatPercentWithoutSign percent
+344 monthToString month
+384 monthToInt month
+424 formatDate time
+439 second
+444 minute
+449 hour
+454 day
+459 week
+
+## src/SupplementalRPC.elm
+### SupplementalRPC
+14 stringifyHttpRequest request
+41 stringifyRPCResult result
+85 encodeHttpBody body
+107 encodeRPCCallAndResult args result
+
+## src/Theme.elm
+### Theme
+28 lightColors
+49 darkColors
+70 getColors isDarkMode
+81 primaryBg isDarkMode
+86 primaryText isDarkMode
+91 primaryBorder isDarkMode
+96 secondaryBg isDarkMode
+101 secondaryText isDarkMode
+106 accent isDarkMode
+111 buttonBg isDarkMode
+116 buttonText isDarkMode
+121 buttonHoverBg isDarkMode
+126 dangerBg isDarkMode
+131 dangerHoverBg isDarkMode
+136 headerBg isDarkMode
+141 headerBorder isDarkMode
+146 headerText isDarkMode
+151 activeTabText isDarkMode
+156 inactiveTabText isDarkMode
+

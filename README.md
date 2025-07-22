@@ -21,27 +21,19 @@ A **production-ready** Lamdera starter that includes literally everything you ne
 - **Task Chains** - Elegant async operation handling
 - **Polling System** - Long-running background jobs
 
-### 🎨 Production-Ready UI System
-- **Complete Theme System** - Light/Dark mode with type-safe colors
-- **Component Library** - Cards, Buttons, Headers, Tabs, AuthControls
-- **Responsive Design** - Mobile-first with Tailwind CSS
-- **Type-Safe Styling** - No more CSS debugging nightmares
-
 ### 🔌 JavaScript Interop Done Right
 - **Port System** - Console logging, clipboard, with error handling
 - **elm-pkg-js Standard** - Clean JavaScript integration pattern
 - **External WebSocket Client** - Node.js examples for external systems
 
 ### 🛠️ Developer Experience
-- **Complete Admin Panel** - Logs, user management, system monitoring
+- **Complete Admin Panel** - Logs, system monitoring
 - **Environment Configuration** - Dev/prod modes with API key management
 - **Utility Library** - HTTP helpers, JSON decoders, date formatting
 - **LLM-Friendly Structure** - Organized for AI-assisted development
 
-### 📦 NPM Package Integration
-- **WebSocket Library Reference** - Submodule demonstrating published `lamdera-websocket` package
-- **TypeScript Support** - Complete type definitions for external integration
-- **Usage Examples** - See `external_integration_examples/` for implementation patterns
+### 📦 External WebSocket Integration
+- **Example of how to connect WebSockets in JS/TS to Lamdera**
 
 ## 🚀 Quick Start
 
@@ -63,7 +55,6 @@ lamdera live
 3. **Admin** - Full admin panel (requires SysAdmin role)
    - View system logs
    - Fetch remote models
-   - User management
    - System monitoring
 
 ## 🏗️ Architecture (The Good Stuff)
@@ -116,11 +107,24 @@ lamdera-websocket-package/
 - **Clipboard Integration** - Copy text with one click
 - **Error Handling** - Proper JavaScript error propagation
 
-### RPC & External APIs
-- **Crypto Price Fetching** - Live ETH prices converted to ZAR
-- **OpenAI Integration** - AI-generated jokes about crypto prices
-- **Slack Notifications** - Automatic logging to Slack channels
-- **Task Chains** - See complex async operations in action
+### RPC Examples
+- **Standard RPC Endpoints** - Synchronous request/response patterns (`getLogs`, `getModel`)
+- **Long-Running RPC with Polling** - Async operations that return immediately with a token, check back for results (`getPrice`, `getPriceResult`)
+- **External API Integration** - Crypto prices, OpenAI, Slack notifications
+- **Error Handling** - Proper HTTP error propagation and logging
+
+### Task Chain Examples (Railway Programming)
+- **Pure Functional Composition** - Chain async operations with `Task.andThen`
+- **Error Propagation** - Automatic error handling through the entire chain
+- **Real Example**: `fetchEthPriceInZar` - Fetches crypto price → waits → fetches exchange rate → calls OpenAI → returns result
+- **Logging Integration** - Slack notifications at each step without breaking the chain
+
+### Essential Supplemental Functions
+- **HTTP Helpers** - `handleJsonResponse`, `httpErrorToString`, `addProxy` for CORS
+- **Task Utilities** - `performNow`, `waitThenPerform`, `getTime` for message scheduling  
+- **Formatting** - `formatFloat`, `formatPrice`, `formatPercent`, `formatDate`
+- **JSON Decoders** - `at_`, `requiredAt_`, `optionalAt_` for nested data
+- **Time Constants** - `second`, `minute`, `hour`, `day`, `week` for readable delays
 
 ### WebSocket Magic
 ```javascript

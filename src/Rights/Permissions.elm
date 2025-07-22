@@ -35,7 +35,7 @@ actionRoleMap msg =
         SetDarkModePreference _ ->
             Anonymous -- Allow anyone to set their own preference
 
-        WS_Receive _ ->
+        A00_WebSocketReceive _ ->
             Anonymous -- Allow anyone to send websocket messages
 
         -- Fusion_PersistPatch _ ->

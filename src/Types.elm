@@ -91,10 +91,10 @@ type FrontendMsg
     -- | Admin_FusionPatch Fusion.Patch.Patch
     -- | Admin_FusionQuery Fusion.Query
 
-
+ 
 type ToBackend
     = NoOpToBackend
-    | WS_Receive String
+    | A00_WebSocketReceive String
     -- Admin
     | Admin_FetchLogs
     | Admin_ClearLogs
@@ -121,7 +121,7 @@ type BackendMsg
 
 type ToFrontend
     = NoOpToFrontend
-    | WS_Send String
+    | A00_WebSocketSend String
       -- Admin page
     | Admin_Logs_ToFrontend (List String)
     | AuthToFrontend Auth.Common.ToFrontend

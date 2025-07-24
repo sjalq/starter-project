@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Run elm-pages
-# npx elm-pages run fusion/scripts/src/Main.elm elm.json generated Types.BackendModel
+echo "Generating Elm function documentation..."
+node LLMBuildTools/gen-elm-functions.cjs --exclude src/Fusion --exclude src/Evergreen --exclude src/generated
 
-# Compile lamdera files
+echo "Compiling Lamdera..."
 lamdera make src/Backend.elm src/Frontend.elm src/RPC.elm

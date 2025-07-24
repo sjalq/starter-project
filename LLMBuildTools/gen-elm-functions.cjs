@@ -5,15 +5,21 @@ const { execSync } = require('child_process');
 function parseArgs() {
     const args = process.argv.slice(2);
     const excludedDirs = [];
+    let verbose = false;
 
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--exclude' && i + 1 < args.length) {
             excludedDirs.push(args[i + 1]);
             i++;
+        } else if (args[i] === '-v') {
+            verbose = true;
         }
     }
 
-    return excludedDirs.length > 0 ? excludedDirs : ['src/Fusion', 'src/Evergreen', 'src/generated'];
+    return {
+        excludedDirs: excludedDirs.length > 0 ? excludedDirs : ['src/Fusion', 'src/Evergreen', 'src/generated'],
+        verbose
+    };
 }
 
 function findElmFiles(excludedDirs) {
@@ -74,7 +80,7 @@ function parseElmFile(filePath) {
     return { moduleName, declarations: decls };
 }
 
-function generateMdcFile(excludedDirs) {
+function generateMdcFile(excludedDirs, verbose = false) {
     const elmFiles = findElmFiles(excludedDirs);
     const moduleData = new Map();
 
@@ -90,6 +96,7 @@ function generateMdcFile(excludedDirs) {
     let output = `---
 description: This file contains all the existing functions in the project. It is included so that you can find code faster and aren't tempted to reinvent wheels. Always consult the src/Types.elm file to see the structure of the app.
 globs: ["**/*.elm"]
+alwaysApply: true
 ---
 
 # Elm Functions Reference
@@ -110,9 +117,11 @@ globs: ["**/*.elm"]
     });
 
     fs.writeFileSync('.cursor/rules/elm-functions.mdc', output);
-    console.log(`Generated .cursor/rules/elm-functions.mdc with ${sortedFiles.length} modules`);
-    console.log(`Excluded directories: ${excludedDirs.join(', ')}`);
+    if (verbose) {
+        console.log(`Generated .cursor/rules/elm-functions.mdc with ${sortedFiles.length} modules`);
+        console.log(`Excluded directories: ${excludedDirs.join(', ')}`);
+    }
 }
 
-const excludedDirs = parseArgs();
-generateMdcFile(excludedDirs); 
+const { excludedDirs, verbose } = parseArgs();
+generateMdcFile(excludedDirs, verbose); 

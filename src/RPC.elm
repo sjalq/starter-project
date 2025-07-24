@@ -40,6 +40,9 @@ lamdera_handleEndpoints rawReq args model =
                 "getPriceResult" ->
                     LamderaRPC.handleEndpointJson EndpointExample.Price.getPriceResult args model
 
+                "triggerWebSocketBroadcast" ->
+                    LamderaRPC.handleEndpointJson triggerWebSocketBroadcast args model
+
                 _ ->
                     let
                         rpcFailure =
@@ -149,3 +152,14 @@ fetchImportedModel remoteLamderaUrl modelKey =
 
 rpcLog =
     Supplemental.rpcLog NoOpBackendMsg
+
+
+triggerWebSocketBroadcast : SessionId -> BackendModel -> Headers -> Encode.Value -> ( Result Http.Error Encode.Value, BackendModel, Cmd BackendMsg )
+triggerWebSocketBroadcast sessionId model headers json =
+    ( Ok (Encode.object 
+        [ ( "status", Encode.string "broadcast triggered" )
+        , ( "message", Encode.string "Test broadcast from RPC" )
+        ])
+    , model
+    , Lamdera.broadcast (A00_WebSocketSend "Test broadcast from RPC endpoint!")
+    )

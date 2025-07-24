@@ -38,6 +38,9 @@ actionRoleMap msg =
         A00_WebSocketReceive _ ->
             Anonymous -- Allow anyone to send websocket messages
 
+        A00_WebSocketTestSequence ->
+            Anonymous -- Allow anyone to trigger websocket test sequence
+
         -- Fusion_PersistPatch _ ->
         --     SysAdmin
 

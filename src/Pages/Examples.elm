@@ -45,6 +45,16 @@ view model colors =
                         [ text "Try pasting (Ctrl+V or Cmd+V) somewhere to see the copied text!" ]
                     ]
                 
+                , -- WebSocket Example
+                  Components.Card.withTitle colors "WebSocket Example"
+                    [ p [ Attr.class "mb-4 text-sm md:text-base", Attr.style "color" colors.primaryText ]
+                        [ text "Test WebSocket messages with varying lengths:" ]
+                    , div [ Attr.class "w-full sm:w-auto" ]
+                        [ Components.Button.primary colors (Just (DirectToBackend A00_WebSocketTestSequence)) "Send Test Sequence" ]
+                    , p [ Attr.class "mt-4 text-xs md:text-sm text-gray-600 dark:text-gray-400" ]
+                        [ text "This will send 8 messages with lengths: 0, 6, 126, 128, 16382, 16384, 2097150, 2097152" ]
+                    ]
+                
                 , -- Code Example
                   Components.Card.withTitle colors "How It Works"
                     [ p [ Attr.class "mb-4 text-sm md:text-base", Attr.style "color" colors.primaryText ]

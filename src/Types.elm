@@ -95,6 +95,7 @@ type FrontendMsg
 type ToBackend
     = NoOpToBackend
     | A00_WebSocketReceive String
+    | A00_WebSocketTestSequence
     -- Admin
     | Admin_FetchLogs
     | Admin_ClearLogs

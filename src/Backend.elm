@@ -28,11 +28,9 @@ app =
         }
 
 
-subscriptions : Model -> Sub msg
+subscriptions : Model -> Sub BackendMsg
 subscriptions _ =
-    Sub.batch
-        [-- things that run on timers and things that listen to the outside world
-        ]
+    Sub.none
 
 
 init : ( Model, Cmd BackendMsg )
@@ -193,6 +191,33 @@ updateFromFrontend browserCookie connectionId msg model =
         A00_WebSocketReceive message ->
             -- Echo websocket message back to frontend
             ( model, Lamdera.sendToFrontend connectionId (A00_WebSocketSend ("Echo: " ++ message)) )
+
+        A00_WebSocketTestSequence ->
+            let
+                alphaNumeric = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                
+                generateString length =
+                    List.range 0 (length - 1)
+                        |> List.map (\i -> 
+                            String.slice (modBy (String.length alphaNumeric) i) (modBy (String.length alphaNumeric) i + 1) alphaNumeric)
+                        |> String.concat
+                
+                messages =
+                    [ ""                -- Empty string (length 0)
+                    , generateString 6
+                    , generateString 126
+                    , generateString 128
+                    , generateString 16382
+                    , generateString 16384
+                    , generateString 2097150
+                    , generateString 2097152
+                    ]
+                
+                commands =
+                    messages
+                        |> List.map (\str -> Lamdera.sendToFrontend connectionId (A00_WebSocketSend str))
+            in
+            ( model, Cmd.batch commands )
 
         -- Fusion_PersistPatch patch ->
         --     let

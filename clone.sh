@@ -28,20 +28,23 @@ fi
 # Clean project name (remove spaces, special chars)
 CLEAN_NAME=$(echo "$PROJECT_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | tr '[:upper:]' '[:lower:]')
 
-# Suggest default path (parent directory)
-DEFAULT_PATH="../$CLEAN_NAME"
+# Suggest default path relative to home directory
+DEFAULT_PATH="$CLEAN_NAME"
 
 echo ""
-echo -e "${YELLOW}Where would you like to create your project?${NC}"
-echo -e "${BLUE}Default: ${DEFAULT_PATH}${NC}"
+echo -e "${YELLOW}Where would you like to create your project? ${BLUE}(relative to your home directory)${NC}"
+echo -e "${BLUE}Default: ~/${DEFAULT_PATH}${NC}"
 read -p "Project path (press Enter for default): " CUSTOM_PATH
 
 # Use default if no custom path provided
 if [ -z "$CUSTOM_PATH" ]; then
-    TARGET="$DEFAULT_PATH"
+    RELATIVE_PATH="$DEFAULT_PATH"
 else
-    TARGET="$CUSTOM_PATH"
+    RELATIVE_PATH="$CUSTOM_PATH"
 fi
+
+# Convert to absolute path from home directory
+TARGET="$HOME/$RELATIVE_PATH"
 
 # Check if directory already exists
 if [ -d "$TARGET" ]; then
@@ -82,21 +85,19 @@ echo -e "${BLUE}💾 Creating initial commit...${NC}"
 git add . > /dev/null 2>&1
 git commit -m "Initial commit from starter project with submodules" > /dev/null 2>&1
 
-# Get absolute path for better UX
-ABSOLUTE_TARGET=$(realpath "$TARGET")
-
 echo ""
 echo -e "${GREEN}${BOLD}✅ Success! Project '$PROJECT_NAME' created!${NC}"
-echo -e "${GREEN}   📁 Location: $ABSOLUTE_TARGET${NC}"
+echo -e "${GREEN}   📁 Location: ~/$RELATIVE_PATH${NC}"
 echo ""
-echo -e "${YELLOW}${BOLD}🚀 Ready to start? Copy and paste this:${NC}"
+echo -e "${YELLOW}${BOLD}🚀 Next steps:${NC}"
+echo -e "${BLUE}1.${NC} ./compile.sh"
+echo -e "${BLUE}2.${NC} lamdera live"
+echo -e "${BLUE}3.${NC} Test login with: ${BOLD}sys@admin.com${NC} / ${BOLD}admin${NC}"
 echo ""
-echo -e "${BOLD}cd '$ABSOLUTE_TARGET' && ./compile.sh && lamdera live${NC}"
+echo -e "${GREEN}Happy coding! 🎉${NC}"
 echo ""
-echo -e "${BLUE}Or step by step:${NC}"
-echo -e "${BLUE}1.${NC} cd '$ABSOLUTE_TARGET'"
-echo -e "${BLUE}2.${NC} ./compile.sh"
-echo -e "${BLUE}3.${NC} lamdera live"
-echo -e "${BLUE}4.${NC} Test login with: ${BOLD}sys@admin.com${NC} / ${BOLD}admin${NC}"
-echo ""
-echo -e "${GREEN}Happy coding! 🎉${NC}" 
+echo -e "${BLUE}Changing to your new project directory...${NC}"
+
+# Change to the target directory and start a new shell there
+cd "$TARGET"
+exec $SHELL 

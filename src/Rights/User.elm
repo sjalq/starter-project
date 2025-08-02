@@ -24,6 +24,7 @@ getUserRole user =
 createUser : Auth.Common.UserInfo -> Preferences -> User
 createUser userInfo initialPreferences =
     { email = userInfo.email
+    , name = userInfo.name
     , preferences = initialPreferences
     }
 

@@ -16,53 +16,59 @@ type alias Colors =
     , buttonHoverBg : String
     , dangerBg : String
     , dangerHoverBg : String
+    , dangerText : String
     , headerBg : String
     , headerBorder : String
     , headerText : String
     , activeTabText : String
     , inactiveTabText : String
+    , successBg : String
     }
 
 
 lightColors : Colors
 lightColors =
-    { primaryBg = "#ffffff"
-    , primaryText = "#1a202c" -- Gray 900
-    , secondaryBg = "#e2e8f0" -- Gray 200
-    , secondaryText = "#4a5568" -- Gray 600
-    , accent = "#4299e1" -- Blue 400
-    , border = "#cbd5e0" -- Gray 400
-    , buttonBg = "#3182ce" -- Blue 600
-    , buttonText = "#ffffff"
-    , buttonHoverBg = "#2b6cb0" -- Blue 700
-    , dangerBg = "#e53e3e" -- Red 600
-    , dangerHoverBg = "#c53030" -- Red 700
-    , headerBg = "#f7fafc" -- Gray 100
-    , headerBorder = "#e2e8f0" -- Gray 200
-    , headerText = "#4a5568" -- Gray 600
-    , activeTabText = "#4299e1" -- Blue 500
-    , inactiveTabText = "#718096" -- Gray 500
+    { primaryBg = "#F2ECE4" -- Light cream (Sakeliga tertiary)
+    , primaryText = "#263745" -- Dark blue-grey (Sakeliga secondary)
+    , secondaryBg = "#FFFFFF" -- White
+    , secondaryText = "#4A5568" -- Grey for secondary text
+    , accent = "#CFB793" -- Warm beige/gold (Sakeliga primary)
+    , border = "rgba(0, 0, 0, 0.15)" -- Semi-transparent black (lighter than original)
+    , buttonBg = "#CFB793" -- Warm beige/gold (Sakeliga primary)
+    , buttonText = "#263745" -- Dark blue-grey
+    , buttonHoverBg = "#BEA682" -- Darker beige (Sakeliga hover)
+    , dangerBg = "#FF0000" -- Red (Sakeliga red)
+    , dangerHoverBg = "#CC0000" -- Darker red
+    , dangerText = "#FF0000" -- Red
+    , headerBg = "#FFFFFF" -- White
+    , headerBorder = "#D9D9D9" -- Grey (Sakeliga grey)
+    , headerText = "#263745" -- Dark blue-grey
+    , activeTabText = "#CFB793" -- Warm beige/gold
+    , inactiveTabText = "#B3B3B3" -- Dark grey
+    , successBg = "#48bb78" -- Green (keeping original for consistency)
     }
 
 
 darkColors : Colors
 darkColors =
-    { primaryBg = "#1a202c" -- Gray 900
-    , primaryText = "#e2e8f0" -- Gray 200
-    , secondaryBg = "#2d3748" -- Gray 800
-    , secondaryText = "#a0aec0" -- Gray 400
-    , accent = "#63b3ed" -- Blue 300
-    , border = "#4a5568" -- Gray 600
-    , buttonBg = "#4299e1" -- Blue 400
-    , buttonText = "#1a202c" -- Gray 900
-    , buttonHoverBg = "#3182ce" -- Blue 500
-    , dangerBg = "#f56565" -- Red 400
-    , dangerHoverBg = "#e53e3e" -- Red 500
-    , headerBg = "#0d1829" -- Dark blue/gray
-    , headerBorder = "#2d3748" -- Gray 800
-    , headerText = "#a0aec0" -- Gray 400
-    , activeTabText = "#4299e1" -- Blue 400
-    , inactiveTabText = "#a0aec0" -- Gray 400
+    { primaryBg = "#1A1F26" -- Very dark blue-grey
+    , primaryText = "#F2ECE4" -- Light cream (from light mode tertiary)
+    , secondaryBg = "#263745" -- Dark blue-grey (Sakeliga secondary)
+    , secondaryText = "#CFB793" -- Warm beige/gold (Sakeliga primary)
+    , accent = "#E8D5BB" -- Lighter warm beige
+    , border = "rgba(207, 183, 147, 0.3)" -- Semi-transparent warm beige
+    , buttonBg = "#CFB793" -- Warm beige/gold
+    , buttonText = "#1A1F26" -- Very dark blue-grey
+    , buttonHoverBg = "#E8D5BB" -- Lighter warm beige
+    , dangerBg = "#E57373" -- Softer red for dark backgrounds
+    , dangerHoverBg = "#EF5350" -- Brighter red on hover
+    , dangerText = "#E57373" -- Softer red
+    , headerBg = "#263745" -- Dark blue-grey
+    , headerBorder = "#2F3D4D" -- Slightly lighter blue-grey
+    , headerText = "#F2ECE4" -- Light cream
+    , activeTabText = "#E8D5BB" -- Lighter warm beige
+    , inactiveTabText = "#8B9AAB" -- Muted blue-grey
+    , successBg = "#4CAF50" -- Green
     }
 
 

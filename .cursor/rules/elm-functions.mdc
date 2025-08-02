@@ -1,6 +1,7 @@
 ---
 description: This file contains all the existing functions in the project. It is included so that you can find code faster and aren't tempted to reinvent wheels. Always consult the src/Types.elm file to see the structure of the app.
 globs: ["**/*.elm"]
+alwaysApply: true
 ---
 
 # Elm Functions Reference
@@ -12,23 +13,44 @@ globs: ["**/*.elm"]
 68 handleTimeResult token result
 79 handlePollingResult _ model _ json
 
+## src/Auth/EmailPasswordAuth.elm
+### Auth.EmailPasswordAuth
+51 initFormModel
+65 updateForm msg model
+87 validateAndSubmit model
+100 handleLogin browserCookie connectionId email password credentials model
+126 handleSignup browserCookie connectionId email password maybeName credentials model
+144 completeSignup browserCookie connectionId email password maybeName salt hash credentials model
+
+## src/Auth/PasswordHash.elm
+### Auth.PasswordHash
+18 generateSalt
+24 hashPassword salt password
+33 verifyPassword plainPassword hashedPassword
+42 generateHashedPassword password
+
 ## src/Backend.elm
 ### Backend
-22 app
-32 subscriptions _
-39 init
-51 update msg model
-117 updateFromFrontend browserCookie connectionId msg model
-225 updateFromFrontendCheckingRights browserCookie connectionId msg model
-253 getUserFromCookie browserCookie model
-258 log
-263 userToFrontend user
+25 app
+35 subscriptions _
+42 init
+55 update msg model
+126 updateFromFrontend browserCookie connectionId msg model
+237 updateFromFrontendCheckingRights browserCookie connectionId msg model
+268 getUserFromCookie browserCookie model
+273 log
+278 userToFrontend user
+287 handleEmailPasswordAuth browserCookie connectionId authMsg model
+297 handleEmailPasswordLogin browserCookie connectionId email password model
+328 handleEmailPasswordSignup browserCookie connectionId email password maybeName model
+346 completeEmailPasswordSignup browserCookie connectionId email password maybeName salt hash model
 
 ## src/Components/AuthControls.elm
 ### Components.AuthControls
-21 view config
-37 darkModeToggle config
-52 authSection config
+35 view config
+54 profileDropdown config
+146 loginButton config
+194 getInitials userInfo
 
 ## src/Components/Button.elm
 ### Components.Button
@@ -47,12 +69,32 @@ globs: ["**/*.elm"]
 79 withTitle colors title children
 90 compact colors children
 
+## src/Components/EmailPasswordAuth.elm
+### Components.EmailPasswordAuth
+22 init
+33 update msg model
+46 updateForm msg model
+68 validateAndGetSubmitModel model
+78 view config
+
+## src/Components/EmailPasswordForm.elm
+### Components.EmailPasswordForm
+24 view config
+136 inputStyles colors
+147 buttonStyles colors
+
 ## src/Components/Header.elm
 ### Components.Header
 23 view config
 72 pageHeader colors title subtitle
 82 sectionHeader colors title
 92 cardHeader colors title
+
+## src/Components/LoginModal.elm
+### Components.LoginModal
+25 view config
+122 oauthButton config label onClickMsg backgroundColor
+143 oauthButtonWithIcon config label onClickMsg backgroundColor iconSrc
 
 ## src/Components/Tab.elm
 ### Components.Tab
@@ -87,19 +129,21 @@ globs: ["**/*.elm"]
 
 ## src/Frontend.elm
 ### Frontend
-45 app
-58 subscriptions _
-66 init url key
-94 inits model route
-110 update msg model
-219 updateFromBackend msg model
-265 view model
-282 callbackForAuth0Auth model url key
-295 callbackForGoogleAuth model url key
-308 authCallbackCmd model url key
-325 initWithAuth url key
-335 viewWithAuth model
-411 authUpdateFromBackend authToFrontendMsg model
+47 app
+60 subscriptions _
+68 init url key
+106 inits model route
+122 update msg model
+266 updateFromBackend msg model
+317 view model
+347 callbackForAuth0Auth model url key
+360 callbackForGoogleAuth model url key
+373 authCallbackCmd model url key
+390 initWithAuth url key
+400 updateEmailPasswordAuth authMsg model
+442 updateEmailPasswordForm msg model
+469 viewWithAuth model
+545 authUpdateFromBackend authToFrontendMsg model
 
 ## src/LamderaRPC.elm
 ### LamderaRPC
@@ -152,10 +196,10 @@ globs: ["**/*.elm"]
 
 ## src/Pages/PageFrame.elm
 ### Pages.PageFrame
-18 viewTabs model
-67 viewAccountControls model
-86 viewCurrentPage model
-112 viewNotFoundPage colors
+19 viewTabs model
+68 viewAccountControls model
+89 viewCurrentPage model
+115 viewNotFoundPage colors
 
 ## src/Ports/Clipboard.elm
 ### 
@@ -188,8 +232,8 @@ globs: ["**/*.elm"]
 ## src/Rights/Permissions.elm
 ### Rights.Permissions
 12 actionRoleMap msg
-50 canPerformAction user action
-64 sessionCanPerformAction model browserCookie action
+53 canPerformAction user action
+67 sessionCanPerformAction model browserCookie action
 
 ## src/Rights/Role.elm
 ### Rights.Role
@@ -201,7 +245,7 @@ globs: ["**/*.elm"]
 10 isSysAdmin user
 16 getUserRole user
 25 createUser userInfo initialPreferences
-32 insertUser email newUser model
+33 insertUser email newUser model
 
 ## src/Route.elm
 ### Route
@@ -247,23 +291,23 @@ globs: ["**/*.elm"]
 
 ## src/Theme.elm
 ### Theme
-28 lightColors
-49 darkColors
-70 getColors isDarkMode
-81 primaryBg isDarkMode
-86 primaryText isDarkMode
-91 primaryBorder isDarkMode
-96 secondaryBg isDarkMode
-101 secondaryText isDarkMode
-106 accent isDarkMode
-111 buttonBg isDarkMode
-116 buttonText isDarkMode
-121 buttonHoverBg isDarkMode
-126 dangerBg isDarkMode
-131 dangerHoverBg isDarkMode
-136 headerBg isDarkMode
-141 headerBorder isDarkMode
-146 headerText isDarkMode
-151 activeTabText isDarkMode
-156 inactiveTabText isDarkMode
+30 lightColors
+53 darkColors
+76 getColors isDarkMode
+87 primaryBg isDarkMode
+92 primaryText isDarkMode
+97 primaryBorder isDarkMode
+102 secondaryBg isDarkMode
+107 secondaryText isDarkMode
+112 accent isDarkMode
+117 buttonBg isDarkMode
+122 buttonText isDarkMode
+127 buttonHoverBg isDarkMode
+132 dangerBg isDarkMode
+137 dangerHoverBg isDarkMode
+142 headerBg isDarkMode
+147 headerBorder isDarkMode
+152 headerText isDarkMode
+157 activeTabText isDarkMode
+162 inactiveTabText isDarkMode
 

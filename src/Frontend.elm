@@ -14,12 +14,14 @@ import Pages.Admin
 import Pages.Default
 import Pages.Examples
 import Pages.PageFrame exposing (viewCurrentPage, viewTabs)
+import Components.LoginModal
 import Route exposing (..)
 import Supplemental exposing (..)
 import Time exposing (..)
 import Types exposing (..)
 import Url exposing (Url)
 import Theme
+import Task
 -- import Fusion.Patch
 -- import Fusion
 
@@ -85,6 +87,16 @@ init url key =
             , currentUser = Nothing
             , pendingAuth = False
             , preferences = initialPreferences
+            , emailPasswordForm = 
+                { email = ""
+                , password = ""
+                , confirmPassword = ""
+                , name = ""
+                , isSignupMode = False
+                , error = Nothing
+                }
+            , profileDropdownOpen = False
+            , loginModalOpen = False
             }
     in
     inits model route
@@ -153,16 +165,33 @@ update msg model =
             in
             ( { model | adminPage = { oldAdminPage | remoteUrl = url } }, Cmd.none )
 
-        GoogleSigninRequested ->
-            Auth.Flow.signInRequested "OAuthGoogle" { model | login = NotLogged True, pendingAuth = True } Nothing
-                |> Tuple.mapSecond (AuthToBackend >> Lamdera.sendToBackend)
-
         Logout ->
-            ( { model | login = NotLogged False, pendingAuth = False, preferences = { darkMode = True } }, Lamdera.sendToBackend LoggedOut )
+            let
+                -- Reset form to initial clean state
+                cleanForm = 
+                    { email = ""
+                    , password = ""
+                    , confirmPassword = ""
+                    , name = ""
+                    , isSignupMode = False
+                    , error = Nothing
+                    }
+            in
+            ( { model 
+                | login = NotLogged False
+                , pendingAuth = False
+                , preferences = { darkMode = True }
+                , emailPasswordForm = cleanForm
+              }
+            , Lamdera.sendToBackend LoggedOut 
+            )
 
         Auth0SigninRequested ->
             Auth.Flow.signInRequested "OAuthAuth0" { model | login = NotLogged True, pendingAuth = True } Nothing
                 |> Tuple.mapSecond (AuthToBackend >> Lamdera.sendToBackend)
+
+        EmailPasswordAuthMsg authMsg ->
+            updateEmailPasswordAuth authMsg model
 
         ToggleDarkMode ->
             let
@@ -180,6 +209,24 @@ update msg model =
             ( { model | preferences = updatedFrontendPreferences }
             , Lamdera.sendToBackend (SetDarkModePreference newDarkModeState)
             )
+
+        ToggleProfileDropdown ->
+            ( { model | profileDropdownOpen = not model.profileDropdownOpen }, Cmd.none )
+
+        ToggleLoginModal ->
+            ( { model | loginModalOpen = not model.loginModalOpen }, Cmd.none )
+
+        CloseLoginModal ->
+            ( { model | loginModalOpen = False }, Cmd.none )
+
+        EmailPasswordAuthError errorMsg ->
+            let
+                _ = Debug.log "EmailPasswordAuthError" errorMsg
+                updatedForm = 
+                    model.emailPasswordForm
+                        |> (\form -> { form | error = Just errorMsg })
+            in
+            ( { model | emailPasswordForm = updatedForm, loginModalOpen = True }, Cmd.none )
 
         ConsoleLogClicked ->
             ( model, Ports.ConsoleLogger.log "Hello from Elm!" )
@@ -233,7 +280,12 @@ updateFromBackend msg model =
             authUpdateFromBackend authToFrontendMsg model
 
         AuthSuccess userInfo ->
-            ( { model | login = LoggedIn userInfo, pendingAuth = False }, Cmd.batch [ Nav.pushUrl model.key "/", Lamdera.sendToBackend GetUserToBackend ] )
+            ( { model | login = LoggedIn userInfo, pendingAuth = False, loginModalOpen = False }, 
+              Cmd.batch 
+                [ Lamdera.sendToBackend GetUserToBackend
+                , Nav.pushUrl model.key "/"
+                ]
+            )
 
         UserInfoMsg mUserinfo ->
             case mUserinfo of
@@ -263,6 +315,9 @@ updateFromBackend msg model =
 
 view : Model -> Browser.Document FrontendMsg
 view model =
+    let
+        colors = Theme.getColors model.preferences.darkMode
+    in
     { title = "Dashboard"
     , body =
         [ div 
@@ -274,6 +329,16 @@ view model =
             [ viewTabs model
             , viewCurrentPage model
             ]
+        , Components.LoginModal.view
+            { isOpen = model.loginModalOpen
+            , colors = colors
+            , emailPasswordForm = model.emailPasswordForm
+            , onClose = CloseLoginModal
+            , onAuth0Login = Auth0SigninRequested
+            , onEmailPasswordMsg = EmailPasswordAuthMsg
+            , onNoOp = NoOpFrontendMsg
+            , isAuthenticating = model.pendingAuth
+            }
         ]
     }
 
@@ -329,6 +394,75 @@ initWithAuth url key =
     in
     authCallbackCmd model url key
         |> Tuple.mapSecond (\cmd -> Cmd.batch [ cmds, cmd, Lamdera.sendToBackend GetUserToBackend ])
+
+
+updateEmailPasswordAuth : EmailPasswordAuthMsg -> Model -> ( Model, Cmd FrontendMsg )
+updateEmailPasswordAuth authMsg model =
+    case authMsg of
+        EmailPasswordFormMsg formMsg ->
+            let
+                newForm = updateEmailPasswordForm formMsg model.emailPasswordForm
+                
+                -- Check if form was validated and should submit
+                cmd = case formMsg of
+                    EmailPasswordFormSubmit ->
+                        if newForm.error == Nothing then
+                            let
+                                backendMsg = if newForm.isSignupMode then
+                                    EmailPasswordSignupToBackend newForm.email newForm.password 
+                                        (if String.isEmpty (String.trim newForm.name) then Nothing else Just newForm.name)
+                                  else
+                                    EmailPasswordLoginToBackend newForm.email newForm.password
+                            in
+                            Lamdera.sendToBackend (EmailPasswordAuthToBackend backendMsg)
+                        else
+                            Cmd.none
+                    _ ->
+                        Cmd.none
+                
+                newModel = if formMsg == EmailPasswordFormSubmit && newForm.error == Nothing then
+                    { model | emailPasswordForm = newForm, login = NotLogged True, pendingAuth = True }
+                  else
+                    { model | emailPasswordForm = newForm }
+            in
+            ( newModel, cmd )
+
+        EmailPasswordLoginRequested email password ->
+            ( { model | login = NotLogged True, pendingAuth = True }
+            , Lamdera.sendToBackend (EmailPasswordAuthToBackend (EmailPasswordLoginToBackend email password))
+            )
+
+        EmailPasswordSignupRequested email password maybeName ->
+            ( { model | login = NotLogged True, pendingAuth = True }
+            , Lamdera.sendToBackend (EmailPasswordAuthToBackend (EmailPasswordSignupToBackend email password maybeName))
+            )
+
+
+updateEmailPasswordForm : EmailPasswordFormMsg -> EmailPasswordFormModel -> EmailPasswordFormModel
+updateEmailPasswordForm msg model =
+    case msg of
+        EmailPasswordFormEmailChanged email ->
+            { model | email = email, error = Nothing }
+
+        EmailPasswordFormPasswordChanged password ->
+            { model | password = password, error = Nothing }
+
+        EmailPasswordFormConfirmPasswordChanged confirmPassword ->
+            { model | confirmPassword = confirmPassword, error = Nothing }
+
+        EmailPasswordFormNameChanged name ->
+            { model | name = name, error = Nothing }
+
+        EmailPasswordFormToggleMode ->
+            { model | isSignupMode = not model.isSignupMode, error = Nothing }
+
+        EmailPasswordFormSubmit ->
+            if String.isEmpty (String.trim model.email) || String.isEmpty (String.trim model.password) then
+                { model | error = Just "Please fill in all required fields" }
+            else if model.isSignupMode && model.password /= model.confirmPassword then
+                { model | error = Just "Passwords do not match" }
+            else
+                model -- Valid form
 
 
 viewWithAuth : Model -> Browser.Document FrontendMsg
@@ -425,8 +559,15 @@ authUpdateFromBackend authToFrontendMsg model =
             let
                 ( newModel, cmd ) =
                     Auth.Flow.setError model err
+                
+                errorMsg = case err of
+                    Auth.Common.ErrAuthString msg -> msg
+                    _ -> "Authentication failed"
+                
+                -- Send error to form via message
+                errorCmd = Task.perform identity (Task.succeed (EmailPasswordAuthError errorMsg))
             in
-            ( { newModel | pendingAuth = False, login = NotLogged False }, cmd )
+            ( { newModel | pendingAuth = False, login = NotLogged False }, Cmd.batch [ cmd, errorCmd ] )
 
         Auth.Common.AuthSessionChallenge _ ->
             ( model, Cmd.none )

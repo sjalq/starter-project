@@ -1,10 +1,13 @@
 module Backend exposing (..)
 
+import Auth.Common
 import Auth.Flow
+import Auth.PasswordHash exposing (HashedPassword, generateHashedPassword, verifyPassword)
 import Dict
 -- import Fusion.Generated.Types
 -- import Fusion.Patch
 import Lamdera
+import Random
 import RPC
 import Rights.Auth0 exposing (backendConfig)
 import Rights.Permissions exposing (sessionCanPerformAction)
@@ -41,6 +44,7 @@ init =
       , pendingAuths = Dict.empty
       , sessions = Dict.empty
       , users = Dict.empty
+      , emailPasswordCredentials = Dict.empty
       , pollingJobs = Dict.empty
       }
     , Cmd.none
@@ -69,6 +73,11 @@ update msg model =
 
         AuthBackendMsg authMsg ->
             Auth.Flow.backendUpdate (backendConfig model) authMsg
+
+        EmailPasswordAuthResult result ->
+            case result of
+                EmailPasswordSignupWithHash browserCookie connectionId email password maybeName salt hash ->
+                    completeEmailPasswordSignup browserCookie connectionId email password maybeName salt hash model
 
         GotCryptoPriceResult token result ->
             case result of
@@ -138,6 +147,9 @@ updateFromFrontend browserCookie connectionId msg model =
 
         AuthToBackend authToBackend ->
             Auth.Flow.updateFromFrontend (backendConfig model) connectionId browserCookie authToBackend model
+
+        EmailPasswordAuthToBackend authMsg ->
+            handleEmailPasswordAuth browserCookie connectionId authMsg model
 
         GetUserToBackend ->
             case Dict.get browserCookie model.sessions of
@@ -234,6 +246,9 @@ updateFromFrontendCheckingRights browserCookie connectionId msg model =
             AuthToBackend _ ->
                 True
 
+            EmailPasswordAuthToBackend _ ->
+                True
+
             GetUserToBackend ->
                 True
             
@@ -265,4 +280,87 @@ userToFrontend user =
     , isSysAdmin = isSysAdmin user
     , role = getUserRole user |> roleToString
     , preferences = user.preferences
-    }  
+    }
+
+
+handleEmailPasswordAuth : BrowserCookie -> ConnectionId -> EmailPasswordAuthToBackend -> Model -> ( Model, Cmd BackendMsg )
+handleEmailPasswordAuth browserCookie connectionId authMsg model =
+    case authMsg of
+        EmailPasswordLoginToBackend email password ->
+            handleEmailPasswordLogin browserCookie connectionId email password model
+
+        EmailPasswordSignupToBackend email password maybeName ->
+            handleEmailPasswordSignup browserCookie connectionId email password maybeName model
+
+
+handleEmailPasswordLogin : BrowserCookie -> ConnectionId -> String -> String -> Model -> ( Model, Cmd BackendMsg )
+handleEmailPasswordLogin browserCookie connectionId email password model =
+    case Dict.get email model.emailPasswordCredentials of
+        Just creds ->
+            let
+                hashedPassword = { hash = creds.passwordHash, salt = creds.passwordSalt }
+            in
+            if verifyPassword password hashedPassword then
+                let
+                    -- Get user name from stored user data
+                    userName = case Dict.get email model.users of
+                        Just user -> user.name
+                        Nothing -> Nothing
+                    
+                    userInfo = { email = email, name = userName, username = Nothing, picture = Nothing }
+                    newSessions = Dict.insert browserCookie userInfo model.sessions
+                in
+                ( { model | sessions = newSessions }
+                , Lamdera.sendToFrontend connectionId (AuthSuccess userInfo)
+                )
+            else
+                ( model
+                , Lamdera.sendToFrontend connectionId (AuthToFrontend (Auth.Common.AuthError (Auth.Common.ErrAuthString "Invalid email or password")))
+                )
+
+        Nothing ->
+            ( model
+            , Lamdera.sendToFrontend connectionId (AuthToFrontend (Auth.Common.AuthError (Auth.Common.ErrAuthString "Invalid email or password")))
+            )
+
+
+handleEmailPasswordSignup : BrowserCookie -> ConnectionId -> String -> String -> Maybe String -> Model -> ( Model, Cmd BackendMsg )
+handleEmailPasswordSignup browserCookie connectionId email password maybeName model =
+    case Dict.get email model.emailPasswordCredentials of
+        Just _ ->
+            ( model
+            , Lamdera.sendToFrontend connectionId (AuthToFrontend (Auth.Common.AuthError (Auth.Common.ErrAuthString "User already exists")))
+            )
+
+        Nothing ->
+            let
+                saltGenerator = Random.int 100000000 999999999 |> Random.map String.fromInt
+                cmd = Random.generate (\salt -> 
+                    EmailPasswordAuthResult (EmailPasswordSignupWithHash browserCookie connectionId email password maybeName salt (Auth.PasswordHash.hashPassword salt password).hash)
+                    ) saltGenerator
+            in
+            ( model, cmd )
+
+
+completeEmailPasswordSignup : BrowserCookie -> ConnectionId -> String -> String -> Maybe String -> String -> String -> Model -> ( Model, Cmd BackendMsg )
+completeEmailPasswordSignup browserCookie connectionId email password maybeName salt hash model =
+    let
+        newCredentials =
+            { email = email
+            , passwordHash = hash
+            , passwordSalt = salt  
+            , createdAt = 0
+            }
+        
+        initialPreferences = { darkMode = True }
+        user = { email = email, name = maybeName, preferences = initialPreferences }
+        userInfo = { email = email, name = maybeName, username = Nothing, picture = Nothing }
+        
+        updatedModel = 
+            { model 
+            | emailPasswordCredentials = Dict.insert email newCredentials model.emailPasswordCredentials
+            , users = Dict.insert email user model.users
+            , sessions = Dict.insert browserCookie userInfo model.sessions
+            }
+    in
+    ( updatedModel, Lamdera.sendToFrontend connectionId (AuthSuccess userInfo) )  

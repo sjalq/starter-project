@@ -12,6 +12,7 @@ import Types exposing (..)
 import Components.Header
 import Components.Tab
 import Components.AuthControls
+import Components.LoginModal
 
 
 viewTabs : FrontendModel -> Html FrontendMsg
@@ -46,7 +47,7 @@ viewTabs model =
         , Attr.style "border-color" colors.headerBorder
         ] 
         [ div [ Attr.class "container mx-auto" ]
-            [ div [ Attr.class "flex flex-col lg:flex-row lg:items-center lg:justify-between" ]
+            [ div [ Attr.class "flex flex-col lg:flex-row lg:items-start lg:justify-between" ]
                 [ div [ Attr.class "text-center lg:text-left mb-4 lg:mb-0" ]
                     [ Components.Header.view 
                         { title = "Starter Project Dashboard"
@@ -70,14 +71,16 @@ viewAccountControls model =
         colors = Theme.getColors isDark
     in
     div 
-        [ Attr.class "flex justify-center lg:justify-end" ]
+        [ Attr.class "flex flex-col items-center lg:items-end lg:justify-start" ]
         [ Components.AuthControls.view 
             { login = model.login
             , colors = colors
             , onToggleDarkMode = ToggleDarkMode
-            , onLogin = Auth0SigninRequested
+            , onLogin = ToggleLoginModal
             , onLogout = Logout
+            , onToggleDropdown = ToggleProfileDropdown
             , isDarkMode = isDark
+            , isDropdownOpen = model.profileDropdownOpen
             }
         ]
 

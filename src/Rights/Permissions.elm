@@ -26,6 +26,9 @@ actionRoleMap msg =
         AuthToBackend _ ->
             Anonymous
 
+        EmailPasswordAuthToBackend _ ->
+            Anonymous
+
         GetUserToBackend ->
             Anonymous
 

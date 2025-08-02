@@ -59,6 +59,19 @@ type alias FrontendModel =
     , pendingAuth : Bool
     -- , fusionState : Fusion.Value
     , preferences : Preferences
+    , emailPasswordForm : EmailPasswordFormModel
+    , profileDropdownOpen : Bool
+    , loginModalOpen : Bool
+    }
+
+
+type alias EmailPasswordFormModel =
+    { email : String
+    , password : String
+    , confirmPassword : String
+    , name : String
+    , isSignupMode : Bool
+    , error : Maybe String
     }
 
 
@@ -67,8 +80,41 @@ type alias BackendModel =
     , pendingAuths : Dict Lamdera.SessionId Auth.Common.PendingAuth
     , sessions : Dict Lamdera.SessionId Auth.Common.UserInfo
     , users : Dict Email User
+    , emailPasswordCredentials : Dict Email EmailPasswordCredentials
     , pollingJobs : Dict PollingToken (PollingStatus PollData)
     }
+
+
+type alias EmailPasswordCredentials =
+    { email : String
+    , passwordHash : String
+    , passwordSalt : String
+    , createdAt : Int
+    }
+
+
+type EmailPasswordAuthMsg
+    = EmailPasswordFormMsg EmailPasswordFormMsg
+    | EmailPasswordLoginRequested String String
+    | EmailPasswordSignupRequested String String (Maybe String)
+
+
+type EmailPasswordFormMsg  
+    = EmailPasswordFormEmailChanged String
+    | EmailPasswordFormPasswordChanged String
+    | EmailPasswordFormConfirmPasswordChanged String
+    | EmailPasswordFormNameChanged String
+    | EmailPasswordFormToggleMode
+    | EmailPasswordFormSubmit
+
+
+type EmailPasswordAuthToBackend
+    = EmailPasswordLoginToBackend String String
+    | EmailPasswordSignupToBackend String String (Maybe String)
+
+
+type EmailPasswordAuthResult
+    = EmailPasswordSignupWithHash BrowserCookie ConnectionId String String (Maybe String) String String
 
     
 type FrontendMsg
@@ -79,10 +125,14 @@ type FrontendMsg
     | DirectToBackend ToBackend
     --- Admin
     | Admin_RemoteUrlChanged String
-    | GoogleSigninRequested
     | Auth0SigninRequested
+    | EmailPasswordAuthMsg EmailPasswordAuthMsg
     | Logout
     | ToggleDarkMode
+    | ToggleProfileDropdown
+    | ToggleLoginModal
+    | CloseLoginModal
+    | EmailPasswordAuthError String
     | ConsoleLogClicked
     | ConsoleLogReceived String
     | CopyToClipboard String
@@ -100,6 +150,7 @@ type ToBackend
     | Admin_ClearLogs
     | Admin_FetchRemoteModel String
     | AuthToBackend Auth.Common.ToBackend
+    | EmailPasswordAuthToBackend EmailPasswordAuthToBackend
     | GetUserToBackend
     | LoggedOut
     | SetDarkModePreference Bool
@@ -113,6 +164,7 @@ type BackendMsg
     | Log String
     | GotRemoteModel (Result Http.Error BackendModel)
     | AuthBackendMsg Auth.Common.BackendMsg
+    | EmailPasswordAuthResult EmailPasswordAuthResult
     | GotJobTime PollingToken Int
       -- example to show polling mechanism
     | GotCryptoPriceResult PollingToken (Result Http.Error String)
@@ -138,6 +190,7 @@ type alias Email =
 
 type alias User =
     { email : Email
+    , name : Maybe String
     , preferences : Preferences
     }
 

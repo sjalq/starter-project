@@ -82,13 +82,21 @@ echo -e "${BLUE}💾 Creating initial commit...${NC}"
 git add . > /dev/null 2>&1
 git commit -m "Initial commit from starter project with submodules" > /dev/null 2>&1
 
+# Get absolute path for better UX
+ABSOLUTE_TARGET=$(realpath "$TARGET")
+
 echo ""
 echo -e "${GREEN}${BOLD}✅ Success! Project '$PROJECT_NAME' created!${NC}"
+echo -e "${GREEN}   📁 Location: $ABSOLUTE_TARGET${NC}"
 echo ""
-echo -e "${YELLOW}${BOLD}🚀 Next steps:${NC}"
-echo -e "${BLUE}1.${NC} cd $TARGET"
-echo -e "${BLUE}2.${NC} Update src/Env.elm with your auth credentials (optional)"
-echo -e "${BLUE}3.${NC} Run ./compile.sh to build the project"
-echo -e "${BLUE}4.${NC} Run 'lamdera live' to start development"
+echo -e "${YELLOW}${BOLD}🚀 Ready to start? Copy and paste this:${NC}"
+echo ""
+echo -e "${BOLD}cd '$ABSOLUTE_TARGET' && ./compile.sh && lamdera live${NC}"
+echo ""
+echo -e "${BLUE}Or step by step:${NC}"
+echo -e "${BLUE}1.${NC} cd '$ABSOLUTE_TARGET'"
+echo -e "${BLUE}2.${NC} ./compile.sh"
+echo -e "${BLUE}3.${NC} lamdera live"
+echo -e "${BLUE}4.${NC} Test login with: ${BOLD}sys@admin.com${NC} / ${BOLD}admin${NC}"
 echo ""
 echo -e "${GREEN}Happy coding! 🎉${NC}" 

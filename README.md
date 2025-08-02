@@ -51,11 +51,10 @@ cd starter-project
 # 1. Project name (e.g., "my-awesome-project")  
 # 2. Location (defaults to ../my-awesome-project)
 # 3. Automatically sets up submodules and git repo
+# 4. Gives you a copy-paste command to start immediately!
 
-# Then just:
-cd ../your-project-name  # (or wherever you chose)
-./compile.sh
-lamdera live
+# Just copy-paste the command it gives you (something like):
+# cd '../my-awesome-project' && ./compile.sh && lamdera live
 
 # Visit http://localhost:8000 and prepare to be amazed
 ```

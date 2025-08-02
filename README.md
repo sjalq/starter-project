@@ -37,15 +37,33 @@ A **production-ready** Lamdera starter that includes literally everything you ne
 
 ## 🚀 Quick Start
 
+**⚠️ Important: Use the clone script to properly set up submodules!**
+
 ```bash
-# Clone the beast
-git clone <your-repo-url>
+# Clone this repository
+git clone https://github.com/sjalq/starter-project.git
 cd starter-project
 
-# Fire it up
+# Create your new project (this sets up submodules automatically)
+./clone.sh my-awesome-project
+cd my-awesome-project
+
+# Configure your auth credentials (see Getting Started section)
+# Edit src/Env.elm with your Auth0/OAuth credentials
+
+# Build and run
+./compile.sh
 lamdera live
 
 # Visit http://localhost:8000 and prepare to be amazed
+```
+
+**Alternative: Manual Setup (if you know what you're doing)**
+```bash
+git clone --recurse-submodules https://github.com/sjalq/starter-project.git
+cd starter-project
+git submodule update --init --recursive
+lamdera live
 ```
 
 ## 🗺️ Navigation Guide
@@ -170,11 +188,43 @@ Because every time someone builds a serious Lamdera app, they:
 
 ## 🚦 Getting Started
 
-1. **Run it**: `lamdera live`
-2. **Explore Examples**: Visit `/examples` for live demos
-3. **Check Admin**: Visit `/admin` (create admin user first)
-4. **Try WebSocket Client**: `cd external_integration_examples && npm start`
-5. **Customize**: Start building your app with this foundation
+### Prerequisites
+- **Lamdera CLI** installed (`npm install -g lamdera`)
+- **Git** for version control
+
+### Step-by-Step Setup
+
+1. **Clone and Create Your Project**
+   ```bash
+   git clone https://github.com/sjalq/starter-project.git
+   cd starter-project
+   ./clone.sh my-project-name
+   cd my-project-name
+   ```
+
+2. **Configure Authentication** (Optional but recommended)
+   - Edit `src/Env.elm` with your Auth0 credentials
+   - Or use the default demo credentials for testing
+
+3. **Build and Run**
+   ```bash
+   ./compile.sh
+   lamdera live
+   ```
+
+4. **Explore the Features**
+   - **Home**: Basic navigation and theming
+   - **Examples**: Live demos of ports, clipboard, console logging  
+   - **Admin**: Full admin panel (requires SysAdmin role)
+   - **OAuth Login**: Test authentication flow
+
+5. **Try External Integration**
+   ```bash
+   cd external_integration_examples
+   npm install && npm start
+   ```
+
+6. **Start Building**: You now have a complete foundation - customize away!
 
 ## 🎓 Learn More
 

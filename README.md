@@ -37,25 +37,32 @@ A **production-ready** Lamdera starter that includes literally everything you ne
 
 ## 🚀 Quick Start
 
-**⚠️ Important: Use the clone script to properly set up submodules!**
+**🎯 Easy Setup - Just like `wrangler init`!**
 
 ```bash
 # Clone this repository
 git clone https://github.com/sjalq/starter-project.git
 cd starter-project
 
-# Create your new project (this sets up submodules automatically)
-./clone.sh my-awesome-project
-cd my-awesome-project
+# Run the interactive setup (it will ask you where to create your project)
+./clone.sh
 
-# Configure your auth credentials (see Getting Started section)
-# Edit src/Env.elm with your Auth0/OAuth credentials
+# The script will prompt you for:
+# 1. Project name (e.g., "my-awesome-project")  
+# 2. Location (defaults to ../my-awesome-project)
+# 3. Automatically sets up submodules and git repo
 
-# Build and run
+# Then just:
+cd ../your-project-name  # (or wherever you chose)
 ./compile.sh
 lamdera live
 
 # Visit http://localhost:8000 and prepare to be amazed
+```
+
+**🚀 One-liner for the impatient:**
+```bash
+git clone https://github.com/sjalq/starter-project.git && cd starter-project && ./clone.sh my-project
 ```
 
 **Alternative: Manual Setup (if you know what you're doing)**
@@ -198,8 +205,9 @@ Because every time someone builds a serious Lamdera app, they:
    ```bash
    git clone https://github.com/sjalq/starter-project.git
    cd starter-project
-   ./clone.sh my-project-name
-   cd my-project-name
+   ./clone.sh
+   # Interactive setup will guide you through naming and location
+   cd ../your-chosen-location
    ```
 
 2. **Configure Authentication** (Optional but recommended)

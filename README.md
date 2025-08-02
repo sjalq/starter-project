@@ -54,7 +54,6 @@ cd starter-project
 # - Changes your working directory to the new project!
 
 # 3. You're now in your new project directory, just run:
-./compile.sh
 lamdera live
 
 # Visit http://localhost:8000 and prepare to be amazed
@@ -183,14 +182,17 @@ ws.send('Hello Lamdera!');
 
 ## 💡 Why This Exists
 
-Because every time someone builds a serious Lamdera app, they:
-1. ✅ Build authentication (done for you)
-2. ✅ Create component libraries (done for you)  
-3. ✅ Set up external API integration (done for you)
-4. ✅ Handle WebSocket communication (done for you)
-5. ✅ Build admin panels (done for you)
-6. ✅ Configure development environments (done for you)
-7. ✅ Write utility functions (done for you)
+*"Example isn't a way to learn, it's the only way to learn"*
+-you know who
+
+Because every time someone builds a serious Lamdera app, they need working examples of how to:
+1. ✅ Build authentication (working example included)
+2. ✅ Create component libraries (working example included)  
+3. ✅ Set up external API integration (working example included)
+4. ✅ Handle WebSocket communication (working example included)
+5. ✅ Build admin panels (working example included)
+6. ✅ Configure development environments (working example included)
+7. ✅ Write utility functions (working example included)
 8. ❌ Question their life choices (this one's still on you)
 
 ## 🚦 Getting Started

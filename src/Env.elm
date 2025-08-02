@@ -45,7 +45,7 @@ auth0AppTenant =
 
 sysAdminEmail : String
 sysAdminEmail =
-    "schalk.dormehl@gmail.com"
+    "sys@admin.com"
 
 
 openAiApiKey : String

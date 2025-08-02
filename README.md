@@ -212,7 +212,10 @@ Because every time someone builds a serious Lamdera app, they:
 
 2. **Configure Authentication** (Optional but recommended)
    - Edit `src/Env.elm` with your Auth0 credentials
-   - Or use the default demo credentials for testing
+   - Or use the **default test admin account**:
+     - **Email**: `sys@admin.com`
+     - **Password**: `admin`
+     - **Role**: System Administrator (full access)
 
 3. **Build and Run**
    ```bash
@@ -233,6 +236,19 @@ Because every time someone builds a serious Lamdera app, they:
    ```
 
 6. **Start Building**: You now have a complete foundation - customize away!
+
+## 🔐 Test Credentials
+
+For immediate testing and development, a default admin user is pre-configured:
+
+| Field | Value |
+|-------|-------|
+| **Email** | `sys@admin.com` |
+| **Password** | `admin` |
+| **Role** | System Administrator |
+| **Access** | Full admin panel, all features |
+
+**🚨 Security Note**: Change or remove this test user before deploying to production!
 
 ## 🎓 Learn More
 

@@ -14,6 +14,7 @@ import Rights.Permissions exposing (sessionCanPerformAction)
 import Rights.Role exposing (roleToString)
 import Rights.User exposing (createUser, getUserRole, insertUser, isSysAdmin)
 import Supplemental exposing (..)
+import TestData
 import Task
 import Types exposing (..)
 
@@ -40,15 +41,20 @@ subscriptions _ =
 
 init : ( Model, Cmd BackendMsg )
 init =
-    ( { logs = []
-      , pendingAuths = Dict.empty
-      , sessions = Dict.empty
-      , users = Dict.empty
-      , emailPasswordCredentials = Dict.empty
-      , pollingJobs = Dict.empty
-      }
-    , Cmd.none
-    )
+    let
+        initialModel = 
+            { logs = []
+            , pendingAuths = Dict.empty
+            , sessions = Dict.empty
+            , users = Dict.empty
+            , emailPasswordCredentials = Dict.empty
+            , pollingJobs = Dict.empty
+            }
+        
+        -- Initialize with test data for development
+        modelWithTestData = TestData.initializeTestData initialModel
+    in
+    ( modelWithTestData, Cmd.none )
 
 
 update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )

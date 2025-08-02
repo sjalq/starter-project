@@ -31,19 +31,19 @@ alwaysApply: true
 
 ## src/Backend.elm
 ### Backend
-25 app
-35 subscriptions _
-42 init
-55 update msg model
-126 updateFromFrontend browserCookie connectionId msg model
-237 updateFromFrontendCheckingRights browserCookie connectionId msg model
-268 getUserFromCookie browserCookie model
-273 log
-278 userToFrontend user
-287 handleEmailPasswordAuth browserCookie connectionId authMsg model
-297 handleEmailPasswordLogin browserCookie connectionId email password model
-328 handleEmailPasswordSignup browserCookie connectionId email password maybeName model
-346 completeEmailPasswordSignup browserCookie connectionId email password maybeName salt hash model
+26 app
+36 subscriptions _
+43 init
+61 update msg model
+132 updateFromFrontend browserCookie connectionId msg model
+243 updateFromFrontendCheckingRights browserCookie connectionId msg model
+274 getUserFromCookie browserCookie model
+279 log
+284 userToFrontend user
+293 handleEmailPasswordAuth browserCookie connectionId authMsg model
+303 handleEmailPasswordLogin browserCookie connectionId email password model
+334 handleEmailPasswordSignup browserCookie connectionId email password maybeName model
+352 completeEmailPasswordSignup browserCookie connectionId email password maybeName salt hash model
 
 ## src/Components/AuthControls.elm
 ### Components.AuthControls
@@ -288,6 +288,14 @@ alwaysApply: true
 41 stringifyRPCResult result
 85 encodeHttpBody body
 107 encodeRPCCallAndResult args result
+
+## src/TestData.elm
+### TestData
+12 defaultUsers
+26 defaultEmailPasswordCredentials
+45 defaultSessions
+52 initializeTestData model
+63 testAdminUserInfo
 
 ## src/Theme.elm
 ### Theme

@@ -444,4 +444,9 @@ This section highlights common mistakes and specific patterns to follow or avoid
 # Debugging
   -  When things goes sideways. Please pepper your code liberally with `_ = Debug.log "{msg}" thingy` and ` |> Debug.log "{msg}"`
 
-
+# Refactoring
+  -  DO : move functions into their own modules when appropriate
+  -  DO : write UI components by the second time they are used on a unique page.
+  -  DO : use the EXISTING stuff in Supplemental.elm
+  -  DO : write modules to help with common tasks like formatting, number transformations and date transformations IFF they are not already in Supplemental.elm
+  -  DO NOT : break up Types.elm unless I EXPLICITLY ask you to.

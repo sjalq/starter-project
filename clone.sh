@@ -1,103 +1,22 @@
 #!/bin/bash
 
-# Colors for better UX
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-NC='\033[0m' # No Color
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EP_ORIG_CWD="$(pwd)"
+export EP_ORIG_CWD
 
-echo -e "${BLUE}${BOLD}🚀 Lamdera Starter Project Setup${NC}"
-echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-
-# Get project name
-if [ -z "$1" ]; then
-    echo -e "${YELLOW}What would you like to name your project?${NC}"
-    read -p "Project name: " PROJECT_NAME
-    
-    if [ -z "$PROJECT_NAME" ]; then
-        echo -e "${RED}❌ Project name cannot be empty${NC}"
-        exit 1
-    fi
-else
-    PROJECT_NAME="$1"
+if ! command -v npx >/dev/null 2>&1; then
+  echo "npx is required to run elm-pages scripts. Please install Node.js (which includes npx)." >&2
+  exit 1
 fi
 
-# Clean project name (remove spaces, special chars)
-CLEAN_NAME=$(echo "$PROJECT_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | tr '[:upper:]' '[:lower:]')
-
-# Suggest default path relative to home directory
-DEFAULT_PATH="$CLEAN_NAME"
-
-echo ""
-echo -e "${YELLOW}Where would you like to create your project? ${BLUE}(relative to your home directory)${NC}"
-echo -e "${BLUE}Default: ~/${DEFAULT_PATH}${NC}"
-read -p "Project path (press Enter for default): " CUSTOM_PATH
-
-# Use default if no custom path provided
-if [ -z "$CUSTOM_PATH" ]; then
-    RELATIVE_PATH="$DEFAULT_PATH"
-else
-    RELATIVE_PATH="$CUSTOM_PATH"
+# Run from the script project directory; point to src/Clone.elm explicitly
+cd "$SCRIPT_DIR/script" || exit 1
+if ! npx --yes elm-pages@latest run src/Clone.elm -- "$@"; then
+  echo "[warn] elm-pages script failed; falling back to Node implementation" >&2
+  if command -v node >/dev/null 2>&1; then
+    node "$SCRIPT_DIR/scripts/clone.js" "$@"
+  else
+    echo "Node.js is required for fallback. Please install Node.js." >&2
+    exit 1
+  fi
 fi
-
-# Convert to absolute path from home directory
-TARGET="$HOME/$RELATIVE_PATH"
-
-# Check if directory already exists
-if [ -d "$TARGET" ]; then
-    echo -e "${RED}❌ Directory '$TARGET' already exists!${NC}"
-    echo ""
-    read -p "Continue anyway? This will overwrite existing files. (y/N): " OVERWRITE
-    if [[ ! $OVERWRITE =~ ^[Yy]$ ]]; then
-        echo -e "${YELLOW}Cancelled.${NC}"
-        exit 1
-    fi
-fi
-
-echo ""
-echo -e "${GREEN}${BOLD}📋 Creating '$PROJECT_NAME' at: $TARGET${NC}"
-echo ""
-
-# Create target directory
-mkdir -p "$TARGET"
-
-# Copy all files excluding git history and this script
-echo -e "${BLUE}📋 Copying project files...${NC}"
-rsync -a --exclude=".git" --exclude="clone.sh" ./ "$TARGET/"
-
-# Initialize a new git repository
-cd "$TARGET"
-echo -e "${BLUE}🔧 Initializing git repository...${NC}"
-git init > /dev/null 2>&1
-
-# Initialize and update submodules
-echo -e "${BLUE}📦 Setting up submodules...${NC}"
-git submodule add https://github.com/sjalq/auth.git auth > /dev/null 2>&1
-git submodule add https://github.com/sjalq/lamdera-websocket.git lamdera-websocket-package > /dev/null 2>&1
-
-# Update submodules to latest
-git submodule update --init --recursive > /dev/null 2>&1
-
-echo -e "${BLUE}💾 Creating initial commit...${NC}"
-git add . > /dev/null 2>&1
-git commit -m "Initial commit from starter project with submodules" > /dev/null 2>&1
-
-echo ""
-echo -e "${GREEN}${BOLD}✅ Success! Project '$PROJECT_NAME' created!${NC}"
-echo -e "${GREEN}   📁 Location: ~/$RELATIVE_PATH${NC}"
-echo ""
-echo -e "${YELLOW}${BOLD}🚀 Next steps:${NC}"
-echo -e "${BLUE}1.${NC} ./compile.sh"
-echo -e "${BLUE}2.${NC} lamdera live"
-echo -e "${BLUE}3.${NC} Test login with: ${BOLD}sys@admin.com${NC} / ${BOLD}admin${NC}"
-echo ""
-echo -e "${GREEN}Happy coding! 🎉${NC}"
-echo ""
-echo -e "${BLUE}Changing to your new project directory...${NC}"
-
-# Change to the target directory and start a new shell there
-cd "$TARGET"
-exec $SHELL 

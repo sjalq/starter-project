@@ -1,4 +1,4 @@
-module Types exposing (..)
+module Types exposing (AdminPageModel, AdminRoute(..), BackendModel, BackendMsg(..), BrowserCookie, ConnectionId, Email, EmailPasswordAuthMsg(..), EmailPasswordAuthResult(..), EmailPasswordAuthToBackend(..), EmailPasswordCredentials, EmailPasswordFormModel, EmailPasswordFormMsg(..), FrontendModel, FrontendMsg(..), LoginState(..), PollData, PollingStatus(..), PollingToken, Preferences, Role(..), Route(..), ToBackend(..), ToFrontend(..), User, UserFrontend)
 
 import Auth.Common
 import Browser exposing (UrlRequest)
@@ -7,9 +7,6 @@ import Dict exposing (Dict)
 import Http
 import Lamdera
 import Url exposing (Url)
--- import Fusion.Patch
--- import Fusion
-
 
 
 {- Represents a currently connection to a Lamdera client -}
@@ -38,7 +35,10 @@ type AdminRoute
     = AdminDefault
     | AdminLogs
     | AdminFetchModel
-    -- | AdminFusion
+
+
+
+-- | AdminFusion
 
 
 type alias AdminPageModel =
@@ -57,6 +57,7 @@ type alias FrontendModel =
     , login : LoginState
     , currentUser : Maybe UserFrontend
     , pendingAuth : Bool
+
     -- , fusionState : Fusion.Value
     , preferences : Preferences
     , emailPasswordForm : EmailPasswordFormModel
@@ -99,7 +100,7 @@ type EmailPasswordAuthMsg
     | EmailPasswordSignupRequested String String (Maybe String)
 
 
-type EmailPasswordFormMsg  
+type EmailPasswordFormMsg
     = EmailPasswordFormEmailChanged String
     | EmailPasswordFormPasswordChanged String
     | EmailPasswordFormConfirmPasswordChanged String
@@ -116,14 +117,14 @@ type EmailPasswordAuthToBackend
 type EmailPasswordAuthResult
     = EmailPasswordSignupWithHash BrowserCookie ConnectionId String String (Maybe String) String String
 
-    
+
 type FrontendMsg
     = UrlClicked UrlRequest
     | UrlChanged Url
     | UrlRequested UrlRequest
     | NoOpFrontendMsg
     | DirectToBackend ToBackend
-    --- Admin
+      --- Admin
     | Admin_RemoteUrlChanged String
     | Auth0SigninRequested
     | EmailPasswordAuthMsg EmailPasswordAuthMsg
@@ -137,15 +138,18 @@ type FrontendMsg
     | ConsoleLogReceived String
     | CopyToClipboard String
     | ClipboardResult (Result String String)
-    --- Fusion
-    -- | Admin_FusionPatch Fusion.Patch.Patch
-    -- | Admin_FusionQuery Fusion.Query
 
- 
+
+
+--- Fusion
+-- | Admin_FusionPatch Fusion.Patch.Patch
+-- | Admin_FusionQuery Fusion.Query
+
+
 type ToBackend
     = NoOpToBackend
     | A00_WebSocketReceive String
-    -- Admin
+      -- Admin
     | Admin_FetchLogs
     | Admin_ClearLogs
     | Admin_FetchRemoteModel String
@@ -154,9 +158,12 @@ type ToBackend
     | GetUserToBackend
     | LoggedOut
     | SetDarkModePreference Bool
-    --- Fusion
-    -- | Fusion_PersistPatch Fusion.Patch.Patch
-    -- | Fusion_Query Fusion.Query
+
+
+
+--- Fusion
+-- | Fusion_PersistPatch Fusion.Patch.Patch
+-- | Fusion_Query Fusion.Query
 
 
 type BackendMsg
@@ -181,7 +188,10 @@ type ToFrontend
     | UserInfoMsg (Maybe Auth.Common.UserInfo)
     | UserDataToFrontend UserFrontend
     | PermissionDenied ToBackend
-    -- | Admin_FusionResponse Fusion.Value
+
+
+
+-- | Admin_FusionResponse Fusion.Value
 
 
 type alias Email =
@@ -238,7 +248,10 @@ type alias PollData =
     String
 
 
+
 -- USER RELATED TYPES
+
+
 type alias Preferences =
     { darkMode : Bool
     }

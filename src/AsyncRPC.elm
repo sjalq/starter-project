@@ -1,4 +1,4 @@
-module AsyncRPC exposing (Config, handleTaskChain, handlePollingResult, handleTaskResult, handleTimeResult)
+module AsyncRPC exposing (Config, handlePollingResult, handleTaskChain)
 
 import Dict
 import Http
@@ -10,6 +10,7 @@ import Supplemental exposing (httpErrorToString)
 import Task
 import Time
 import Types exposing (..)
+
 
 
 {-
@@ -104,4 +105,4 @@ handlePollingResult _ model _ json =
                     ( Err (Http.BadBody "Invalid polling token"), model, Cmd.none )
 
         Err _ ->
-            ( Err (Http.BadBody "Missing token in request"), model, Cmd.none ) 
+            ( Err (Http.BadBody "Missing token in request"), model, Cmd.none )

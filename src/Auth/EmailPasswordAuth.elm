@@ -1,32 +1,15 @@
-module Auth.EmailPasswordAuth exposing (..)
+module Auth.EmailPasswordAuth exposing (FormMsg(..), completeSignup, handleLogin, handleSignup)
 
 import Auth.Common
-import Auth.PasswordHash exposing (HashedPassword, generateHashedPassword, verifyPassword)
-import Dict exposing (Dict)
+import Auth.PasswordHash exposing (verifyPassword)
+import Dict
 import Lamdera
 import Random
 import Types exposing (..)
 
 
+
 -- TYPES
-
-
-type alias EmailPasswordCredentials =
-    { email : String
-    , passwordHash : String
-    , passwordSalt : String
-    , createdAt : Int
-    }
-
-
-type alias FormModel =
-    { email : String
-    , password : String
-    , confirmPassword : String
-    , name : String
-    , isSignupMode : Bool
-    , error : Maybe String
-    }
 
 
 type FormMsg
@@ -38,79 +21,42 @@ type FormMsg
     | Submit
 
 
-type BackendAuthMsg
-    = LoginRequested String String
-    | SignupRequested String String (Maybe String)
-    | SignupWithHash String String (Maybe String) String String
-
 
 -- INITIAL VALUES
-
-
-initFormModel : FormModel
-initFormModel =
-    { email = ""
-    , password = ""
-    , confirmPassword = ""
-    , name = ""
-    , isSignupMode = False
-    , error = Nothing
-    }
-
-
 -- FORM UPDATE
-
-
-updateForm : FormMsg -> FormModel -> FormModel
-updateForm msg model =
-    case msg of
-        EmailChanged email ->
-            { model | email = email, error = Nothing }
-
-        PasswordChanged password ->
-            { model | password = password, error = Nothing }
-
-        ConfirmPasswordChanged confirmPassword ->
-            { model | confirmPassword = confirmPassword, error = Nothing }
-
-        NameChanged name ->
-            { model | name = name, error = Nothing }
-
-        ToggleMode ->
-            { model | isSignupMode = not model.isSignupMode, error = Nothing }
-
-        Submit ->
-            validateAndSubmit model
-
-
-validateAndSubmit : FormModel -> FormModel
-validateAndSubmit model =
-    if String.isEmpty (String.trim model.email) || String.isEmpty (String.trim model.password) then
-        { model | error = Just "Please fill in all required fields" }
-    else if model.isSignupMode && model.password /= model.confirmPassword then
-        { model | error = Just "Passwords do not match" }
-    else
-        model -- Form is valid, submission will be handled by parent
-
-
+-- Form is valid, submission will be handled by parent
 -- BACKEND OPERATIONS
 
 
-handleLogin : BrowserCookie -> ConnectionId -> String -> String -> Dict String EmailPasswordCredentials -> BackendModel -> ( BackendModel, Cmd BackendMsg )
-handleLogin browserCookie connectionId email password credentials model =
-    case Dict.get email credentials of
+handleLogin : BrowserCookie -> ConnectionId -> String -> String -> BackendModel -> ( BackendModel, Cmd BackendMsg )
+handleLogin browserCookie connectionId email password model =
+    case Dict.get email model.emailPasswordCredentials of
         Just creds ->
             let
-                hashedPassword = { hash = creds.passwordHash, salt = creds.passwordSalt }
+                hashedPassword =
+                    { hash = creds.passwordHash, salt = creds.passwordSalt }
             in
             if verifyPassword password hashedPassword then
                 let
-                    userInfo = { email = email, name = Nothing, username = Nothing, picture = Nothing }
-                    newSessions = Dict.insert browserCookie userInfo model.sessions
+                    -- Get user name from stored user data
+                    userName =
+                        case Dict.get email model.users of
+                            Just user ->
+                                user.name
+
+                            Nothing ->
+                                Nothing
+
+                    userInfo =
+                        { email = email, name = userName, username = Nothing, picture = Nothing }
+
+                    newSessions =
+                        Dict.insert browserCookie userInfo model.sessions
                 in
                 ( { model | sessions = newSessions }
                 , Lamdera.sendToFrontend connectionId (AuthSuccess userInfo)
                 )
+
             else
                 ( model
                 , Lamdera.sendToFrontend connectionId (AuthToFrontend (Auth.Common.AuthError (Auth.Common.ErrAuthString "Invalid email or password")))
@@ -122,9 +68,9 @@ handleLogin browserCookie connectionId email password credentials model =
             )
 
 
-handleSignup : BrowserCookie -> ConnectionId -> String -> String -> Maybe String -> Dict String EmailPasswordCredentials -> BackendModel -> ( BackendModel, Cmd BackendMsg )
-handleSignup browserCookie connectionId email password maybeName credentials model =
-    case Dict.get email credentials of
+handleSignup : BrowserCookie -> ConnectionId -> String -> String -> Maybe String -> BackendModel -> ( BackendModel, Cmd BackendMsg )
+handleSignup browserCookie connectionId email password maybeName model =
+    case Dict.get email model.emailPasswordCredentials of
         Just _ ->
             ( model
             , Lamdera.sendToFrontend connectionId (AuthToFrontend (Auth.Common.AuthError (Auth.Common.ErrAuthString "User already exists")))
@@ -132,28 +78,43 @@ handleSignup browserCookie connectionId email password maybeName credentials mod
 
         Nothing ->
             let
-                saltGenerator = Random.int 100000000 999999999 |> Random.map String.fromInt
-                cmd = Random.generate (\salt -> 
-                    EmailPasswordAuthResult (SignupWithHash browserCookie connectionId email password maybeName salt (Auth.PasswordHash.hashPassword salt password).hash)
-                ) saltGenerator
+                saltGenerator =
+                    Random.int 100000000 999999999 |> Random.map String.fromInt
+
+                cmd =
+                    Random.generate
+                        (\salt ->
+                            EmailPasswordAuthResult (EmailPasswordSignupWithHash browserCookie connectionId email password maybeName salt (Auth.PasswordHash.hashPassword salt password).hash)
+                        )
+                        saltGenerator
             in
             ( model, cmd )
 
 
-completeSignup : BrowserCookie -> ConnectionId -> String -> String -> Maybe String -> String -> String -> Dict String EmailPasswordCredentials -> BackendModel -> ( BackendModel, Cmd BackendMsg )
-completeSignup browserCookie connectionId email password maybeName salt hash credentials model =
+completeSignup : BrowserCookie -> ConnectionId -> String -> String -> Maybe String -> String -> String -> BackendModel -> ( BackendModel, Cmd BackendMsg )
+completeSignup browserCookie connectionId email _ maybeName salt hash model =
     let
         newCredentials =
             { email = email
             , passwordHash = hash
-            , passwordSalt = salt  
-            , createdAt = 0 -- You might want to add timestamp here
+            , passwordSalt = salt
+            , createdAt = 0
             }
-        
-        updatedCredentials = Dict.insert email newCredentials credentials
-        userInfo = { email = email, name = maybeName, username = Nothing, picture = Nothing }
-        newSessions = Dict.insert browserCookie userInfo model.sessions
+
+        initialPreferences =
+            { darkMode = True }
+
+        user =
+            { email = email, name = maybeName, preferences = initialPreferences }
+
+        userInfo =
+            { email = email, name = maybeName, username = Nothing, picture = Nothing }
+
+        updatedModel =
+            { model
+                | emailPasswordCredentials = Dict.insert email newCredentials model.emailPasswordCredentials
+                , users = Dict.insert email user model.users
+                , sessions = Dict.insert browserCookie userInfo model.sessions
+            }
     in
-    ( { model | sessions = newSessions }
-    , Lamdera.sendToFrontend connectionId (AuthSuccess userInfo)
-    )
+    ( updatedModel, Lamdera.sendToFrontend connectionId (AuthSuccess userInfo) )

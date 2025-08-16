@@ -1,11 +1,7 @@
-module Env exposing (..)
+module Env exposing (Mode(..), auth0AppClientId, auth0AppClientSecret, auth0AppTenant, logSize, mode, modelKey, openAiApiKey, slackApiToken, slackChannel, stillTesting, sysAdminEmail)
 
 -- The Env.elm file is for per-environment configuration.
 -- See https://dashboard.lamdera.app/docs/environment for more info.
-
-
-dummyConfigItem =
-    ""
 
 
 modelKey =
@@ -51,11 +47,6 @@ sysAdminEmail =
 openAiApiKey : String
 openAiApiKey =
     ""
-
-
-openRouterApiKey : String
-openRouterApiKey =
-    "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"
 
 
 type Mode

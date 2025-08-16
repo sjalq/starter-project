@@ -1,7 +1,6 @@
-module Auth.PasswordHash exposing (..)
+module Auth.PasswordHash exposing (HashedPassword, PlainPassword, hashPassword, verifyPassword)
 
 import Crypto.Hash
-import Random
 
 
 type alias HashedPassword =
@@ -10,21 +9,18 @@ type alias HashedPassword =
     }
 
 
-type alias PlainPassword = 
+type alias PlainPassword =
     String
-
-
-generateSalt : Random.Generator String
-generateSalt =
-    Random.int 100000000 999999999
-        |> Random.map String.fromInt
 
 
 hashPassword : String -> PlainPassword -> HashedPassword
 hashPassword salt password =
     let
-        combined = salt ++ password
-        hash = Crypto.Hash.sha256 combined
+        combined =
+            salt ++ password
+
+        hash =
+            Crypto.Hash.sha256 combined
     in
     { hash = hash, salt = salt }
 
@@ -32,13 +28,10 @@ hashPassword salt password =
 verifyPassword : PlainPassword -> HashedPassword -> Bool
 verifyPassword plainPassword hashedPassword =
     let
-        combined = hashedPassword.salt ++ plainPassword
-        computedHash = Crypto.Hash.sha256 combined
+        combined =
+            hashedPassword.salt ++ plainPassword
+
+        computedHash =
+            Crypto.Hash.sha256 combined
     in
     computedHash == hashedPassword.hash
-
-
-generateHashedPassword : PlainPassword -> Random.Generator HashedPassword
-generateHashedPassword password =
-    generateSalt
-        |> Random.map (\salt -> hashPassword salt password)

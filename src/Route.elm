@@ -1,4 +1,4 @@
-module Route exposing (..)
+module Route exposing (fromUrl, toString)
 
 import Types exposing (AdminRoute(..), Route(..))
 import Url exposing (Url)
@@ -12,6 +12,7 @@ parser =
         , Parser.map (Admin AdminDefault) (s "admin")
         , Parser.map (Admin AdminLogs) (s "admin" </> s "logs")
         , Parser.map (Admin AdminFetchModel) (s "admin" </> s "fetch-model")
+
         --, Parser.map (Admin AdminFusion) (s "admin" </> s "fusion")
         , Parser.map Examples (s "examples")
         ]
@@ -37,9 +38,6 @@ toString route =
 
         Admin AdminFetchModel ->
             "/admin/fetch-model"
-
-        -- Admin AdminFusion ->
-        --     "/admin/fusion"
 
         Examples ->
             "/examples"

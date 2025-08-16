@@ -1,21 +1,20 @@
-module Backend exposing (..)
+module Backend exposing (Model, app)
 
-import Auth.Common
-import Auth.Flow
-import Auth.PasswordHash exposing (HashedPassword, generateHashedPassword, verifyPassword)
-import Dict
 -- import Fusion.Generated.Types
 -- import Fusion.Patch
+
+import Auth.EmailPasswordAuth as EmailPasswordAuth
+import Auth.Flow
+import Dict
 import Lamdera
-import Random
 import RPC
 import Rights.Auth0 exposing (backendConfig)
 import Rights.Permissions exposing (sessionCanPerformAction)
 import Rights.Role exposing (roleToString)
 import Rights.User exposing (createUser, getUserRole, insertUser, isSysAdmin)
 import Supplemental exposing (..)
-import TestData
 import Task
+import TestData
 import Types exposing (..)
 
 
@@ -34,15 +33,13 @@ app =
 
 subscriptions : Model -> Sub msg
 subscriptions _ =
-    Sub.batch
-        [-- things that run on timers and things that listen to the outside world
-        ]
+    Sub.none
 
 
 init : ( Model, Cmd BackendMsg )
 init =
     let
-        initialModel = 
+        initialModel =
             { logs = []
             , pendingAuths = Dict.empty
             , sessions = Dict.empty
@@ -50,9 +47,10 @@ init =
             , emailPasswordCredentials = Dict.empty
             , pollingJobs = Dict.empty
             }
-        
+
         -- Initialize with test data for development
-        modelWithTestData = TestData.initializeTestData initialModel
+        modelWithTestData =
+            TestData.initializeTestData initialModel
     in
     ( modelWithTestData, Cmd.none )
 
@@ -83,7 +81,7 @@ update msg model =
         EmailPasswordAuthResult result ->
             case result of
                 EmailPasswordSignupWithHash browserCookie connectionId email password maybeName salt hash ->
-                    completeEmailPasswordSignup browserCookie connectionId email password maybeName salt hash model
+                    EmailPasswordAuth.completeSignup browserCookie connectionId email password maybeName salt hash model
 
         GotCryptoPriceResult token result ->
             case result of
@@ -107,12 +105,12 @@ update msg model =
             let
                 updatedPollingJobs =
                     Dict.insert token (Ready result) model.pollingJobs
-                
+
                 logMsg =
                     case result of
-                        Ok data ->
+                        Ok _ ->
                             "Task completed successfully: " ++ token
-                        
+
                         Err err ->
                             "Task failed: " ++ token ++ " - " ++ err
             in
@@ -167,8 +165,9 @@ updateFromFrontend browserCookie connectionId msg model =
                         Nothing ->
                             let
                                 initialPreferences =
-                                    { darkMode = True } -- Default new users to dark mode
-                                
+                                    { darkMode = True }
+
+                                -- Default new users to dark mode
                                 user =
                                     createUser userInfo initialPreferences
 
@@ -188,13 +187,14 @@ updateFromFrontend browserCookie connectionId msg model =
                 Just user ->
                     let
                         -- Explicitly alias the nested record
-                        currentPreferences = 
+                        currentPreferences =
                             user.preferences
-                        
+
                         updatedUserPreferences : Preferences
                         updatedUserPreferences =
-                            { currentPreferences | darkMode = preference } -- Update the alias
-                        
+                            { currentPreferences | darkMode = preference }
+
+                        -- Update the alias
                         updatedUser : User
                         updatedUser =
                             { user | preferences = updatedUserPreferences }
@@ -212,31 +212,6 @@ updateFromFrontend browserCookie connectionId msg model =
             -- Echo websocket message back to frontend
             ( model, Lamdera.sendToFrontend connectionId (A00_WebSocketSend ("Echo: " ++ message)) )
 
-        -- Fusion_PersistPatch patch ->
-        --     let
-        --         value =
-        --             Fusion.Patch.patch { force = False } patch (Fusion.Generated.Types.toValue_BackendModel model)
-        --                 |> Result.withDefault (Fusion.Generated.Types.toValue_BackendModel model)
-        --     in
-        --     case
-        --         Fusion.Generated.Types.build_BackendModel value
-        --     of
-        --         Ok newModel ->
-        --             ( newModel
-        --               -- , Lamdera.sendToFrontend connectionId (Admin_FusionResponse value)
-        --             , Cmd.none
-        --             )
-
-                -- Err err ->
-                --     ( model
-                --     , Cmd.none
-                --     )
-                --         |> log ("Failed to apply fusion patch: " ++ Debug.toString err)
-
-        -- Fusion_Query query ->
-        --     ( model
-        --     , Lamdera.sendToFrontend connectionId (Admin_FusionResponse (Fusion.Generated.Types.toValue_BackendModel model))
-        --     )
 
 
 updateFromFrontendCheckingRights : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
@@ -257,8 +232,9 @@ updateFromFrontendCheckingRights browserCookie connectionId msg model =
 
             GetUserToBackend ->
                 True
-            
-            SetDarkModePreference _ -> -- Allow everyone to set their own preference
+
+            SetDarkModePreference _ ->
+                -- Allow everyone to set their own preference
                 True
 
             _ ->
@@ -293,80 +269,7 @@ handleEmailPasswordAuth : BrowserCookie -> ConnectionId -> EmailPasswordAuthToBa
 handleEmailPasswordAuth browserCookie connectionId authMsg model =
     case authMsg of
         EmailPasswordLoginToBackend email password ->
-            handleEmailPasswordLogin browserCookie connectionId email password model
+            EmailPasswordAuth.handleLogin browserCookie connectionId email password model
 
         EmailPasswordSignupToBackend email password maybeName ->
-            handleEmailPasswordSignup browserCookie connectionId email password maybeName model
-
-
-handleEmailPasswordLogin : BrowserCookie -> ConnectionId -> String -> String -> Model -> ( Model, Cmd BackendMsg )
-handleEmailPasswordLogin browserCookie connectionId email password model =
-    case Dict.get email model.emailPasswordCredentials of
-        Just creds ->
-            let
-                hashedPassword = { hash = creds.passwordHash, salt = creds.passwordSalt }
-            in
-            if verifyPassword password hashedPassword then
-                let
-                    -- Get user name from stored user data
-                    userName = case Dict.get email model.users of
-                        Just user -> user.name
-                        Nothing -> Nothing
-                    
-                    userInfo = { email = email, name = userName, username = Nothing, picture = Nothing }
-                    newSessions = Dict.insert browserCookie userInfo model.sessions
-                in
-                ( { model | sessions = newSessions }
-                , Lamdera.sendToFrontend connectionId (AuthSuccess userInfo)
-                )
-            else
-                ( model
-                , Lamdera.sendToFrontend connectionId (AuthToFrontend (Auth.Common.AuthError (Auth.Common.ErrAuthString "Invalid email or password")))
-                )
-
-        Nothing ->
-            ( model
-            , Lamdera.sendToFrontend connectionId (AuthToFrontend (Auth.Common.AuthError (Auth.Common.ErrAuthString "Invalid email or password")))
-            )
-
-
-handleEmailPasswordSignup : BrowserCookie -> ConnectionId -> String -> String -> Maybe String -> Model -> ( Model, Cmd BackendMsg )
-handleEmailPasswordSignup browserCookie connectionId email password maybeName model =
-    case Dict.get email model.emailPasswordCredentials of
-        Just _ ->
-            ( model
-            , Lamdera.sendToFrontend connectionId (AuthToFrontend (Auth.Common.AuthError (Auth.Common.ErrAuthString "User already exists")))
-            )
-
-        Nothing ->
-            let
-                saltGenerator = Random.int 100000000 999999999 |> Random.map String.fromInt
-                cmd = Random.generate (\salt -> 
-                    EmailPasswordAuthResult (EmailPasswordSignupWithHash browserCookie connectionId email password maybeName salt (Auth.PasswordHash.hashPassword salt password).hash)
-                    ) saltGenerator
-            in
-            ( model, cmd )
-
-
-completeEmailPasswordSignup : BrowserCookie -> ConnectionId -> String -> String -> Maybe String -> String -> String -> Model -> ( Model, Cmd BackendMsg )
-completeEmailPasswordSignup browserCookie connectionId email password maybeName salt hash model =
-    let
-        newCredentials =
-            { email = email
-            , passwordHash = hash
-            , passwordSalt = salt  
-            , createdAt = 0
-            }
-        
-        initialPreferences = { darkMode = True }
-        user = { email = email, name = maybeName, preferences = initialPreferences }
-        userInfo = { email = email, name = maybeName, username = Nothing, picture = Nothing }
-        
-        updatedModel = 
-            { model 
-            | emailPasswordCredentials = Dict.insert email newCredentials model.emailPasswordCredentials
-            , users = Dict.insert email user model.users
-            , sessions = Dict.insert browserCookie userInfo model.sessions
-            }
-    in
-    ( updatedModel, Lamdera.sendToFrontend connectionId (AuthSuccess userInfo) )  
+            EmailPasswordAuth.handleSignup browserCookie connectionId email password maybeName model

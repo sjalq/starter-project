@@ -1,4 +1,4 @@
-module TestData exposing (..)
+module TestData exposing (initializeTestData)
 
 import Auth.Common
 import Auth.PasswordHash
@@ -26,7 +26,8 @@ defaultEmailPasswordCredentials : Dict Email EmailPasswordCredentials
 defaultEmailPasswordCredentials =
     let
         -- Hash for password "admin"
-        adminHash = Auth.PasswordHash.hashPassword "salt123" "admin"
+        adminHash =
+            Auth.PasswordHash.hashPassword "salt123" "admin"
     in
     Dict.fromList
         [ ( "sys@admin.com"
@@ -50,19 +51,8 @@ defaultSessions =
 -}
 initializeTestData : BackendModel -> BackendModel
 initializeTestData model =
-    { model 
-    | users = Dict.union defaultUsers model.users
-    , emailPasswordCredentials = Dict.union defaultEmailPasswordCredentials model.emailPasswordCredentials
-    , sessions = Dict.union defaultSessions model.sessions
-    }
-
-
-{-| Test admin user info for OAuth scenarios
--}
-testAdminUserInfo : Auth.Common.UserInfo
-testAdminUserInfo =
-    { email = "sys@admin.com"
-    , name = Just "System Administrator"
-    , username = Nothing
-    , picture = Nothing
+    { model
+        | users = Dict.union defaultUsers model.users
+        , emailPasswordCredentials = Dict.union defaultEmailPasswordCredentials model.emailPasswordCredentials
+        , sessions = Dict.union defaultSessions model.sessions
     }

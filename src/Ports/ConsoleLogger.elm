@@ -1,7 +1,7 @@
 port module Ports.ConsoleLogger exposing (log, logReceived)
 
-import Json.Encode as E
 import Json.Decode as D
+import Json.Encode as E
 
 
 port console_logger_to_js : E.Value -> Cmd msg

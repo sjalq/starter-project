@@ -25,7 +25,14 @@ run =
                 cleanName =
                     opts.name
                         |> String.toLower
-                        |> String.map (\c -> if Char.isAlphaNum c || c == '-' then c else '-')
+                        |> String.map
+                            (\c ->
+                                if Char.isAlphaNum c || c == '-' then
+                                    c
+
+                                else
+                                    '-'
+                            )
 
                 backendDefault : BackendTask FatalError String
                 backendDefault =

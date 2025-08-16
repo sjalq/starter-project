@@ -1,12 +1,11 @@
 module Pages.Default exposing (..)
 
+import Components.Button
+import Components.Header
 import Html exposing (..)
 import Html.Attributes as Attr
-import Html.Events as HE
 import Theme
 import Types exposing (..)
-import Components.Header
-import Components.Button
 
 
 init : FrontendModel -> ( FrontendModel, Cmd FrontendMsg )
@@ -20,7 +19,7 @@ view model colors =
         [ div [ Attr.class "container mx-auto px-4 md:px-6 py-4 md:py-8" ]
             [ Components.Header.pageHeader colors "Welcome to the Starter Project" (Just "This is the default home page.")
             , div [ Attr.class "mt-6 md:mt-8 text-center md:text-left" ]
-                [ a 
+                [ a
                     [ Attr.href "/examples"
                     , Attr.class "inline-block w-full sm:w-auto"
                     ]

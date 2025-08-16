@@ -81,7 +81,9 @@ getColors isDarkMode =
         lightColors
 
 
+
 -- Helper to apply theme colors as style attributes
+
 
 primaryBg : Bool -> Attribute msg
 primaryBg isDarkMode =
@@ -160,4 +162,4 @@ activeTabText isDarkMode =
 
 inactiveTabText : Bool -> Attribute msg
 inactiveTabText isDarkMode =
-    Html.Attributes.style "color" (getColors isDarkMode).inactiveTabText 
+    Html.Attributes.style "color" (getColors isDarkMode).inactiveTabText

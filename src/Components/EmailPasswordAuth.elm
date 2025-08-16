@@ -1,8 +1,8 @@
 module Components.EmailPasswordAuth exposing (..)
 
+import Components.EmailPasswordForm
 import Html exposing (Html)
 import Theme
-import Components.EmailPasswordForm
 import Types exposing (..)
 
 
@@ -36,10 +36,15 @@ update msg model =
             ( updateForm formMsg model, Cmd.none )
 
         EmailPasswordLoginRequested email password ->
-            ( model, Cmd.none ) -- This will be handled by parent
+            ( model, Cmd.none )
 
+        -- This will be handled by parent
         EmailPasswordSignupRequested email password maybeName ->
-            ( model, Cmd.none ) -- This will be handled by parent
+            ( model, Cmd.none )
+
+
+
+-- This will be handled by parent
 
 
 updateForm : EmailPasswordFormMsg -> Model -> Model
@@ -68,10 +73,16 @@ validateAndGetSubmitModel : Model -> Model
 validateAndGetSubmitModel model =
     if String.isEmpty (String.trim model.email) || String.isEmpty (String.trim model.password) then
         { model | error = Just "Please fill in all required fields" }
+
     else if model.isSignupMode && model.password /= model.confirmPassword then
         { model | error = Just "Passwords do not match" }
+
     else
-        model -- Valid, parent will handle submission
+        model
+
+
+
+-- Valid, parent will handle submission
 
 
 view : Config msg -> Html msg
@@ -87,5 +98,6 @@ view config =
             , onToggleMode = EmailPasswordFormToggleMode |> EmailPasswordFormMsg |> config.onAuthMsg
             , onSubmit = EmailPasswordFormSubmit |> EmailPasswordFormMsg |> config.onAuthMsg
             }
+
     else
         Html.text ""

@@ -7,9 +7,13 @@ import Html.Events exposing (onClick)
 import Lamdera
 import Theme
 import Types exposing (..)
+
+
+
 -- import Fusion.Editor
 -- import Fusion.Generated.TypeDict
 -- import Fusion.Generated.TypeDict.Types
+
 
 init : FrontendModel -> AdminRoute -> ( FrontendModel, Cmd FrontendMsg )
 init model adminRoute =
@@ -104,6 +108,7 @@ viewTabs model colors =
         [ viewTab AdminDefault model colors "Default"
         , viewTab AdminLogs model colors "Logs"
         , viewTab AdminFetchModel model colors "Fetch Model"
+
         -- , viewTab AdminFusion model "Fusion"
         ]
 
@@ -112,25 +117,28 @@ viewTab : AdminRoute -> FrontendModel -> Theme.Colors -> String -> Html Frontend
 viewTab tab model colors label =
     let
         isActive =
-             Admin tab == model.currentRoute
-        
+            Admin tab == model.currentRoute
+
         activeClasses =
             if isActive then
                 "border-b-2"
+
             else
                 ""
-        
+
         activeBorderStyle =
             if isActive then
-                 Attr.style "border-color" colors.accent
+                Attr.style "border-color" colors.accent
+
             else
                 Attr.style "border-color" "transparent"
 
         textColorStyle =
-             if isActive then
-                 Attr.style "color" colors.accent
-             else
-                 Attr.style "color" colors.secondaryText
+            if isActive then
+                Attr.style "color" colors.accent
+
+            else
+                Attr.style "color" colors.secondaryText
 
         route =
             case tab of
@@ -143,8 +151,8 @@ viewTab tab model colors label =
                 AdminFetchModel ->
                     "/admin/fetch-model"
 
-                -- AdminFusion ->
-                --     "/admin/fusion"
+        -- AdminFusion ->
+        --     "/admin/fusion"
     in
     a
         [ Attr.href route
@@ -169,7 +177,6 @@ viewTabContent model colors =
 
         -- Admin AdminFusion ->
         --     viewFusionTab model
-
         _ ->
             text "Not found"
 
@@ -178,7 +185,7 @@ viewDefaultTab : FrontendModel -> Theme.Colors -> Html FrontendMsg
 viewDefaultTab _ colors =
     div [ Attr.class "p-4 rounded-lg shadow", Attr.style "background-color" colors.secondaryBg ]
         [ h2 [ Attr.class "text-xl font-bold mb-4", Attr.style "color" colors.primaryText ] [ text "Default Admin" ]
-        , div [Attr.style "color" colors.primaryText] [ text "Default admin content" ]
+        , div [ Attr.style "color" colors.primaryText ] [ text "Default admin content" ]
         ]
 
 
@@ -238,6 +245,7 @@ viewFusionTab : FrontendModel -> Html FrontendMsg
 viewFusionTab model =
     div [ Attr.class "p-4 bg-black text-white" ]
         [ h2 [ Attr.class "text-xl font-bold mb-4" ] [ text "Fusion Editor" ]
+
         -- , Fusion.Editor.value
         --     { typeDict = Fusion.Generated.TypeDict.typeDict
         --     , type_ = Just Fusion.Generated.TypeDict.Types.type_BackendModel

@@ -36,16 +36,20 @@ actionRoleMap msg =
             Anonymous
 
         SetDarkModePreference _ ->
-            Anonymous -- Allow anyone to set their own preference
+            Anonymous
 
+        -- Allow anyone to set their own preference
         A00_WebSocketReceive _ ->
-            Anonymous -- Allow anyone to send websocket messages
+            Anonymous
 
-        -- Fusion_PersistPatch _ ->
-        --     SysAdmin
 
-        -- Fusion_Query _ ->
-        --     SysAdmin
+
+-- Allow anyone to send websocket messages
+-- Fusion_PersistPatch _ ->
+--     SysAdmin
+-- Fusion_Query _ ->
+--     SysAdmin
+
 
 {-| Checks if a user has permission to perform a specific backend action
 -}

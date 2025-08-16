@@ -18,15 +18,17 @@ view config =
     a
         [ Attr.href config.href
         , Attr.class "px-4 py-3 md:px-3 md:py-2 text-base md:text-lg font-medium transition-colors duration-200 touch-manipulation min-h-[44px] md:min-h-[36px] flex items-center"
-        , Attr.style "color" 
+        , Attr.style "color"
             (if config.isActive then
                 config.colors.activeTabText
+
              else
                 config.colors.inactiveTabText
             )
-        , Attr.style "border-bottom" 
+        , Attr.style "border-bottom"
             (if config.isActive then
                 "2px solid " ++ config.colors.activeTabText
+
              else
                 "none"
             )
@@ -35,7 +37,7 @@ view config =
         [ text config.label ]
 
 
-tabBar : Theme.Colors -> List (TabConfig) -> Html msg
+tabBar : Theme.Colors -> List TabConfig -> Html msg
 tabBar colors tabs =
     div [ Attr.class "flex flex-wrap justify-center gap-2 md:gap-8 mt-4 px-2 md:px-0" ]
         (List.map view tabs)

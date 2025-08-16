@@ -36,7 +36,7 @@ handleAuthSuccess backendModel sessionId clientId userInfo _ _ _ =
         response =
             AuthSuccess userInfo
     in
-    ( { backendModel | sessions = newSessions }, Cmd.batch [ Lamdera.sendToFrontend clientId response ] )
+    ( { backendModel | sessions = newSessions }, Lamdera.sendToFrontend clientId response )
 
 
 logout : Lamdera.SessionId -> Lamdera.ClientId -> BackendModel -> ( BackendModel, Cmd msg )

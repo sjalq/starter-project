@@ -1,6 +1,6 @@
 module Components.EmailPasswordForm exposing (..)
 
-import Html exposing (Html, div, input, button, text, h3, p, a, form)
+import Html exposing (Html, a, button, div, form, h3, input, p, text)
 import Html.Attributes as Attr
 import Html.Events as Events
 import Json.Decode as Decode
@@ -33,10 +33,16 @@ view config =
             , Attr.style "font-size" "1.25rem"
             , Attr.style "font-weight" "600"
             ]
-            [ text (if config.formModel.isSignupMode then "Create Account" else "Sign In") ]
-        
+            [ text
+                (if config.formModel.isSignupMode then
+                    "Create Account"
+
+                 else
+                    "Sign In"
+                )
+            ]
         , form
-            [ Events.preventDefaultOn "submit" (Decode.succeed (config.onSubmit, True))
+            [ Events.preventDefaultOn "submit" (Decode.succeed ( config.onSubmit, True ))
             , Attr.style "display" "flex"
             , Attr.style "flex-direction" "column"
             , Attr.style "gap" "1rem"
@@ -44,44 +50,50 @@ view config =
             [ if config.formModel.isSignupMode then
                 input
                     ([ Attr.type_ "text"
-                    , Attr.placeholder "Full Name (optional)"
-                    , Attr.value config.formModel.name
-                    , Events.onInput config.onNameChange
-                    ] ++ inputStyles config.colors)
+                     , Attr.placeholder "Full Name (optional)"
+                     , Attr.value config.formModel.name
+                     , Events.onInput config.onNameChange
+                     ]
+                        ++ inputStyles config.colors
+                    )
                     []
+
               else
                 text ""
-            
             , input
                 ([ Attr.type_ "email"
-                , Attr.placeholder "Email"
-                , Attr.value config.formModel.email
-                , Events.onInput config.onEmailChange
-                , Attr.required True
-                ] ++ inputStyles config.colors)
+                 , Attr.placeholder "Email"
+                 , Attr.value config.formModel.email
+                 , Events.onInput config.onEmailChange
+                 , Attr.required True
+                 ]
+                    ++ inputStyles config.colors
+                )
                 []
-            
             , input
                 ([ Attr.type_ "password"
-                , Attr.placeholder "Password"
-                , Attr.value config.formModel.password
-                , Events.onInput config.onPasswordChange
-                , Attr.required True
-                ] ++ inputStyles config.colors)
+                 , Attr.placeholder "Password"
+                 , Attr.value config.formModel.password
+                 , Events.onInput config.onPasswordChange
+                 , Attr.required True
+                 ]
+                    ++ inputStyles config.colors
+                )
                 []
-            
             , if config.formModel.isSignupMode then
                 input
                     ([ Attr.type_ "password"
-                    , Attr.placeholder "Confirm Password"
-                    , Attr.value config.formModel.confirmPassword
-                    , Events.onInput config.onConfirmPasswordChange
-                    , Attr.required True
-                    ] ++ inputStyles config.colors)
+                     , Attr.placeholder "Confirm Password"
+                     , Attr.value config.formModel.confirmPassword
+                     , Events.onInput config.onConfirmPasswordChange
+                     , Attr.required True
+                     ]
+                        ++ inputStyles config.colors
+                    )
                     []
+
               else
                 text ""
-            
             , case config.formModel.error of
                 Just errorMsg ->
                     p
@@ -91,10 +103,9 @@ view config =
                         , Attr.style "text-align" "center"
                         ]
                         [ text errorMsg ]
-                
+
                 Nothing ->
                     text ""
-            
             , button
                 [ Attr.type_ "submit"
                 , Attr.style "padding" "0.75rem"
@@ -104,16 +115,28 @@ view config =
                 , Attr.style "border-radius" "4px"
                 , Attr.style "cursor" "pointer"
                 ]
-                [ text (if config.formModel.isSignupMode then "Sign Up" else "Login") ]
+                [ text
+                    (if config.formModel.isSignupMode then
+                        "Sign Up"
+
+                     else
+                        "Login"
+                    )
+                ]
             ]
-        
         , div
             [ Attr.style "text-align" "center"
             , Attr.style "margin-top" "1rem"
             ]
             [ p
                 [ Attr.style "color" config.colors.secondaryText ]
-                [ text (if config.formModel.isSignupMode then "Already have an account?" else "Don't have an account?")
+                [ text
+                    (if config.formModel.isSignupMode then
+                        "Already have an account?"
+
+                     else
+                        "Don't have an account?"
+                    )
                 , text " "
                 , button
                     [ Events.onClick config.onToggleMode
@@ -126,7 +149,14 @@ view config =
                     , Attr.style "padding" "0"
                     , Attr.style "font" "inherit"
                     ]
-                    [ text (if config.formModel.isSignupMode then "Login" else "Sign Up") ]
+                    [ text
+                        (if config.formModel.isSignupMode then
+                            "Login"
+
+                         else
+                            "Sign Up"
+                        )
+                    ]
                 ]
             ]
         ]
@@ -143,6 +173,6 @@ inputStyles colors =
     ]
 
 
-buttonStyles : Theme.Colors -> Html.Attribute msg  
+buttonStyles : Theme.Colors -> Html.Attribute msg
 buttonStyles colors =
     Attr.class "w-full bg-green-600 text-white py-3 rounded hover:bg-green-700 transition-colors"

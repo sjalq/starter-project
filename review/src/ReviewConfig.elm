@@ -37,9 +37,12 @@ config : List Rule
 config =
     let
         -- Common directories and files to ignore
-        ignoreDirs = [ "auth/", "src/Evergreen/" ]
-        ignoreFiles = [ "src/RPC.elm", "src/LamderaRPC.elm" ]
-        
+        ignoreDirs =
+            [ "auth/", "src/Evergreen/" ]
+
+        ignoreFiles =
+            [ "src/RPC.elm", "src/LamderaRPC.elm", "src/SupplementalRPC.elm" ]
+
         -- Helper to apply ignore patterns to a rule
         applyIgnores rule =
             rule
@@ -48,23 +51,24 @@ config =
     in
     [ Docs.ReviewAtDocs.rule |> applyIgnores
     , NoConfusingPrefixOperator.rule |> applyIgnores
-    , NoDebug.Log.rule 
+    , NoDebug.Log.rule
         |> Rule.ignoreErrorsForDirectories ("tests/" :: ignoreDirs)
         |> Rule.ignoreErrorsForFiles ignoreFiles
     , NoDebug.TodoOrToString.rule
         |> Rule.ignoreErrorsForDirectories ("tests/" :: ignoreDirs)
         |> Rule.ignoreErrorsForFiles ignoreFiles
-    -- COMMENTED OUT: NoExposingEverything - In a starter project, exposing (..) is often 
+
+    -- COMMENTED OUT: NoExposingEverything - In a starter project, exposing (..) is often
     -- convenient for prototyping and allows users to easily explore all available functions
     -- , NoExposingEverything.rule |> applyIgnores
-    
-    , NoImportingEverything.rule [] |> applyIgnores
+    -- REMOVED: NoImportingEverything - Actually WANT to import everything for convenience
+    -- , NoImportingEverything.rule [] |> applyIgnores
     , NoMissingTypeAnnotation.rule |> applyIgnores
     , NoMissingTypeAnnotationInLetIn.rule |> applyIgnores
     , NoMissingTypeExpose.rule |> applyIgnores
     , NoSimpleLetBody.rule |> applyIgnores
     , NoPrematureLetComputation.rule |> applyIgnores
-    
+
     -- COMMENTED OUT: NoUnused rules - This is a starter project with example code
     -- Many functions/types are intentionally provided as examples even if not used
     -- Removing these would delete valuable starter code that users might need
@@ -76,15 +80,13 @@ config =
     -- , NoUnused.Parameters.rule |> applyIgnores
     -- , NoUnused.Patterns.rule |> applyIgnores
     -- , NoUnused.Variables.rule |> applyIgnores
-    
     -- Keep only the unused imports rule to clean up actual import statements
-    , NoUnused.Variables.rule 
+    , NoUnused.Variables.rule
         |> applyIgnores
-        |> Rule.ignoreErrorsForFiles 
-            [ "src/Components/EmailPasswordAuth.elm"  -- Form components that might be used later
+        |> Rule.ignoreErrorsForFiles
+            [ "src/Components/EmailPasswordAuth.elm" -- Form components that might be used later
             , "src/Components/EmailPasswordForm.elm"
-            , "src/Auth/EmailPasswordAuth.elm"  -- Auth helpers that are part of the starter kit
+            , "src/Auth/EmailPasswordAuth.elm" -- Auth helpers that are part of the starter kit
             ]
-    
     , Simplify.rule Simplify.defaults |> applyIgnores
     ]

@@ -26,46 +26,47 @@ view config =
             case config.size of
                 Large ->
                     "text-2xl md:text-4xl font-bold mb-2 md:mb-2"
-                
+
                 Medium ->
                     "text-xl md:text-3xl font-bold mb-3 md:mb-4"
-                
+
                 Small ->
                     "text-lg md:text-xl font-semibold mb-2"
-        
-        subtitleClasses =
-            case config.size of
-                Large ->
-                    "mb-6 md:mb-8 text-sm md:text-base"
-                
-                Medium ->
-                    "mb-3 md:mb-4 text-sm md:text-base"
-                
-                Small ->
-                    "mb-2 text-sm"
-        
+
         titleElement =
-            h1 
+            h1
                 [ Attr.class titleClasses
                 , Attr.style "color" config.colors.accent
                 ]
                 [ text config.title ]
-        
+
         subtitleElement =
             case config.subtitle of
                 Just subtitle ->
-                    [ p 
+                    let
+                        subtitleClasses =
+                            case config.size of
+                                Large ->
+                                    "mb-6 md:mb-8 text-sm md:text-base"
+
+                                Medium ->
+                                    "mb-3 md:mb-4 text-sm md:text-base"
+
+                                Small ->
+                                    "mb-2 text-sm"
+                    in
+                    [ p
                         [ Attr.class subtitleClasses
                         , Attr.style "color" config.colors.primaryText
                         ]
                         [ text subtitle ]
                     ]
-                
+
                 Nothing ->
                     []
     in
     div []
-        ([ titleElement ] ++ subtitleElement)
+        (titleElement :: subtitleElement)
 
 
 pageHeader : Theme.Colors -> String -> Maybe String -> Html msg

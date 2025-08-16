@@ -1,12 +1,12 @@
 module Components.LoginModal exposing (..)
 
-import Html exposing (Html, div, button, text, h2, p, hr, img)
+import Components.EmailPasswordForm
+import Html exposing (Html, button, div, h2, hr, img, p, text)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick, stopPropagationOn)
 import Json.Decode as Decode
 import Theme
 import Types exposing (..)
-import Components.EmailPasswordForm
 
 
 type alias Config msg =
@@ -37,7 +37,7 @@ view config =
                 , Attr.style "box-shadow" "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                 , Attr.style "max-height" "90vh"
                 , Attr.style "overflow-y" "auto"
-                , stopPropagationOn "click" (Decode.succeed (config.onNoOp, True)) -- Prevent modal close when clicking inside
+                , stopPropagationOn "click" (Decode.succeed ( config.onNoOp, True )) -- Prevent modal close when clicking inside
                 ]
                 [ -- Modal Header
                   div
@@ -61,7 +61,6 @@ view config =
                             [ text "×" ]
                         ]
                     ]
-
                 , -- Email/Password Form
                   div
                     [ Attr.class "px-6 pb-4" ]
@@ -76,7 +75,6 @@ view config =
                         , onSubmit = EmailPasswordFormSubmit |> EmailPasswordFormMsg |> config.onEmailPasswordMsg
                         }
                     ]
-
                 , -- Divider
                   div
                     [ Attr.class "px-6 py-4" ]
@@ -98,7 +96,6 @@ view config =
                             ]
                         ]
                     ]
-
                 , -- OAuth Options
                   div
                     [ Attr.class "px-6 pb-6" ]
@@ -114,6 +111,7 @@ view config =
                     ]
                 ]
             ]
+
     else
         text ""
 
@@ -121,12 +119,35 @@ view config =
 oauthButton : Config msg -> String -> msg -> String -> Html msg
 oauthButton config label onClickMsg backgroundColor =
     let
-        buttonText = if config.isAuthenticating then "Authenticating..." else label
-        opacity = if config.isAuthenticating then "0.7" else "1"
-        cursor = if config.isAuthenticating then "not-allowed" else "pointer"
+        buttonText =
+            if config.isAuthenticating then
+                "Authenticating..."
+
+            else
+                label
+
+        opacity =
+            if config.isAuthenticating then
+                "0.7"
+
+            else
+                "1"
+
+        cursor =
+            if config.isAuthenticating then
+                "not-allowed"
+
+            else
+                "pointer"
     in
     button
-        [ onClick (if config.isAuthenticating then config.onNoOp else onClickMsg)
+        [ onClick
+            (if config.isAuthenticating then
+                config.onNoOp
+
+             else
+                onClickMsg
+            )
         , Attr.class "w-full flex items-center justify-center px-4 py-3 rounded-lg transition-all font-medium"
         , Attr.style "background-color" backgroundColor
         , Attr.style "color" "#ffffff"
@@ -142,16 +163,42 @@ oauthButton config label onClickMsg backgroundColor =
 oauthButtonWithIcon : Config msg -> String -> msg -> String -> String -> Html msg
 oauthButtonWithIcon config label onClickMsg backgroundColor iconSrc =
     let
-        buttonText = if config.isAuthenticating then "Authenticating..." else label
-        opacity = if config.isAuthenticating then "0.7" else "1"
-        cursor = if config.isAuthenticating then "not-allowed" else "pointer"
-        
+        buttonText =
+            if config.isAuthenticating then
+                "Authenticating..."
+
+            else
+                label
+
+        opacity =
+            if config.isAuthenticating then
+                "0.7"
+
+            else
+                "1"
+
+        cursor =
+            if config.isAuthenticating then
+                "not-allowed"
+
+            else
+                "pointer"
+
         -- Use primary text color for better contrast with secondaryBg
-        textColor = config.colors.primaryText
-        borderStyle = "1px solid " ++ config.colors.border
+        textColor =
+            config.colors.primaryText
+
+        borderStyle =
+            "1px solid " ++ config.colors.border
     in
     button
-        [ onClick (if config.isAuthenticating then config.onNoOp else onClickMsg)
+        [ onClick
+            (if config.isAuthenticating then
+                config.onNoOp
+
+             else
+                onClickMsg
+            )
         , Attr.class "w-full flex items-center justify-center px-4 py-3 rounded-lg transition-all font-medium"
         , Attr.style "background-color" backgroundColor
         , Attr.style "color" textColor
@@ -171,10 +218,9 @@ oauthButtonWithIcon config label onClickMsg backgroundColor iconSrc =
                     , Attr.alt "Google logo"
                     ]
                     []
+
               else
                 text ""
             , text buttonText
             ]
         ]
-
-

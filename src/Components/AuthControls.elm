@@ -44,7 +44,7 @@ view config =
                 , onToggleDarkMode = config.onToggleDarkMode
                 , onLogout = config.onLogout
                 }
-        
+
         _ ->
             -- Non-logged in states use the login button
             loginButton config
@@ -52,7 +52,7 @@ view config =
 
 profileDropdown : ProfileDropdownConfig msg -> Html msg
 profileDropdown config =
-    div 
+    div
         [ Attr.class "relative"
         ]
         [ -- Profile Button
@@ -63,13 +63,13 @@ profileDropdown config =
             , Attr.style "hover:opacity" "0.8"
             ]
             [ -- Profile Icon
-              div 
+              div
                 [ Attr.class "w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium overflow-hidden relative"
                 , Attr.style "background-color" config.colors.accent
                 , Attr.style "color" "#ffffff"
                 ]
                 [ -- Show initials as background
-                  div 
+                  div
                     [ Attr.class "absolute inset-0 flex items-center justify-center"
                     ]
                     [ text (getInitials config.userInfo) ]
@@ -85,37 +85,35 @@ profileDropdown config =
                             , Attr.attribute "crossorigin" "anonymous"
                             ]
                             []
-                    
+
                     Nothing ->
                         text ""
                 ]
             ]
-        
         , -- Dropdown Menu
           if config.isOpen then
-            div 
+            div
                 [ Attr.class "absolute top-full left-1/2 transform -translate-x-1/2 md:left-auto md:right-0 md:transform-none rounded-lg shadow-lg overflow-hidden z-50 mt-2"
                 , Attr.style "background-color" config.colors.primaryBg
                 , Attr.style "border" ("1px solid " ++ config.colors.border)
                 , Attr.style "min-width" "280px"
                 ]
                 [ -- User Info Section
-                  div 
+                  div
                     [ Attr.class "px-4 py-3"
                     , Attr.style "border-bottom" ("1px solid " ++ config.colors.border)
                     ]
-                    [ div 
+                    [ div
                         [ Attr.class "font-medium"
                         , Attr.style "color" config.colors.primaryText
                         ]
                         [ text (Maybe.withDefault config.userInfo.email config.userInfo.name) ]
-                    , div 
+                    , div
                         [ Attr.class "text-sm mt-1"
                         , Attr.style "color" config.colors.secondaryText
                         ]
                         [ text config.userInfo.email ]
                     ]
-                
                 , -- Theme Toggle
                   button
                     [ onClick config.onToggleDarkMode
@@ -125,9 +123,16 @@ profileDropdown config =
                     , Attr.style "border-bottom" ("1px solid " ++ config.colors.border)
                     ]
                     [ span [] [ text "Theme" ]
-                    , span [] [ text (if config.isDarkMode then "🌙 Dark" else "☀️ Light") ]
+                    , span []
+                        [ text
+                            (if config.isDarkMode then
+                                "🌙 Dark"
+
+                             else
+                                "☀️ Light"
+                            )
+                        ]
                     ]
-                
                 , -- Logout Button
                   button
                     [ onClick config.onLogout
@@ -137,6 +142,7 @@ profileDropdown config =
                     ]
                     [ text "Logout" ]
                 ]
+
           else
             text ""
         ]
@@ -148,21 +154,21 @@ loginButton config =
         baseButtonStyles =
             [ Attr.class "px-4 py-2 rounded-lg transition-all text-sm font-medium"
             ]
-        
+
         loginButtonStyles =
-            baseButtonStyles ++
-            [ Attr.style "background-color" config.colors.buttonBg
-            , Attr.style "color" config.colors.buttonText
-            , Attr.style "hover:opacity" "0.9"
-            ]
-            
+            baseButtonStyles
+                ++ [ Attr.style "background-color" config.colors.buttonBg
+                   , Attr.style "color" config.colors.buttonText
+                   , Attr.style "hover:opacity" "0.9"
+                   ]
+
         loadingStyles =
-            baseButtonStyles ++
-            [ Attr.style "background-color" config.colors.secondaryBg
-            , Attr.style "color" config.colors.primaryText
-            , Attr.style "opacity" "0.7"
-            , Attr.style "cursor" "wait"
-            ]
+            baseButtonStyles
+                ++ [ Attr.style "background-color" config.colors.secondaryBg
+                   , Attr.style "color" config.colors.primaryText
+                   , Attr.style "opacity" "0.7"
+                   , Attr.style "cursor" "wait"
+                   ]
     in
     case config.login of
         LoginTokenSent ->
@@ -175,6 +181,7 @@ loginButton config =
                 button
                     (loadingStyles ++ [ Attr.disabled True ])
                     [ text "Authenticating..." ]
+
             else
                 button
                     (loginButtonStyles ++ [ onClick config.onLogin ])
@@ -184,7 +191,7 @@ loginButton config =
             button
                 (loginButtonStyles ++ [ onClick config.onLogin ])
                 [ text "Login" ]
-                
+
         LoggedIn _ ->
             -- This shouldn't happen as we handle LoggedIn in the main view
             text ""
@@ -198,9 +205,9 @@ getInitials userInfo =
                 |> String.words
                 |> List.map (String.left 1)
                 |> List.take 2
-                |> String.join ""
+                |> String.concat
                 |> String.toUpper
-        
+
         Nothing ->
             userInfo.email
                 |> String.left 1

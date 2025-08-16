@@ -8,142 +8,132 @@ alwaysApply: true
 
 ## src/AsyncRPC.elm
 ### AsyncRPC
-27 handleTaskChain _ model _ _ config
-52 handleTaskResult token encoder result
-68 handleTimeResult token result
-79 handlePollingResult _ model _ json
+28 handleTaskChain _ model _ _ config
+53 handleTaskResult token encoder result
+69 handleTimeResult token result
+80 handlePollingResult _ model _ json
 
 ## src/Auth/EmailPasswordAuth.elm
 ### Auth.EmailPasswordAuth
-51 initFormModel
-65 updateForm msg model
-87 validateAndSubmit model
-100 handleLogin browserCookie connectionId email password credentials model
-126 handleSignup browserCookie connectionId email password maybeName credentials model
-144 completeSignup browserCookie connectionId email password maybeName salt hash credentials model
+32 handleLogin browserCookie connectionId email password model
+72 handleSignup browserCookie connectionId email password maybeName model
+95 completeSignup browserCookie connectionId email _ maybeName salt hash model
 
 ## src/Auth/PasswordHash.elm
 ### Auth.PasswordHash
-18 generateSalt
-24 hashPassword salt password
-33 verifyPassword plainPassword hashedPassword
-42 generateHashedPassword password
+17 hashPassword salt password
+29 verifyPassword plainPassword hashedPassword
 
 ## src/Backend.elm
 ### Backend
-26 app
-36 subscriptions _
-43 init
-61 update msg model
-132 updateFromFrontend browserCookie connectionId msg model
-243 updateFromFrontendCheckingRights browserCookie connectionId msg model
-274 getUserFromCookie browserCookie model
-279 log
-284 userToFrontend user
-293 handleEmailPasswordAuth browserCookie connectionId authMsg model
-303 handleEmailPasswordLogin browserCookie connectionId email password model
-334 handleEmailPasswordSignup browserCookie connectionId email password maybeName model
-352 completeEmailPasswordSignup browserCookie connectionId email password maybeName salt hash model
+25 app
+35 subscriptions _
+40 init
+59 update msg model
+130 updateFromFrontend browserCookie connectionId msg model
+217 updateFromFrontendCheckingRights browserCookie connectionId msg model
+249 getUserFromCookie browserCookie model
+254 log
+259 userToFrontend user
+268 handleEmailPasswordAuth browserCookie connectionId authMsg model
 
 ## src/Components/AuthControls.elm
 ### Components.AuthControls
 35 view config
 54 profileDropdown config
-146 loginButton config
-194 getInitials userInfo
+152 loginButton config
+201 getInitials userInfo
 
 ## src/Components/Button.elm
 ### Components.Button
 33 view config label
-108 primary colors onClick label
-120 secondary colors onClick label
-132 danger colors onClick label
-144 success colors onClick label
-156 loading colors label
+110 primary colors onClick label
+122 secondary colors onClick label
+134 danger colors onClick label
+146 success colors onClick label
+158 loading colors label
 
 ## src/Components/Card.elm
 ### Components.Card
 17 view config children
-52 getPaddingClass padding
-68 simple colors children
-79 withTitle colors title children
-90 compact colors children
+53 getPaddingClass padding
+69 simple colors children
+80 withTitle colors title children
+91 compact colors children
 
 ## src/Components/EmailPasswordAuth.elm
 ### Components.EmailPasswordAuth
 22 init
 33 update msg model
-46 updateForm msg model
-68 validateAndGetSubmitModel model
-78 view config
+51 updateForm msg model
+73 validateAndGetSubmitModel model
+89 view config
 
 ## src/Components/EmailPasswordForm.elm
 ### Components.EmailPasswordForm
 24 view config
-136 inputStyles colors
-147 buttonStyles colors
+166 inputStyles colors
+177 buttonStyles colors
 
 ## src/Components/Header.elm
 ### Components.Header
 23 view config
-72 pageHeader colors title subtitle
-82 sectionHeader colors title
-92 cardHeader colors title
+73 pageHeader colors title subtitle
+83 sectionHeader colors title
+93 cardHeader colors title
 
 ## src/Components/LoginModal.elm
 ### Components.LoginModal
 25 view config
-122 oauthButton config label onClickMsg backgroundColor
-143 oauthButtonWithIcon config label onClickMsg backgroundColor iconSrc
+120 oauthButton config label onClickMsg backgroundColor
+164 oauthButtonWithIcon config label onClickMsg backgroundColor iconSrc
 
 ## src/Components/Tab.elm
 ### Components.Tab
 17 view config
-39 tabBar colors tabs
+41 tabBar colors tabs
 
 ## src/EndpointExample/Price.elm
 ### EndpointExample.Price
 21 getPrice sessionId model headers json
 36 getPriceResult sessionId model headers json
 45 fetchEthPriceInZar
-97 fetchEthPrice
-118 fetchZarRate
-139 fetchJokeAboutEthPrice price
-181 openAiResponseDecoder responseBody
+118 fetchEthPrice
+139 fetchZarRate
+160 fetchJokeAboutEthPrice price
+202 openAiResponseDecoder responseBody
 
 ## src/Env.elm
 ### Env
-7 dummyConfigItem
-11 modelKey
-15 slackApiToken
-19 slackChannel
-23 logSize
-27 stillTesting
-32 auth0AppClientId
-37 auth0AppClientSecret
-42 auth0AppTenant
-47 sysAdminEmail
-52 openAiApiKey
-57 openRouterApiKey
-66 mode
+7 modelKey
+11 slackApiToken
+15 slackChannel
+19 logSize
+23 stillTesting
+28 auth0AppClientId
+33 auth0AppClientSecret
+38 auth0AppTenant
+43 sysAdminEmail
+48 openAiApiKey
+57 mode
 
 ## src/Frontend.elm
 ### Frontend
-47 app
-60 subscriptions _
-68 init url key
-106 inits model route
-122 update msg model
-266 updateFromBackend msg model
-317 view model
-347 callbackForAuth0Auth model url key
-360 callbackForGoogleAuth model url key
-373 authCallbackCmd model url key
-390 initWithAuth url key
-400 updateEmailPasswordAuth authMsg model
-442 updateEmailPasswordForm msg model
-469 viewWithAuth model
-545 authUpdateFromBackend authToFrontendMsg model
+49 app
+62 subscriptions _
+70 init url key
+108 inits model route
+124 update msg model
+261 updateFromBackend msg model
+308 view model
+339 callbackForAuth0Auth model url key
+348 callbackForGoogleAuth model url key
+357 authCallbackCmd model url key
+374 initWithAuth url key
+384 updateEmailPasswordAuth authMsg model
+440 updateEmailPasswordForm msg model
+473 viewWithAuth model
+549 authUpdateFromBackend authToFrontendMsg model
 
 ## src/LamderaRPC.elm
 ### LamderaRPC
@@ -171,35 +161,35 @@ alwaysApply: true
 
 ## src/Pages/Admin.elm
 ### Pages.Admin
-15 init model adminRoute
-56 view model colors
-78 viewNoAccess _ colors
-102 viewTabs model colors
-112 viewTab tab model colors label
-159 viewTabContent model colors
-178 viewDefaultTab _ colors
-186 viewLogsTab model colors
-207 viewFetchModelTab model colors
-238 viewFusionTab model
-252 viewLogEntry index log
-260 viewLogin _ colors
+19 init model adminRoute
+60 view model colors
+82 viewNoAccess _ colors
+106 viewTabs model colors
+117 viewTab tab model colors label
+167 viewTabContent model colors
+185 viewDefaultTab _ colors
+193 viewLogsTab model colors
+214 viewFetchModelTab model colors
+245 viewFusionTab model
+260 viewLogEntry index log
+268 viewLogin _ colors
 
 ## src/Pages/Default.elm
 ### Pages.Default
-13 init model
-18 view model colors
+12 init model
+17 view model colors
 
 ## src/Pages/Examples.elm
 ### Pages.Examples
-14 init model
-19 view model colors
+13 init model
+18 view model colors
 
 ## src/Pages/PageFrame.elm
 ### Pages.PageFrame
 19 viewTabs model
-68 viewAccountControls model
-89 viewCurrentPage model
-115 viewNotFoundPage colors
+71 viewAccountControls model
+95 viewCurrentPage model
+126 viewNotFoundPage colors
 
 ## src/Ports/Clipboard.elm
 ### 
@@ -232,8 +222,8 @@ alwaysApply: true
 ## src/Rights/Permissions.elm
 ### Rights.Permissions
 12 actionRoleMap msg
-53 canPerformAction user action
-67 sessionCanPerformAction model browserCookie action
+57 canPerformAction user action
+71 sessionCanPerformAction model browserCookie action
 
 ## src/Rights/Role.elm
 ### Rights.Role
@@ -250,8 +240,8 @@ alwaysApply: true
 ## src/Route.elm
 ### Route
 9 parser
-21 fromUrl url
-27 toString route
+22 fromUrl url
+28 toString route
 
 ## src/Supplemental.elm
 ### Supplemental
@@ -293,29 +283,28 @@ alwaysApply: true
 ### TestData
 12 defaultUsers
 26 defaultEmailPasswordCredentials
-45 defaultSessions
-52 initializeTestData model
-63 testAdminUserInfo
+46 defaultSessions
+53 initializeTestData model
 
 ## src/Theme.elm
 ### Theme
 30 lightColors
 53 darkColors
 76 getColors isDarkMode
-87 primaryBg isDarkMode
-92 primaryText isDarkMode
-97 primaryBorder isDarkMode
-102 secondaryBg isDarkMode
-107 secondaryText isDarkMode
-112 accent isDarkMode
-117 buttonBg isDarkMode
-122 buttonText isDarkMode
-127 buttonHoverBg isDarkMode
-132 dangerBg isDarkMode
-137 dangerHoverBg isDarkMode
-142 headerBg isDarkMode
-147 headerBorder isDarkMode
-152 headerText isDarkMode
-157 activeTabText isDarkMode
-162 inactiveTabText isDarkMode
+89 primaryBg isDarkMode
+94 primaryText isDarkMode
+99 primaryBorder isDarkMode
+104 secondaryBg isDarkMode
+109 secondaryText isDarkMode
+114 accent isDarkMode
+119 buttonBg isDarkMode
+124 buttonText isDarkMode
+129 buttonHoverBg isDarkMode
+134 dangerBg isDarkMode
+139 dangerHoverBg isDarkMode
+144 headerBg isDarkMode
+149 headerBorder isDarkMode
+154 headerText isDarkMode
+159 activeTabText isDarkMode
+164 inactiveTabText isDarkMode
 

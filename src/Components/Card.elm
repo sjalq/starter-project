@@ -18,26 +18,27 @@ view config children =
     let
         baseClasses =
             "bg-gray-100 dark:bg-gray-800"
-        
+
         paddingClass =
             getPaddingClass config.padding
-        
+
         roundedClass =
             if config.rounded then
                 "rounded-lg"
+
             else
                 ""
-        
+
         cardContent =
             case config.title of
                 Just title ->
-                    [ h2 
+                    h2
                         [ Attr.class "text-lg md:text-xl font-semibold mb-3 md:mb-4"
                         , Attr.style "color" config.colors.primaryText
                         ]
                         [ text title ]
-                    ] ++ children
-                
+                        :: children
+
                 Nothing ->
                     children
     in
@@ -53,13 +54,13 @@ getPaddingClass padding =
     case padding of
         "4" ->
             "p-4 md:p-4"
-        
+
         "6" ->
             "p-4 md:p-6"
-        
+
         "8" ->
             "p-6 md:p-8"
-        
+
         _ ->
             "p-4 md:p-6"
 

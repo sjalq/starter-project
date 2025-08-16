@@ -213,7 +213,6 @@ updateFromFrontend browserCookie connectionId msg model =
             ( model, Lamdera.sendToFrontend connectionId (A00_WebSocketSend ("Echo: " ++ message)) )
 
 
-
 updateFromFrontendCheckingRights : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
 updateFromFrontendCheckingRights browserCookie connectionId msg model =
     if

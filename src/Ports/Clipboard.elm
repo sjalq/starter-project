@@ -1,7 +1,7 @@
-port module Ports.Clipboard exposing (copyToClipboard, copyResult)
+port module Ports.Clipboard exposing (copyResult, copyToClipboard)
 
-import Json.Encode as E
 import Json.Decode as D
+import Json.Encode as E
 
 
 port clipboard_to_js : E.Value -> Cmd msg

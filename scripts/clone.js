@@ -97,14 +97,14 @@ const run = (cmd, silent = false) => {
     hasRsync = false;
   }
   if (hasRsync) {
-    run(`rsync -a --exclude ".git" --exclude ".gitmodules" --exclude "clone.sh" --exclude "scripts/clone.js" "${repoRoot}/" "${target}/"`);
+    run(`rsync -a --exclude ".git" --exclude ".gitmodules" --exclude "clone.sh" --exclude "clone.ps1" --exclude "scripts" "${repoRoot}/" "${target}/"`);
   } else {
     // Fallback copy excluding .git and this script
     run(`bash -c 'shopt -s dotglob; \ 
       mkdir -p "${target}" && \ 
       for f in "${repoRoot}"/*; do \ 
         base="$(basename "$f")"; \ 
-        if [ "$base" != ".git" ] && [ "$base" != ".gitmodules" ] && [ "$base" != "scripts" ]; then \ 
+        if [ "$base" != ".git" ] && [ "$base" != ".gitmodules" ] && [ "$base" != "clone.sh" ] && [ "$base" != "clone.ps1" ] && [ "$base" != "scripts" ]; then \ 
           cp -R "$f" "${target}/"; \ 
         fi; \ 
       done'`);
@@ -114,10 +114,14 @@ const run = (cmd, silent = false) => {
   println(`${COLORS.blue}🔧 Initializing git repository...${COLORS.nc}`);
   run(`bash -c 'cd "${target}" && git init'`, true);
 
-  println(`${COLORS.blue}📦 Setting up submodules...${COLORS.nc}`);
-  run(`bash -c 'cd "${target}" && git submodule add https://github.com/sjalq/auth.git auth'`, true);
-  run(`bash -c 'cd "${target}" && git submodule add https://github.com/sjalq/lamdera-websocket.git lamdera-websocket-package'`, true);
-  run(`bash -c 'cd "${target}" && git submodule update --init --recursive'`, true);
+  println(`${COLORS.blue}📦 Copying auth and websocket dependencies...${COLORS.nc}`);
+  // Copy auth and lamdera-websocket directly instead of submodules
+  if (fs.existsSync(path.join(repoRoot, 'auth'))) {
+    run(`cp -R "${repoRoot}/auth" "${target}/auth"`);
+  }
+  if (fs.existsSync(path.join(repoRoot, 'lamdera-websocket-package'))) {
+    run(`cp -R "${repoRoot}/lamdera-websocket-package" "${target}/lamdera-websocket-package"`);
+  }
 
   println(`${COLORS.blue}💾 Creating initial commit...${COLORS.nc}`);
   try {

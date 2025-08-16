@@ -1,0 +1,8 @@
+{
+  "name": "starter-project-scripts",
+  "private": true,
+  "version": "0.0.0",
+  "devDependencies": {
+    "elm": "0.19.1-5"
+  }
+}

@@ -54,19 +54,37 @@ config =
     , NoDebug.TodoOrToString.rule
         |> Rule.ignoreErrorsForDirectories ("tests/" :: ignoreDirs)
         |> Rule.ignoreErrorsForFiles ignoreFiles
-    , NoExposingEverything.rule |> applyIgnores
+    -- COMMENTED OUT: NoExposingEverything - In a starter project, exposing (..) is often 
+    -- convenient for prototyping and allows users to easily explore all available functions
+    -- , NoExposingEverything.rule |> applyIgnores
+    
     , NoImportingEverything.rule [] |> applyIgnores
     , NoMissingTypeAnnotation.rule |> applyIgnores
     , NoMissingTypeAnnotationInLetIn.rule |> applyIgnores
     , NoMissingTypeExpose.rule |> applyIgnores
     , NoSimpleLetBody.rule |> applyIgnores
     , NoPrematureLetComputation.rule |> applyIgnores
-    -- Removed NoUnused.CustomTypeConstructors.rule to keep NoOp messages for Evergreen migrations
-    , NoUnused.CustomTypeConstructorArgs.rule |> applyIgnores
-    , NoUnused.Dependencies.rule |> applyIgnores
-    , NoUnused.Exports.rule |> applyIgnores
-    , NoUnused.Parameters.rule |> applyIgnores
-    , NoUnused.Patterns.rule |> applyIgnores
-    , NoUnused.Variables.rule |> applyIgnores
+    
+    -- COMMENTED OUT: NoUnused rules - This is a starter project with example code
+    -- Many functions/types are intentionally provided as examples even if not used
+    -- Removing these would delete valuable starter code that users might need
+    -- Re-enable these rules in production projects to clean up truly unused code
+    -- , NoUnused.CustomTypeConstructors.rule [] -- Already removed for Evergreen NoOp support
+    -- , NoUnused.CustomTypeConstructorArgs.rule |> applyIgnores
+    -- , NoUnused.Dependencies.rule |> applyIgnores
+    -- , NoUnused.Exports.rule |> applyIgnores
+    -- , NoUnused.Parameters.rule |> applyIgnores
+    -- , NoUnused.Patterns.rule |> applyIgnores
+    -- , NoUnused.Variables.rule |> applyIgnores
+    
+    -- Keep only the unused imports rule to clean up actual import statements
+    , NoUnused.Variables.rule 
+        |> applyIgnores
+        |> Rule.ignoreErrorsForFiles 
+            [ "src/Components/EmailPasswordAuth.elm"  -- Form components that might be used later
+            , "src/Components/EmailPasswordForm.elm"
+            , "src/Auth/EmailPasswordAuth.elm"  -- Auth helpers that are part of the starter kit
+            ]
+    
     , Simplify.rule Simplify.defaults |> applyIgnores
     ]

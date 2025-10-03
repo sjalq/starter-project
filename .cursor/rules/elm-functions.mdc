@@ -203,12 +203,13 @@ alwaysApply: true
 
 ## src/RPC.elm
 ### RPC
-23 lamdera_handleEndpoints rawReq args model
-62 getLogs _ model headers _
-83 getModel _ _ model headers _
-97 makeModelImportUrl remoteLamderaUrl
-103 fetchImportedModel remoteLamderaUrl modelKey
-150 rpcLog
+24 lamdera_handleEndpoints rawReq args model
+69 getLogs _ model headers _
+90 getModel _ model request
+113 setModel _ currentModel request
+152 makeModelImportUrl remoteLamderaUrl
+158 fetchImportedModel remoteLamderaUrl modelKey
+205 rpcLog
 
 ## src/Rights/Auth0.elm
 ### Rights.Auth0

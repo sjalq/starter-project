@@ -7,6 +7,7 @@ import Http
 import Json.Encode as Encode
 import Lamdera exposing (SessionId)
 import Lamdera.Wire exposing (bytesDecode)
+import Lamdera.Wire3
 import LamderaRPC exposing (..)
 import Supplemental exposing (..)
 import SupplementalRPC exposing (..)
@@ -25,7 +26,10 @@ lamdera_handleEndpoints rawReq args model =
         ( result, newModel, cmds ) =
             case args.endpoint of
                 "getModel" ->
-                    LamderaRPC.handleEndpointJson getLogs args model
+                    LamderaRPC.handleEndpoint getModel args model
+
+                "setModel" ->
+                    LamderaRPC.handleEndpoint setModel args model
 
                 "getLogs" ->
                     LamderaRPC.handleEndpointJson getLogs args model
@@ -50,6 +54,9 @@ lamdera_handleEndpoints rawReq args model =
     -- do not waste log space with logging the logs or the model requests
     case args.endpoint of
         "getModel" ->
+            ( result, newModel, cmds )
+
+        "setModel" ->
             ( result, newModel, cmds )
 
         "getLogs" ->
@@ -79,18 +86,66 @@ getLogs _ model headers _ =
 -}
 
 
-getModel : HttpRequest -> SessionId -> BackendModel -> Dict.Dict String String -> input -> ( Result Http.Error BackendModel, BackendModel, Cmd msg )
-getModel _ _ model headers _ =
-    case headers |> Dict.get "x-lamdera-model-key" of
+getModel : SessionId -> BackendModel -> LamderaRPC.HttpRequest -> ( LamderaRPC.RPCResult, BackendModel, Cmd msg )
+getModel _ model request =
+    case request.headers |> Dict.get "x-lamdera-model-key" of
         Just modelKey ->
             if Env.modelKey == modelKey then
-                ( model |> Ok, model, Cmd.none )
+                ( LamderaRPC.ResultBytes <| Lamdera.Wire3.intListFromBytes <| Lamdera.Wire3.bytesEncode <| Types.w3_encode_BackendModel model
+                , model
+                , Cmd.none
+                )
 
             else
-                ( Http.BadStatus 401 |> Err, model, Cmd.none )
+                ( LamderaRPC.failWith LamderaRPC.StatusUnauthorized "Unauthorized"
+                , model
+                , Cmd.none
+                )
 
         Nothing ->
-            ( Http.BadStatus 401 |> Err, model, Cmd.none )
+            ( LamderaRPC.failWith LamderaRPC.StatusUnauthorized "Unauthorized"
+            , model
+            , Cmd.none
+            )
+
+
+setModel : SessionId -> BackendModel -> LamderaRPC.HttpRequest -> ( LamderaRPC.RPCResult, BackendModel, Cmd msg )
+setModel _ currentModel request =
+    case request.headers |> Dict.get "x-lamdera-model-key" of
+        Just modelKey ->
+            if Env.modelKey == modelKey then
+                case request.body of
+                    LamderaRPC.BodyBytes intList ->
+                        case Lamdera.Wire3.bytesDecode Types.w3_decode_BackendModel (Lamdera.Wire3.intListToBytes intList) of
+                            Just newModel ->
+                                ( LamderaRPC.ResultString "Model updated successfully"
+                                , newModel
+                                , Cmd.none
+                                )
+
+                            Nothing ->
+                                ( LamderaRPC.failWith LamderaRPC.StatusBadRequest "Failed to decode model"
+                                , currentModel
+                                , Cmd.none
+                                )
+
+                    _ ->
+                        ( LamderaRPC.failWith LamderaRPC.StatusBadRequest "Expected bytes body"
+                        , currentModel
+                        , Cmd.none
+                        )
+
+            else
+                ( LamderaRPC.failWith LamderaRPC.StatusUnauthorized "Unauthorized"
+                , currentModel
+                , Cmd.none
+                )
+
+        Nothing ->
+            ( LamderaRPC.failWith LamderaRPC.StatusUnauthorized "Unauthorized"
+            , currentModel
+            , Cmd.none
+            )
 
 
 makeModelImportUrl : String -> Maybe String

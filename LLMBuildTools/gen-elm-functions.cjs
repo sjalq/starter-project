@@ -24,7 +24,7 @@ function parseArgs() {
 
 function findElmFiles(excludedDirs) {
     try {
-        let excludePattern = excludedDirs.map(dir => `-not -path "./${dir}/*"`).join(' ');
+        let excludePattern = excludedDirs.map(dir => `-not -path "*/${dir.replace('src/', '')}/*"`).join(' ');
         const output = execSync(`find src -name "*.elm" -type f ${excludePattern}`, { encoding: 'utf8' });
         return output.trim().split('\n').filter(f => f);
     } catch (e) {

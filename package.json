@@ -1,5 +1,6 @@
 {
   "devDependencies": {
-    "elm-review": "^2.13.4"
+    "elm-review": "^2.13.4",
+    "puppeteer": "^24.23.0"
   }
 }

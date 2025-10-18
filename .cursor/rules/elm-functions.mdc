@@ -103,6 +103,10 @@ alwaysApply: true
 160 fetchJokeAboutEthPrice price
 202 openAiResponseDecoder responseBody
 
+## src/Endpoints/Example.elm
+### Endpoints.Example
+11 calculateSum sessionId model request
+
 ## src/Env.elm
 ### Env
 7 modelKey
@@ -203,13 +207,13 @@ alwaysApply: true
 
 ## src/RPC.elm
 ### RPC
-24 lamdera_handleEndpoints rawReq args model
-69 getLogs _ model headers _
-90 getModel _ model request
-113 setModel _ currentModel request
-152 makeModelImportUrl remoteLamderaUrl
-158 fetchImportedModel remoteLamderaUrl modelKey
-205 rpcLog
+25 lamdera_handleEndpoints rawReq args model
+67 getLogs _ model headers _
+88 getModel _ model request
+111 setModel _ currentModel request
+150 makeModelImportUrl remoteLamderaUrl
+156 fetchImportedModel remoteLamderaUrl modelKey
+203 rpcLog
 
 ## src/Rights/Auth0.elm
 ### Rights.Auth0
@@ -243,6 +247,13 @@ alwaysApply: true
 9 parser
 22 fromUrl url
 28 toString route
+
+## src/SignatureParser.elm
+### SignatureParser
+33 parseSignature line
+74 parseTypeSignature signature
+111 splitBeforeTuple segments
+135 extractOutputType tuple
 
 ## src/Supplemental.elm
 ### Supplemental

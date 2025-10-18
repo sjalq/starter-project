@@ -2,7 +2,8 @@
     "type": "application",
     "source-directories": [
         "src",
-        "auth/src"
+        "auth/src",
+        "generated"
     ],
     "elm-version": "0.19.1",
     "dependencies": {
@@ -36,7 +37,9 @@
         }
     },
     "test-dependencies": {
-        "direct": {},
+        "direct": {
+            "elm-explorations/test": "2.2.0"
+        },
         "indirect": {}
     }
 }

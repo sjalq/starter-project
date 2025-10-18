@@ -1,0 +1,3 @@
+#!/bin/bash
+# Wrapper script to make elm-codegen use lamdera as the compiler
+exec lamdera "$@"

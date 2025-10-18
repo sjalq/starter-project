@@ -3,6 +3,7 @@ module RPC exposing (..)
 import Dict
 import EndpointExample.Price
 import Env
+import GeneratedRPC
 import Http
 import Json.Encode as Encode
 import Lamdera exposing (SessionId)
@@ -45,11 +46,8 @@ lamdera_handleEndpoints rawReq args model =
                     LamderaRPC.handleEndpointJson EndpointExample.Price.getPriceResult args model
 
                 _ ->
-                    let
-                        rpcFailure =
-                            LamderaRPC.failWith LamderaRPC.StatusBadRequest <| "Unknown endpoint " ++ args.endpoint
-                    in
-                    ( rpcFailure, model, performNow (Log (encodeRPCCallAndResult args rpcFailure)) )
+                    -- Try generated endpoints as fallback
+                    GeneratedRPC.handleGeneratedEndpoints rawReq args model
     in
     -- do not waste log space with logging the logs or the model requests
     case args.endpoint of

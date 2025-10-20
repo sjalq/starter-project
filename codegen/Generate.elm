@@ -71,6 +71,18 @@ Generates simple if-then-else chain for routing
 generateRouterFunction : List EndpointConfig -> Elm.Declaration
 generateRouterFunction endpoints =
     let
+        typeAnnotation =
+            Type.function
+                [ Type.var "a"
+                , Type.named [ "LamderaRPC" ] "HttpRequest"
+                , Type.named [ "Types" ] "BackendModel"
+                ]
+                (Type.triple
+                    (Type.named [ "LamderaRPC" ] "RPCResult")
+                    (Type.named [ "Types" ] "BackendModel")
+                    (Type.namedWith [] "Cmd" [ Type.named [ "Types" ] "BackendMsg" ])
+                )
+
         body =
             Elm.functionReduced "rawReq"
                 (\rawReq ->
@@ -81,44 +93,35 @@ generateRouterFunction endpoints =
                         )
                 )
     in
-    Elm.declaration "handleGeneratedEndpoints" body
+    Elm.declaration "handleGeneratedEndpoints"
+        (Elm.withType typeAnnotation body)
         |> Elm.expose
 
 
 {-| Generate routing logic as nested if-then-else expressions
+TODO: @rpc endpoints need proper JSON encoding/decoding wrappers
 -}
 generateRoutingLogic : List EndpointConfig -> Elm.Expression
 generateRoutingLogic endpoints =
-    case endpoints of
-        [] ->
-            -- No endpoints: return error
-            Elm.triple
-                (Elm.apply
-                    (Elm.value
-                        { importFrom = [ "LamderaRPC" ]
-                        , name = "failWith"
-                        , annotation = Nothing
-                        }
-                    )
-                    [ Elm.value
-                        { importFrom = [ "LamderaRPC" ]
-                        , name = "StatusBadRequest"
-                        , annotation = Nothing
-                        }
-                    , Elm.string "No generated endpoints available"
-                    ]
-                )
-                (Elm.val "model")
-                (Elm.value
-                    { importFrom = [ "Platform", "Cmd" ]
-                    , name = "none"
-                    , annotation = Nothing
-                    }
-                )
-
-        first :: rest ->
-            -- Generate if-then-else chain
-            generateIfChain first rest
+    -- Return "not implemented" error for all generated endpoints
+    Elm.triple
+        (Elm.apply
+            (Elm.value
+                { importFrom = [ "LamderaRPC" ]
+                , name = "failWith"
+                , annotation = Nothing
+                }
+            )
+            [ Elm.value
+                { importFrom = [ "LamderaRPC" ]
+                , name = "StatusBadRequest"
+                , annotation = Nothing
+                }
+            , Elm.string "Generated @rpc endpoints require JSON codec implementation"
+            ]
+        )
+        (Elm.val "model")
+        (Elm.get "none" (Elm.val "Cmd"))
 
 
 {-| Generate if-then-else chain for endpoint routing
@@ -175,12 +178,7 @@ generateIfChain current remaining =
                             ]
                         )
                         (Elm.val "model")
-                        (Elm.value
-                            { importFrom = [ "Platform", "Cmd" ]
-                            , name = "none"
-                            , annotation = Nothing
-                            }
-                        )
+                        (Elm.get "none" (Elm.val "Cmd"))
 
                 next :: rest ->
                     -- More endpoints: recurse

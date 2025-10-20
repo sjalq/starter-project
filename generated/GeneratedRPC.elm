@@ -5,37 +5,24 @@ module GeneratedRPC exposing ( handleGeneratedEndpoints, generatedEndpointNames 
 -}
 
 
-import Endpoints.Demo
-import Endpoints.Example
 import LamderaRPC
+import Types
 
 
-handleGeneratedEndpoints : rawReq -> args -> model -> handleEndpointJson
+handleGeneratedEndpoints :
+    rawReq
+    -> LamderaRPC.HttpRequest
+    -> Types.BackendModel
+    -> ( LamderaRPC.RPCResult, Types.BackendModel, Cmd Types.BackendMsg )
 handleGeneratedEndpoints rawReq =
     \args ->
         \model ->
-            if (==) args.endpoint "Endpoints_Demo_greetUser" then
-                LamderaRPC.handleEndpointJson
-                    Endpoints.Demo.greetUser
-                    args
-                    model
-
-            else if (==) args.endpoint "Endpoints_Demo_multiply" then
-                LamderaRPC.handleEndpointJson Endpoints.Demo.multiply args model
-
-            else if (==) args.endpoint "Endpoints_Example_calculateSum" then
-                LamderaRPC.handleEndpointJson
-                    Endpoints.Example.calculateSum
-                    args
-                    model
-
-            else
-                ( LamderaRPC.failWith
-                    LamderaRPC.StatusBadRequest
-                    ((++) "Unknown endpoint: " args.endpoint)
-                , model
-                , Platform.Cmd.none
-                )
+            ( LamderaRPC.failWith
+                LamderaRPC.StatusBadRequest
+                "Generated @rpc endpoints require JSON codec implementation"
+            , model
+            , Cmd.none
+            )
 
 
 generatedEndpointNames : List String

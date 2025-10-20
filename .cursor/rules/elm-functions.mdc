@@ -103,6 +103,11 @@ alwaysApply: true
 160 fetchJokeAboutEthPrice price
 202 openAiResponseDecoder responseBody
 
+## src/Endpoints/Demo.elm
+### Endpoints.Demo
+16 greetUser sessionId model userName
+27 multiply sessionId model a b
+
 ## src/Endpoints/Example.elm
 ### Endpoints.Example
 11 calculateSum sessionId model request

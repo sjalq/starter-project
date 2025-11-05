@@ -106,7 +106,7 @@ view config =
                         [ text "Sign in with your social account" ]
                     , div
                         [ Attr.class "space-y-3" ]
-                        [ oauthButtonWithIcon config "Continue with Google" config.onAuth0Login config.colors.secondaryBg "/public/google-logo.svg"
+                        [ oauthButtonWithIcon config "Continue with Google" config.onAuth0Login config.colors.secondaryBg "/google-logo.svg"
                         ]
                     ]
                 ]

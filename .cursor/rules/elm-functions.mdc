@@ -113,13 +113,12 @@ alwaysApply: true
 11 slackApiToken
 15 slackChannel
 19 logSize
-23 stillTesting
-28 auth0AppClientId
-33 auth0AppClientSecret
-38 auth0AppTenant
-43 sysAdminEmail
-48 openAiApiKey
-57 mode
+24 auth0AppClientId
+29 auth0AppClientSecret
+34 auth0AppTenant
+39 sysAdminEmail
+44 openAiApiKey
+53 mode
 
 ## src/Frontend.elm
 ### Frontend
@@ -166,17 +165,17 @@ alwaysApply: true
 ## src/Pages/Admin.elm
 ### Pages.Admin
 19 init model adminRoute
-60 view model colors
-82 viewNoAccess _ colors
-106 viewTabs model colors
-117 viewTab tab model colors label
-167 viewTabContent model colors
-185 viewDefaultTab _ colors
-193 viewLogsTab model colors
-214 viewFetchModelTab model colors
-245 viewFusionTab model
-260 viewLogEntry index log
-268 viewLogin _ colors
+42 view model colors
+64 viewNoAccess _ colors
+88 viewTabs model colors
+99 viewTab tab model colors label
+149 viewTabContent model colors
+167 viewDefaultTab _ colors
+175 viewLogsTab model colors
+196 viewFetchModelTab model colors
+227 viewFusionTab model
+242 viewLogEntry index log
+250 viewLogin _ colors
 
 ## src/Pages/Default.elm
 ### Pages.Default

@@ -17,43 +17,25 @@ import Types exposing (..)
 
 init : FrontendModel -> AdminRoute -> ( FrontendModel, Cmd FrontendMsg )
 init model adminRoute =
-    if Env.stillTesting == "1" then
-        -- Testing mode, allow admin access
-        ( { model
-            | adminPage =
-                { isAuthenticated = True
-                , logs = model.adminPage.logs
-                , remoteUrl = ""
-                }
-          }
-        , case adminRoute of
-            AdminLogs ->
-                Lamdera.sendToBackend Admin_FetchLogs
+    -- Check if user is logged in and has admin privileges
+    case model.currentUser of
+        Just user ->
+            if user.isSysAdmin then
+                -- Allow admin access
+                case adminRoute of
+                    AdminLogs ->
+                        ( model, Lamdera.sendToBackend Admin_FetchLogs )
 
-            _ ->
-                Cmd.none
-        )
+                    _ ->
+                        ( model, Cmd.none )
 
-    else
-        -- Check if user is logged in and has admin privileges
-        case model.currentUser of
-            Just user ->
-                if user.isSysAdmin then
-                    -- Allow admin access
-                    case adminRoute of
-                        AdminLogs ->
-                            ( model, Lamdera.sendToBackend Admin_FetchLogs )
-
-                        _ ->
-                            ( model, Cmd.none )
-
-                else
-                    -- Logged in but not admin
-                    ( model, Cmd.none )
-
-            _ ->
-                -- Not logged in or user data not yet loaded
+            else
+                -- Logged in but not admin
                 ( model, Cmd.none )
+
+        _ ->
+            -- Not logged in or user data not yet loaded
+            ( model, Cmd.none )
 
 
 view : FrontendModel -> Theme.Colors -> Html FrontendMsg

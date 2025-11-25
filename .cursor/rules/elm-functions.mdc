@@ -103,22 +103,19 @@ alwaysApply: true
 160 fetchJokeAboutEthPrice price
 202 openAiResponseDecoder responseBody
 
-## src/Endpoints/Example.elm
-### Endpoints.Example
-11 calculateSum sessionId model request
-
 ## src/Env.elm
 ### Env
 7 modelKey
 11 slackApiToken
 15 slackChannel
 19 logSize
-24 auth0AppClientId
-29 auth0AppClientSecret
-34 auth0AppTenant
-39 sysAdminEmail
-44 openAiApiKey
-53 mode
+23 stillTesting
+28 auth0AppClientId
+33 auth0AppClientSecret
+38 auth0AppTenant
+43 sysAdminEmail
+48 openAiApiKey
+57 mode
 
 ## src/Frontend.elm
 ### Frontend
@@ -206,13 +203,13 @@ alwaysApply: true
 
 ## src/RPC.elm
 ### RPC
-25 lamdera_handleEndpoints rawReq args model
-67 getLogs _ model headers _
-88 getModel _ model request
-111 setModel _ currentModel request
-150 makeModelImportUrl remoteLamderaUrl
-156 fetchImportedModel remoteLamderaUrl modelKey
-203 rpcLog
+24 lamdera_handleEndpoints rawReq args model
+68 getLogs _ model headers _
+89 getModel _ model request
+112 setModel _ currentModel request
+151 makeModelImportUrl remoteLamderaUrl
+157 fetchImportedModel remoteLamderaUrl modelKey
+204 rpcLog
 
 ## src/Rights/Auth0.elm
 ### Rights.Auth0

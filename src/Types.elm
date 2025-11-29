@@ -6,6 +6,7 @@ import Browser.Navigation exposing (Key)
 import Dict exposing (Dict)
 import Http
 import Lamdera
+import Logger
 import Url exposing (Url)
 
 
@@ -43,7 +44,7 @@ type AdminRoute
 
 
 type alias AdminPageModel =
-    { logs : List String
+    { logs : List Logger.LogEntry
     , isAuthenticated : Bool
     , remoteUrl : String
     }
@@ -78,7 +79,7 @@ type alias EmailPasswordFormModel =
 
 
 type alias BackendModel =
-    { logs : List String
+    { logState : Logger.LogState
     , pendingAuths : Dict Lamdera.SessionId Auth.Common.PendingAuth
     , sessions : Dict Lamdera.SessionId Auth.Common.UserInfo
     , users : Dict Email User
@@ -169,7 +170,7 @@ type ToBackend
 
 type BackendMsg
     = NoOpBackendMsg
-    | Log String
+    | GotLogTime Logger.Msg
     | GotRemoteModel (Result Http.Error BackendModel)
     | AuthBackendMsg Auth.Common.BackendMsg
     | EmailPasswordAuthResult EmailPasswordAuthResult
@@ -183,7 +184,7 @@ type ToFrontend
     = NoOpToFrontend
     | A00_WebSocketSend String
       -- Admin page
-    | Admin_Logs_ToFrontend (List String)
+    | Admin_Logs_ToFrontend (List Logger.LogEntry)
     | AuthToFrontend Auth.Common.ToFrontend
     | AuthSuccess Auth.Common.UserInfo
     | UserInfoMsg (Maybe Auth.Common.UserInfo)

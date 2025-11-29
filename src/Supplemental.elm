@@ -127,36 +127,11 @@ handleJsonResponse decoder response =
 
 
 {-
-   Logging
+   Logging - DEPRECATED: Use Logger module instead
+
+   These functions are kept for backwards compatibility but should not be used
+   in new code. Use Logger.log, Logger.logInfo, Logger.logError, etc.
 -}
-
-
-log noop logMsg ( model, cmd ) =
-    let
-        _ =
-            Debug.log "Log: " logMsg
-
-        logSize =
-            Env.logSize |> String.toInt |> Maybe.withDefault 2000
-
-        -- x =
-        --     Time.now
-        model_ =
-            { model | logs = logMsg :: model.logs |> List.take logSize }
-
-        extraCmd =
-            sendSlackMessage Env.slackApiToken Env.slackChannel logMsg
-                |> Task.attempt (\_ -> noop)
-    in
-    ( model_, Cmd.batch [ cmd, extraCmd ] )
-
-
-rpcLog noop logMsg ( rpcResponse, model, cmds ) =
-    let
-        ( newModel, newCmd ) =
-            log noop logMsg ( model, cmds )
-    in
-    ( rpcResponse, newModel, newCmd )
 
 
 

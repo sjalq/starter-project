@@ -7,4 +7,4 @@ echo "Running tests..."
 elm-test-rs --compiler lamdera
 
 echo "Compiling Lamdera..."
-lamdera make src/Backend.elm src/Frontend.elm src/RPC.elm
+lamdera make src/Backend.elm src/Frontend.elm

@@ -1,3 +1,7 @@
 
 elm-stuff
 node_modules
+
+# CLI config (contains secrets) and state
+.lamdera-cli.json
+.lamdera-cli.state.json

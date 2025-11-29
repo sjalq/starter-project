@@ -1,0 +1,17 @@
+{
+  "environments": {
+    "local": {
+      "url": "http://localhost:8000",
+      "modelKey": "1234567890"
+    },
+    "prod": {
+      "url": "https://your-app.lamdera.app",
+      "modelKey": "YOUR_PRODUCTION_MODEL_KEY"
+    },
+    "preview": {
+      "url": "https://your-app-preview.lamdera.app",
+      "modelKey": "YOUR_PREVIEW_MODEL_KEY"
+    }
+  },
+  "defaultEnv": "local"
+}

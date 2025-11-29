@@ -6,8 +6,9 @@ module Backend exposing (Model, app)
 import Auth.EmailPasswordAuth as EmailPasswordAuth
 import Auth.Flow
 import Dict
+import Env
 import Lamdera
-import RPC
+import Logger
 import Rights.Auth0 exposing (backendConfig)
 import Rights.Permissions exposing (sessionCanPerformAction)
 import Rights.Role exposing (roleToString)
@@ -39,8 +40,11 @@ subscriptions _ =
 init : ( Model, Cmd BackendMsg )
 init =
     let
+        logSize =
+            Env.logSize |> String.toInt |> Maybe.withDefault 2000
+
         initialModel =
-            { logs = []
+            { logState = Logger.init logSize
             , pendingAuths = Dict.empty
             , sessions = Dict.empty
             , users = Dict.empty
@@ -61,19 +65,20 @@ update msg model =
         NoOpBackendMsg ->
             ( model, Cmd.none )
 
-        Log logMsg ->
-            ( model, Cmd.none )
-                |> log logMsg
+        GotLogTime loggerMsg ->
+            ( { model | logState = Logger.handleMsg loggerMsg model.logState }
+            , Cmd.none
+            )
 
         GotRemoteModel result ->
             case result of
                 Ok model_ ->
                     ( model_, Cmd.none )
-                        |> log "GotRemoteModel Ok"
+                        |> Logger.logInfo "GotRemoteModel Ok" GotLogTime
 
                 Err err ->
                     ( model, Cmd.none )
-                        |> log ("GotRemoteModel Err: " ++ httpErrorToString err)
+                        |> Logger.logError ("GotRemoteModel Err: " ++ httpErrorToString err) GotLogTime
 
         AuthBackendMsg authMsg ->
             Auth.Flow.backendUpdate (backendConfig model) authMsg
@@ -91,7 +96,7 @@ update msg model =
                             Dict.insert token (Ready (Ok priceStr)) model.pollingJobs
                     in
                     ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                        |> log ("Crypto price calculated: " ++ priceStr)
+                        |> Logger.logInfo ("Crypto price calculated: " ++ priceStr) GotLogTime
 
                 Err err ->
                     let
@@ -99,23 +104,21 @@ update msg model =
                             Dict.insert token (Ready (Err (httpErrorToString err))) model.pollingJobs
                     in
                     ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                        |> log ("Failed to calculate crypto price: " ++ httpErrorToString err)
+                        |> Logger.logError ("Failed to calculate crypto price: " ++ httpErrorToString err) GotLogTime
 
         StoreTaskResult token result ->
             let
                 updatedPollingJobs =
                     Dict.insert token (Ready result) model.pollingJobs
-
-                logMsg =
-                    case result of
-                        Ok _ ->
-                            "Task completed successfully: " ++ token
-
-                        Err err ->
-                            "Task failed: " ++ token ++ " - " ++ err
             in
-            ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                |> log logMsg
+            case result of
+                Ok _ ->
+                    ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
+                        |> Logger.logInfo ("Task completed successfully: " ++ token) GotLogTime
+
+                Err err ->
+                    ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
+                        |> Logger.logError ("Task failed: " ++ token ++ " - " ++ err) GotLogTime
 
         GotJobTime token timestamp ->
             let
@@ -123,7 +126,7 @@ update msg model =
                     Dict.insert token (BusyWithTime timestamp) model.pollingJobs
             in
             ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                |> log ("Updated job " ++ token ++ " with timestamp: " ++ String.fromInt timestamp)
+                |> Logger.logDebug ("Updated job " ++ token ++ " with timestamp: " ++ String.fromInt timestamp) GotLogTime
 
 
 updateFromFrontend : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
@@ -133,21 +136,21 @@ updateFromFrontend browserCookie connectionId msg model =
             ( model, Cmd.none )
 
         Admin_FetchLogs ->
-            ( model, Lamdera.sendToFrontend connectionId (Admin_Logs_ToFrontend model.logs) )
+            ( model, Lamdera.sendToFrontend connectionId (Admin_Logs_ToFrontend (Logger.toList model.logState)) )
 
         Admin_ClearLogs ->
             let
-                newModel =
-                    { model | logs = [] }
-            in
-            ( newModel, Lamdera.sendToFrontend connectionId (Admin_Logs_ToFrontend newModel.logs) )
+                logSize =
+                    Env.logSize |> String.toInt |> Maybe.withDefault 2000
 
-        Admin_FetchRemoteModel remoteUrl ->
-            ( model
-              -- put your production model key in here to fetch from your prod env.
-            , RPC.fetchImportedModel remoteUrl "1234567890"
-                |> Task.attempt GotRemoteModel
-            )
+                newModel =
+                    { model | logState = Logger.init logSize }
+            in
+            ( newModel, Lamdera.sendToFrontend connectionId (Admin_Logs_ToFrontend []) )
+
+        Admin_FetchRemoteModel _ ->
+            -- Remote model fetching removed (was RPC-based)
+            ( model, Cmd.none )
 
         AuthToBackend authToBackend ->
             Auth.Flow.updateFromFrontend (backendConfig model) connectionId browserCookie authToBackend model
@@ -206,7 +209,7 @@ updateFromFrontend browserCookie connectionId msg model =
 
                 Nothing ->
                     ( model, Cmd.none )
-                        |> log "User or session not found for SetDarkModePreference"
+                        |> Logger.logWarn "User or session not found for SetDarkModePreference" GotLogTime
 
         A00_WebSocketReceive message ->
             -- Echo websocket message back to frontend
@@ -249,10 +252,6 @@ getUserFromCookie : BrowserCookie -> Model -> Maybe User
 getUserFromCookie browserCookie model =
     Dict.get browserCookie model.sessions
         |> Maybe.andThen (\userInfo -> Dict.get userInfo.email model.users)
-
-
-log =
-    Supplemental.log NoOpBackendMsg
 
 
 userToFrontend : User -> UserFrontend

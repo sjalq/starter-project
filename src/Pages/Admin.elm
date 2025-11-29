@@ -5,7 +5,9 @@ import Html exposing (..)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Lamdera
+import Logger
 import Theme
+import Time
 import Types exposing (..)
 
 
@@ -184,10 +186,10 @@ viewLogsTab model colors =
                 ]
                 [ text "Clear Logs" ]
             ]
-        , div [ Attr.class "bg-black text-gray-200 font-mono p-4 rounded space-y-1", Attr.style "color" "#e2e8f0" ]
+        , div [ Attr.class "bg-black text-gray-200 font-mono p-4 rounded space-y-1 text-sm overflow-x-auto", Attr.style "color" "#e2e8f0" ]
             (model.adminPage.logs
                 |> List.reverse
-                |> List.indexedMap viewLogEntry
+                |> List.map viewLogEntry
             )
         ]
 
@@ -238,12 +240,66 @@ viewFusionTab model =
         ]
 
 
-viewLogEntry : Int -> String -> Html FrontendMsg
-viewLogEntry index log =
-    div []
-        [ span [ Attr.class "pr-2" ] [ text (String.fromInt index) ]
-        , span [ Attr.style "color" "#a0aec0" ] [ text log ]
+viewLogEntry : Logger.LogEntry -> Html FrontendMsg
+viewLogEntry entry =
+    let
+        levelColor =
+            case entry.level of
+                Logger.Debug ->
+                    "#718096"
+
+                Logger.Info ->
+                    "#4299e1"
+
+                Logger.Warn ->
+                    "#ecc94b"
+
+                Logger.Error ->
+                    "#fc8181"
+
+        levelText =
+            Logger.levelToString entry.level
+
+        timestamp =
+            if entry.timestamp > 0 then
+                formatTimestamp entry.timestamp
+
+            else
+                "..."
+    in
+    div [ Attr.class "flex gap-2 py-0.5" ]
+        [ span [ Attr.class "text-gray-600 w-12 text-right shrink-0" ]
+            [ text (String.fromInt entry.index) ]
+        , span [ Attr.class "text-gray-500 w-20 shrink-0" ]
+            [ text timestamp ]
+        , span
+            [ Attr.class "w-14 shrink-0 font-semibold"
+            , Attr.style "color" levelColor
+            ]
+            [ text levelText ]
+        , span [ Attr.style "color" "#e2e8f0" ]
+            [ text entry.message ]
         ]
+
+
+{-| Format a Unix timestamp (milliseconds) to HH:MM:SS
+-}
+formatTimestamp : Int -> String
+formatTimestamp millis =
+    let
+        posix =
+            Time.millisToPosix millis
+
+        hours =
+            Time.toHour Time.utc posix |> String.fromInt |> String.padLeft 2 '0'
+
+        minutes =
+            Time.toMinute Time.utc posix |> String.fromInt |> String.padLeft 2 '0'
+
+        seconds =
+            Time.toSecond Time.utc posix |> String.fromInt |> String.padLeft 2 '0'
+    in
+    hours ++ ":" ++ minutes ++ ":" ++ seconds
 
 
 viewLogin : FrontendModel -> Theme.Colors -> Html FrontendMsg

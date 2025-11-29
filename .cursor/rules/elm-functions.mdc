@@ -26,16 +26,15 @@ alwaysApply: true
 
 ## src/Backend.elm
 ### Backend
-25 app
-35 subscriptions _
-40 init
-59 update msg model
-130 updateFromFrontend browserCookie connectionId msg model
-217 updateFromFrontendCheckingRights browserCookie connectionId msg model
-249 getUserFromCookie browserCookie model
-254 log
-259 userToFrontend user
-268 handleEmailPasswordAuth browserCookie connectionId authMsg model
+27 app
+37 subscriptions _
+42 init
+64 update msg model
+134 updateFromFrontend browserCookie connectionId msg model
+224 updateFromFrontendCheckingRights browserCookie connectionId msg model
+256 getUserFromCookie browserCookie model
+262 userToFrontend user
+271 handleEmailPasswordAuth browserCookie connectionId authMsg model
 
 ## src/Components/AuthControls.elm
 ### Components.AuthControls
@@ -159,20 +158,47 @@ alwaysApply: true
 544 statusToInt code
 731 statusToString statusCode
 
+## src/Logger.elm
+### Logger
+121 init maxEntries
+139 addLog level message state
+150 addLogWithTime level message timestamp state
+174 updateTimestamp index timestamp state
+199 getRecent n state
+210 getSinceIndex minIndex state
+223 getSinceTimestamp minTimestamp state
+233 getRange fromIndex toIndex state
+242 toList state
+249 size state
+257 nextIndex state
+313 logInfo
+324 logWarn
+335 logError
+346 logDebug
+354 handleMsg msg state
+367 encodeLogEntry entry
+379 encodeLogEntries entries
+386 decodeLogEntry
+395 decodeLevelHelper str
+407 decodeLogEntries
+418 levelToString level
+436 levelFromString str
+
 ## src/Pages/Admin.elm
 ### Pages.Admin
-19 init model adminRoute
-42 view model colors
-64 viewNoAccess _ colors
-88 viewTabs model colors
-99 viewTab tab model colors label
-149 viewTabContent model colors
-167 viewDefaultTab _ colors
-175 viewLogsTab model colors
-196 viewFetchModelTab model colors
-227 viewFusionTab model
-242 viewLogEntry index log
-250 viewLogin _ colors
+21 init model adminRoute
+44 view model colors
+66 viewNoAccess _ colors
+90 viewTabs model colors
+101 viewTab tab model colors label
+151 viewTabContent model colors
+169 viewDefaultTab _ colors
+177 viewLogsTab model colors
+198 viewFetchModelTab model colors
+229 viewFusionTab model
+244 viewLogEntry entry
+288 formatTimestamp millis
+306 viewLogin _ colors
 
 ## src/Pages/Default.elm
 ### Pages.Default
@@ -203,13 +229,13 @@ alwaysApply: true
 
 ## src/RPC.elm
 ### RPC
-24 lamdera_handleEndpoints rawReq args model
-68 getLogs _ model headers _
-89 getModel _ model request
-112 setModel _ currentModel request
-151 makeModelImportUrl remoteLamderaUrl
-157 fetchImportedModel remoteLamderaUrl modelKey
-204 rpcLog
+27 lamdera_handleEndpoints rawReq args model
+90 getLogs _ model headers jsonBody
+167 logLevelToInt level
+190 getModel _ model request
+213 setModel _ currentModel request
+252 makeModelImportUrl remoteLamderaUrl
+258 fetchImportedModel remoteLamderaUrl modelKey
 
 ## src/Rights/Auth0.elm
 ### Rights.Auth0
@@ -259,26 +285,26 @@ alwaysApply: true
 67 responseToString response
 86 httpErrorToString error
 105 handleJsonResponse decoder response
-169 performNow msg
-174 getTime msg
-179 waitThenPerform ms msg
-190 at_ path decoder
-195 requiredAt_ path decoder
-200 optionalAt_ path valDecoder fallback decoder
-211 slackApiUrl
-216 sendSlackMessage token channel message
-254 formatFloat decimals value
-298 formatPrice currency price
-312 formatPercent percent
-328 formatPercentWithoutSign percent
-344 monthToString month
-384 monthToInt month
-424 formatDate time
-439 second
-444 minute
-449 hour
-454 day
-459 week
+144 performNow msg
+149 getTime msg
+154 waitThenPerform ms msg
+165 at_ path decoder
+170 requiredAt_ path decoder
+175 optionalAt_ path valDecoder fallback decoder
+186 slackApiUrl
+191 sendSlackMessage token channel message
+229 formatFloat decimals value
+273 formatPrice currency price
+287 formatPercent percent
+303 formatPercentWithoutSign percent
+319 monthToString month
+359 monthToInt month
+399 formatDate time
+414 second
+419 minute
+424 hour
+429 day
+434 week
 
 ## src/SupplementalRPC.elm
 ### SupplementalRPC

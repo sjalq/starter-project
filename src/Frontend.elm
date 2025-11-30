@@ -299,7 +299,7 @@ updateFromBackend msg model =
             -- Simply ignore the denied action without any UI notification
             ( model, Cmd.none )
 
-        A00_WebSocketSend message ->
+        A0 message ->
             -- Log websocket messages for debugging
             ( model, Cmd.none )
 

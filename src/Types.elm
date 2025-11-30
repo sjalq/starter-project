@@ -149,16 +149,15 @@ type FrontendMsg
 
 
 type ToBackend
-    = NoOpToBackend
-    | A00_WebSocketReceive String
-      -- Admin
-    | Admin_FetchLogs
+    = A String -- WebSocket message from JS (guaranteed tag 0)
     | Admin_ClearLogs
+    | Admin_FetchLogs
     | Admin_FetchRemoteModel String
     | AuthToBackend Auth.Common.ToBackend
     | EmailPasswordAuthToBackend EmailPasswordAuthToBackend
     | GetUserToBackend
     | LoggedOut
+    | NoOpToBackend
     | SetDarkModePreference Bool
 
 
@@ -181,15 +180,14 @@ type BackendMsg
 
 
 type ToFrontend
-    = NoOpToFrontend
-    | A00_WebSocketSend String
-      -- Admin page
+    = A0 String -- WebSocket message to JS (guaranteed tag 0, '0' < 'A' so A0 < Admin...)
     | Admin_Logs_ToFrontend (List Logger.LogEntry)
-    | AuthToFrontend Auth.Common.ToFrontend
     | AuthSuccess Auth.Common.UserInfo
-    | UserInfoMsg (Maybe Auth.Common.UserInfo)
-    | UserDataToFrontend UserFrontend
+    | AuthToFrontend Auth.Common.ToFrontend
+    | NoOpToFrontend
     | PermissionDenied ToBackend
+    | UserDataToFrontend UserFrontend
+    | UserInfoMsg (Maybe Auth.Common.UserInfo)
 
 
 

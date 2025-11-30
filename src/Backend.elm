@@ -211,9 +211,9 @@ updateFromFrontend browserCookie connectionId msg model =
                     ( model, Cmd.none )
                         |> Logger.logWarn "User or session not found for SetDarkModePreference" GotLogTime
 
-        A00_WebSocketReceive message ->
+        A message ->
             -- Echo websocket message back to frontend
-            ( model, Lamdera.sendToFrontend connectionId (A00_WebSocketSend ("Echo: " ++ message)) )
+            ( model, Lamdera.sendToFrontend connectionId (A0 ("Echo: " ++ message)) )
 
 
 updateFromFrontendCheckingRights : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )

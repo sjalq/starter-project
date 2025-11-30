@@ -1,25 +1,22 @@
 {
   "name": "create-lamdera-app",
   "version": "1.0.0",
-  "description": "Lamdera starter project with authentication and websockets",
+  "description": "Create production-ready Lamdera apps with authentication, WebSockets, and more",
+  "author": "sjalq",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sjalq/starter-project.git"
+  },
+  "homepage": "https://github.com/sjalq/starter-project#readme",
+  "bugs": {
+    "url": "https://github.com/sjalq/starter-project/issues"
+  },
   "bin": {
-    "create-lamdera-app": "./scripts/clone.js"
+    "create-lamdera-app": "./bin/create-lamdera-app.js"
   },
   "files": [
-    "src/",
-    "auth/",
-    "lamdera-websocket-package/",
-    "scripts/clone.js",
-    "elm.json",
-    "tests/",
-    "compile.sh",
-    "public/",
-    "review/",
-    "elm-pkg-js/",
-    ".cursor/",
-    "codegen/",
-    "README.md",
-    "CLAUDE.md"
+    "bin/create-lamdera-app.js"
   ],
   "keywords": [
     "lamdera",
@@ -28,9 +25,14 @@
     "template",
     "scaffolding",
     "authentication",
-    "websockets"
+    "websockets",
+    "create",
+    "cli",
+    "generator"
   ],
-  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "devDependencies": {
     "elm-review": "^2.13.4",
     "puppeteer": "^24.23.0"

@@ -38,8 +38,8 @@ actionRoleMap msg =
         SetDarkModePreference _ ->
             Anonymous
 
-        -- Allow anyone to set their own preference
-        A00_WebSocketReceive _ ->
+        -- Allow anyone to send websocket messages
+        A _ ->
             Anonymous
 
 

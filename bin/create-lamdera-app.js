@@ -342,7 +342,7 @@ const main = async () => {
   println('');
   printFolderHelp(cwd);
 
-  const defaultPath = path.join(cwd, cleanName);
+  const defaultPath = path.join(cwd, '..', cleanName);
   println(`${COLORS.dim}Default: ${defaultPath}${COLORS.reset}`);
   println('');
 

@@ -6,13 +6,6 @@ alwaysApply: true
 
 # Elm Functions Reference
 
-## src/AsyncRPC.elm
-### AsyncRPC
-28 handleTaskChain _ model _ _ config
-53 handleTaskResult token encoder result
-69 handleTimeResult token result
-80 handlePollingResult _ model _ json
-
 ## src/Auth/EmailPasswordAuth.elm
 ### Auth.EmailPasswordAuth
 32 handleLogin browserCookie connectionId email password model
@@ -26,15 +19,15 @@ alwaysApply: true
 
 ## src/Backend.elm
 ### Backend
-27 app
-37 subscriptions _
-42 init
-64 update msg model
-134 updateFromFrontend browserCookie connectionId msg model
-224 updateFromFrontendCheckingRights browserCookie connectionId msg model
-256 getUserFromCookie browserCookie model
-262 userToFrontend user
-271 handleEmailPasswordAuth browserCookie connectionId authMsg model
+26 app
+36 subscriptions _
+41 init
+63 update msg model
+133 updateFromFrontend browserCookie connectionId msg model
+220 updateFromFrontendCheckingRights browserCookie connectionId msg model
+252 getUserFromCookie browserCookie model
+258 userToFrontend user
+267 handleEmailPasswordAuth browserCookie connectionId authMsg model
 
 ## src/Components/AuthControls.elm
 ### Components.AuthControls
@@ -92,16 +85,6 @@ alwaysApply: true
 17 view config
 41 tabBar colors tabs
 
-## src/EndpointExample/Price.elm
-### EndpointExample.Price
-21 getPrice sessionId model headers json
-36 getPriceResult sessionId model headers json
-45 fetchEthPriceInZar
-118 fetchEthPrice
-139 fetchZarRate
-160 fetchJokeAboutEthPrice price
-202 openAiResponseDecoder responseBody
-
 ## src/Env.elm
 ### Env
 7 modelKey
@@ -133,30 +116,6 @@ alwaysApply: true
 440 updateEmailPasswordForm msg model
 473 viewWithAuth model
 549 authUpdateFromBackend authToFrontendMsg model
-
-## src/LamderaRPC.elm
-### LamderaRPC
-25 fail string
-43 resultWith statusCode body
-48 failWith statusCode stringBody
-63 bodyTypeToString body
-105 requestDecoder
-120 rawBody rawReq
-130 rawBodyDecoder
-147 process log rpcOut rawReq handler model
-209 asTask encoder decoder requestValue endpoint
-245 asTaskJson json endpoint
-266 asTaskString requestBody endpoint
-278 customResolver fn response
-304 handleEndpointBytes fn decoder encoder args model
-333 handleEndpoint fn args model
-342 handleEndpointJson fn args model
-366 handleEndpointJsonRaw fn args model
-390 handleEndpointString fn args model
-410 httpErrorToString err
-445 methodString method
-544 statusToInt code
-731 statusToString statusCode
 
 ## src/Logger.elm
 ### Logger
@@ -227,16 +186,6 @@ alwaysApply: true
 14 log message
 19 logReceived toMsg
 
-## src/RPC.elm
-### RPC
-27 lamdera_handleEndpoints rawReq args model
-90 getLogs _ model headers jsonBody
-167 logLevelToInt level
-190 getModel _ model request
-213 setModel _ currentModel request
-252 makeModelImportUrl remoteLamderaUrl
-258 fetchImportedModel remoteLamderaUrl modelKey
-
 ## src/Rights/Auth0.elm
 ### Rights.Auth0
 14 renewSession _ _ model
@@ -306,13 +255,6 @@ alwaysApply: true
 429 day
 434 week
 
-## src/SupplementalRPC.elm
-### SupplementalRPC
-14 stringifyHttpRequest request
-41 stringifyRPCResult result
-85 encodeHttpBody body
-107 encodeRPCCallAndResult args result
-
 ## src/TestData.elm
 ### TestData
 12 defaultUsers
@@ -341,4 +283,14 @@ alwaysApply: true
 154 headerText isDarkMode
 159 activeTabText isDarkMode
 164 inactiveTabText isDarkMode
+
+## src/Wire3SortTest.elm
+### Wire3SortTest
+36 encodeAA
+43 encodeA_
+50 bytesToList bytes
+59 aaBytes
+64 a_Bytes
+71 sortOrderResult
+92 proofTest
 

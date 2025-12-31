@@ -6,6 +6,13 @@ alwaysApply: true
 
 # Elm Functions Reference
 
+## src/AsyncRPC.elm
+### AsyncRPC
+28 handleTaskChain _ model _ _ config
+53 handleTaskResult token encoder result
+69 handleTimeResult token result
+80 handlePollingResult _ model _ json
+
 ## src/Auth/EmailPasswordAuth.elm
 ### Auth.EmailPasswordAuth
 32 handleLogin browserCookie connectionId email password model
@@ -85,6 +92,16 @@ alwaysApply: true
 17 view config
 41 tabBar colors tabs
 
+## src/EndpointExample/Price.elm
+### EndpointExample.Price
+21 getPrice sessionId model headers json
+36 getPriceResult sessionId model headers json
+45 fetchEthPriceInZar
+118 fetchEthPrice
+139 fetchZarRate
+160 fetchJokeAboutEthPrice price
+202 openAiResponseDecoder responseBody
+
 ## src/Env.elm
 ### Env
 7 modelKey
@@ -117,31 +134,57 @@ alwaysApply: true
 473 viewWithAuth model
 549 authUpdateFromBackend authToFrontendMsg model
 
+## src/LamderaRPC.elm
+### LamderaRPC
+25 fail string
+43 resultWith statusCode body
+48 failWith statusCode stringBody
+63 bodyTypeToString body
+105 requestDecoder
+120 rawBody rawReq
+130 rawBodyDecoder
+147 process log rpcOut rawReq handler model
+209 asTask encoder decoder requestValue endpoint
+245 asTaskJson json endpoint
+266 asTaskString requestBody endpoint
+278 customResolver fn response
+304 handleEndpointBytes fn decoder encoder args model
+333 handleEndpoint fn args model
+342 handleEndpointJson fn args model
+366 handleEndpointJsonRaw fn args model
+390 handleEndpointString fn args model
+410 httpErrorToString err
+445 methodString method
+544 statusToInt code
+731 statusToString statusCode
+
 ## src/Logger.elm
 ### Logger
-121 init maxEntries
-139 addLog level message state
-150 addLogWithTime level message timestamp state
-174 updateTimestamp index timestamp state
-199 getRecent n state
-210 getSinceIndex minIndex state
-223 getSinceTimestamp minTimestamp state
-233 getRange fromIndex toIndex state
-242 toList state
-249 size state
-257 nextIndex state
-313 logInfo
-324 logWarn
-335 logError
-346 logDebug
-354 handleMsg msg state
-367 encodeLogEntry entry
-379 encodeLogEntries entries
-386 decodeLogEntry
-395 decodeLevelHelper str
-407 decodeLogEntries
-418 levelToString level
-436 levelFromString str
+123 init maxEntries
+141 addLog level message state
+152 addLogWithTime level message timestamp state
+176 updateTimestamp index timestamp state
+201 getRecent n state
+212 getSinceIndex minIndex state
+225 getSinceTimestamp minTimestamp state
+235 getRange fromIndex toIndex state
+244 toList state
+251 size state
+259 nextIndex state
+315 logInfo
+326 logWarn
+337 logError
+348 logDebug
+363 logWithCmd level message state
+384 logInfoWithCmd
+392 handleMsg msg state
+405 encodeLogEntry entry
+417 encodeLogEntries entries
+424 decodeLogEntry
+433 decodeLevelHelper str
+445 decodeLogEntries
+456 levelToString level
+474 levelFromString str
 
 ## src/Pages/Admin.elm
 ### Pages.Admin
@@ -185,6 +228,15 @@ alwaysApply: true
 ### 
 14 log message
 19 logReceived toMsg
+
+## src/RPC.elm
+### RPC
+25 lamdera_handleEndpoints rawReq args model
+74 getLogs _ model headers _
+98 getModel _ model request
+124 setModel _ currentModel request
+163 makeModelImportUrl remoteLamderaUrl
+169 fetchImportedModel remoteLamderaUrl modelKey
 
 ## src/Rights/Auth0.elm
 ### Rights.Auth0
@@ -254,6 +306,13 @@ alwaysApply: true
 424 hour
 429 day
 434 week
+
+## src/SupplementalRPC.elm
+### SupplementalRPC
+14 stringifyHttpRequest request
+41 stringifyRPCResult result
+85 encodeHttpBody body
+107 encodeRPCCallAndResult args result
 
 ## src/TestData.elm
 ### TestData

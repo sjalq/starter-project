@@ -14,7 +14,7 @@ actionRoleMap msg =
         NoOpToBackend ->
             Anonymous
 
-        Admin_FetchLogs ->
+        Admin_FetchLogs _ ->
             SysAdmin
 
         Admin_ClearLogs ->

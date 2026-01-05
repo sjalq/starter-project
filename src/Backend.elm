@@ -135,8 +135,24 @@ updateFromFrontend browserCookie connectionId msg model =
         NoOpToBackend ->
             ( model, Cmd.none )
 
-        Admin_FetchLogs ->
-            ( model, Lamdera.sendToFrontend connectionId (Admin_Logs_ToFrontend (Logger.toList model.logState)) )
+        Admin_FetchLogs searchQuery ->
+            let
+                allLogs =
+                    Logger.toList model.logState
+
+                filteredLogs =
+                    if String.isEmpty searchQuery then
+                        allLogs
+
+                    else
+                        allLogs
+                            |> List.filter
+                                (\logEntry ->
+                                    String.contains (String.toLower searchQuery)
+                                        (String.toLower logEntry.message)
+                                )
+            in
+            ( model, Lamdera.sendToFrontend connectionId (Admin_Logs_ToFrontend filteredLogs) )
 
         Admin_ClearLogs ->
             let

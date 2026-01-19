@@ -35,22 +35,22 @@ async function cloneTo(args) {
   }
   if (hasRsync) {
     execSync(
-      `rsync -a --exclude ".git" --exclude ".gitmodules" --exclude "clone.sh" --exclude "script" "${repoRoot}/" "${target}/"`,
+      `rsync -a --exclude ".git" --exclude ".gitmodules" --exclude "clone.sh" --exclude "clone.ps1" --exclude "script" --exclude "scripts" "${repoRoot}/" "${target}/"`,
       { stdio: "inherit" }
     );
   } else {
     execSync(
-      `bash -c 'shopt -s dotglob;         mkdir -p "${target}" &&         for f in "${repoRoot}"/*; do           base="$(basename "$f")";           if [ "$base" != ".git" ] && [ "$base" != ".gitmodules" ] && [ "$base" != "script" ]; then             cp -R "$f" "${target}/";           fi;         done'`,
+      `bash -c 'shopt -s dotglob;         mkdir -p "${target}" &&         for f in "${repoRoot}"/*; do           base="$(basename "$f")";           if [ "$base" != ".git" ] && [ "$base" != ".gitmodules" ] && [ "$base" != "clone.sh" ] && [ "$base" != "clone.ps1" ] && [ "$base" != "script" ] && [ "$base" != "scripts" ]; then             cp -R "$f" "${target}/";           fi;         done'`,
       { stdio: "inherit" }
     );
   }
   execSync(`bash -c 'cd "${target}" && git init'`, { stdio: "ignore" });
-  execSync(`bash -c 'cd "${target}" && git submodule add https://github.com/sjalq/auth.git auth'`, { stdio: "ignore" });
-  execSync(
-    `bash -c 'cd "${target}" && git submodule add https://github.com/sjalq/lamdera-websocket.git lamdera-websocket-package'`,
-    { stdio: "ignore" }
-  );
-  execSync(`bash -c 'cd "${target}" && git submodule update --init --recursive'`, { stdio: "ignore" });
+  if (fs.existsSync(path.join(repoRoot, "auth"))) {
+    execSync(`cp -R "${repoRoot}/auth" "${target}/auth"`, { stdio: "inherit" });
+  }
+  if (fs.existsSync(path.join(repoRoot, "lamdera-websocket-package"))) {
+    execSync(`cp -R "${repoRoot}/lamdera-websocket-package" "${target}/lamdera-websocket-package"`, { stdio: "inherit" });
+  }
   try {
     execSync(`bash -c 'cd "${target}" && git add . && git commit -m "Initial commit from starter project with submodules"'`, {
       stdio: "ignore"

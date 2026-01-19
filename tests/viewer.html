@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Program Test Viewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+    <iframe id="viewer" src="viewer-inner.html"></iframe>
+    <script>
+        function injectTailwindCSS() {
+            var iframe = document.getElementById('viewer');
+            try {
+                var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                if (iframeDoc && !iframeDoc.getElementById('tailwind-css')) {
+                    var link = iframeDoc.createElement('link');
+                    link.id = 'tailwind-css';
+                    link.rel = 'stylesheet';
+                    link.href = 'tailwind-compiled.css';
+                    iframeDoc.head.appendChild(link);
+                }
+            } catch(e) {}
+        }
+
+        document.getElementById('viewer').addEventListener('load', function() {
+            injectTailwindCSS();
+            // Keep re-injecting in case Elm removes it
+            setInterval(injectTailwindCSS, 200);
+        });
+    </script>
+</body>
+</html>

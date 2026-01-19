@@ -445,6 +445,30 @@ simulateEffects effect =
 elm-test-rs --compiler lamdera "tests/**/*.elm"
 ```
 
+### Visual Test Viewer
+
+To see tests render the actual frontend UI:
+
+1. **Compile the viewer:**
+   ```bash
+   lamdera make tests/TestViewer.elm --output=tests/viewer.js
+   ```
+
+2. **Serve the tests directory:**
+   ```bash
+   cd tests && python3 -m http.server 8888 --bind 0.0.0.0
+   ```
+
+3. **Open:** `http://localhost:8888/viewer.html`
+
+4. **View rendered frontend:** Click a test, then click the **@** marker in the timeline to see the snapshot.
+
+**Key:** Use `frontend.snapshotView` in tests to capture rendered views:
+```elm
+Test.connectFrontend 0 sessionId "/" { width = 1920, height = 1080 }
+    (\frontend -> [ frontend.snapshotView 100 { name = "Home Page" } ])
+```
+
 ### Resources
 
 - [lamdera/program-test GitHub](https://github.com/lamdera/program-test)

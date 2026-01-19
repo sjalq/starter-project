@@ -5,6 +5,10 @@ import Auth.Flow
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Nav
 import Components.LoginModal
+import Effect.Browser.Navigation
+import Effect.Command as Command exposing (Command, FrontendOnly)
+import Effect.Lamdera
+import Effect.Subscription as Subscription exposing (Subscription)
 import Html exposing (..)
 import Html.Attributes as Attr
 import Html.Events as HE
@@ -47,26 +51,24 @@ type alias Model =
 {-| replace with your app function to try it out
 -}
 app =
-    Lamdera.frontend
+    Effect.Lamdera.frontend Lamdera.sendToBackend
         { init = initWithAuth
         , onUrlRequest = UrlClicked
         , onUrlChange = UrlChanged
         , update = update
         , updateFromBackend = updateFromBackend
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         , view = view
         }
 
 
-subscriptions : FrontendModel -> Sub FrontendMsg
+subscriptions : Model -> Subscription FrontendOnly FrontendMsg
 subscriptions _ =
-    Sub.batch
-        [ Ports.ConsoleLogger.logReceived ConsoleLogReceived
-        , Ports.Clipboard.copyResult ClipboardResult
-        ]
+    -- TODO: Port subscriptions need Effect module migration
+    Subscription.none
 
 
-init : Url -> Nav.Key -> ( FrontendModel, Cmd FrontendMsg )
+init : Url -> Effect.Browser.Navigation.Key -> ( FrontendModel, Command FrontendOnly ToBackend FrontendMsg )
 init url key =
     let
         route =
@@ -104,50 +106,53 @@ init url key =
     inits model route
 
 
-inits : Model -> Route -> ( Model, Cmd FrontendMsg )
+inits : Model -> Route -> ( Model, Command FrontendOnly ToBackend FrontendMsg )
 inits model route =
     case route of
         Admin adminRoute ->
             Pages.Admin.init model adminRoute
+                |> Tuple.mapSecond (Command.fromCmd "Admin.init")
 
         Default ->
             Pages.Default.init model
+                |> Tuple.mapSecond (Command.fromCmd "Default.init")
 
         Examples ->
             Pages.Examples.init model
+                |> Tuple.mapSecond (Command.fromCmd "Examples.init")
 
         _ ->
-            ( model, Cmd.none )
+            ( model, Command.none )
 
 
-update : FrontendMsg -> Model -> ( Model, Cmd FrontendMsg )
+update : FrontendMsg -> Model -> ( Model, Command FrontendOnly ToBackend FrontendMsg )
 update msg model =
     case msg of
         NoOpFrontendMsg ->
-            ( model, Cmd.none )
+            ( model, Command.none )
 
         UrlRequested urlRequest ->
             case urlRequest of
                 Internal url ->
                     ( model
-                    , Nav.pushUrl model.key (Url.toString url)
+                    , Effect.Browser.Navigation.pushUrl model.key (Url.toString url)
                     )
 
                 External url ->
                     ( model
-                    , Nav.load url
+                    , Effect.Browser.Navigation.load url
                     )
 
         UrlClicked urlRequest ->
             case urlRequest of
                 Internal url ->
                     ( model
-                    , Nav.pushUrl model.key (Url.toString url)
+                    , Effect.Browser.Navigation.pushUrl model.key (Url.toString url)
                     )
 
                 External url ->
                     ( model
-                    , Nav.load url
+                    , Effect.Browser.Navigation.load url
                     )
 
         UrlChanged url ->
@@ -158,18 +163,18 @@ update msg model =
             inits newModel newModel.currentRoute
 
         DirectToBackend msg_ ->
-            ( model, Lamdera.sendToBackend msg_ )
+            ( model, Effect.Lamdera.sendToBackend msg_ )
 
         Admin_RemoteUrlChanged url ->
             let
                 oldAdminPage =
                     model.adminPage
             in
-            ( { model | adminPage = { oldAdminPage | remoteUrl = url } }, Cmd.none )
+            ( { model | adminPage = { oldAdminPage | remoteUrl = url } }, Command.none )
 
         Admin_LogsNavigate params ->
             ( model
-            , Nav.pushUrl model.key (Route.toString (Admin (AdminLogs params)))
+            , Effect.Browser.Navigation.pushUrl model.key (Route.toString (Admin (AdminLogs params)))
             )
 
         Logout ->
@@ -190,15 +195,16 @@ update msg model =
                 , preferences = { darkMode = True }
                 , emailPasswordForm = cleanForm
               }
-            , Lamdera.sendToBackend LoggedOut
+            , Effect.Lamdera.sendToBackend LoggedOut
             )
 
         Auth0SigninRequested ->
             Auth.Flow.signInRequested "OAuthAuth0" { model | login = NotLogged True, pendingAuth = True } Nothing
-                |> Tuple.mapSecond (AuthToBackend >> Lamdera.sendToBackend)
+                |> Tuple.mapSecond (AuthToBackend >> Lamdera.sendToBackend >> Command.fromCmd "Auth0Signin")
 
         EmailPasswordAuthMsg authMsg ->
             updateEmailPasswordAuth authMsg model
+                |> Tuple.mapSecond (Command.fromCmd "EmailPasswordAuth")
 
         ToggleDarkMode ->
             let
@@ -216,17 +222,17 @@ update msg model =
                 -- Update the alias
             in
             ( { model | preferences = updatedFrontendPreferences }
-            , Lamdera.sendToBackend (SetDarkModePreference newDarkModeState)
+            , Effect.Lamdera.sendToBackend (SetDarkModePreference newDarkModeState)
             )
 
         ToggleProfileDropdown ->
-            ( { model | profileDropdownOpen = not model.profileDropdownOpen }, Cmd.none )
+            ( { model | profileDropdownOpen = not model.profileDropdownOpen }, Command.none )
 
         ToggleLoginModal ->
-            ( { model | loginModalOpen = not model.loginModalOpen }, Cmd.none )
+            ( { model | loginModalOpen = not model.loginModalOpen }, Command.none )
 
         CloseLoginModal ->
-            ( { model | loginModalOpen = False }, Cmd.none )
+            ( { model | loginModalOpen = False }, Command.none )
 
         EmailPasswordAuthError errorMsg ->
             let
@@ -234,19 +240,19 @@ update msg model =
                     model.emailPasswordForm
                         |> (\form -> { form | error = Just errorMsg })
             in
-            ( { model | emailPasswordForm = updatedForm, loginModalOpen = True }, Cmd.none )
+            ( { model | emailPasswordForm = updatedForm, loginModalOpen = True }, Command.none )
 
         ConsoleLogClicked ->
-            ( model, Ports.ConsoleLogger.log "Hello from Elm!" )
+            ( model, Command.fromCmd "ConsoleLog" (Ports.ConsoleLogger.log "Hello from Elm!") )
 
         ConsoleLogReceived message ->
-            ( model, Cmd.none )
+            ( model, Command.none )
 
         CopyToClipboard text ->
-            ( model, Ports.Clipboard.copyToClipboard text )
+            ( model, Command.fromCmd "Clipboard" (Ports.Clipboard.copyToClipboard text) )
 
         ClipboardResult result ->
-            ( model, Cmd.none )
+            ( model, Command.none )
 
 
 
@@ -262,11 +268,11 @@ update msg model =
 --     ( model, Lamdera.sendToBackend (Fusion_Query query) )
 
 
-updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
+updateFromBackend : ToFrontend -> Model -> ( Model, Command FrontendOnly ToBackend FrontendMsg )
 updateFromBackend msg model =
     case msg of
         NoOpToFrontend ->
-            ( model, Cmd.none )
+            ( model, Command.none )
 
         -- Admin page
         Admin_Logs_ToFrontend logs ->
@@ -274,39 +280,40 @@ updateFromBackend msg model =
                 oldAdminPage =
                     model.adminPage
             in
-            ( { model | adminPage = { oldAdminPage | logs = logs } }, Cmd.none )
+            ( { model | adminPage = { oldAdminPage | logs = logs } }, Command.none )
 
         AuthToFrontend authToFrontendMsg ->
             authUpdateFromBackend authToFrontendMsg model
+                |> Tuple.mapSecond (Command.fromCmd "AuthToFrontend")
 
         AuthSuccess userInfo ->
             ( { model | login = LoggedIn userInfo, pendingAuth = False, loginModalOpen = False }
-            , Cmd.batch
-                [ Lamdera.sendToBackend GetUserToBackend
-                , Nav.pushUrl model.key "/"
+            , Command.batch
+                [ Effect.Lamdera.sendToBackend GetUserToBackend
+                , Effect.Browser.Navigation.pushUrl model.key "/"
                 ]
             )
 
         UserInfoMsg mUserinfo ->
             case mUserinfo of
                 Just userInfo ->
-                    ( { model | login = LoggedIn userInfo, pendingAuth = False }, Cmd.none )
+                    ( { model | login = LoggedIn userInfo, pendingAuth = False }, Command.none )
 
                 Nothing ->
-                    ( { model | login = NotLogged False, pendingAuth = False, preferences = { darkMode = True } }, Cmd.none )
+                    ( { model | login = NotLogged False, pendingAuth = False, preferences = { darkMode = True } }, Command.none )
 
         UserDataToFrontend currentUser ->
-            ( { model | currentUser = Just currentUser, preferences = currentUser.preferences }, Cmd.none )
+            ( { model | currentUser = Just currentUser, preferences = currentUser.preferences }, Command.none )
 
         -- Admin_FusionResponse value ->
-        --     ( { model | fusionState = value }, Cmd.none )
+        --     ( { model | fusionState = value }, Command.none )
         PermissionDenied _ ->
             -- Simply ignore the denied action without any UI notification
-            ( model, Cmd.none )
+            ( model, Command.none )
 
         A0 message ->
             -- Log websocket messages for debugging
-            ( model, Cmd.none )
+            ( model, Command.none )
 
 
 view : Model -> Browser.Document FrontendMsg
@@ -340,25 +347,25 @@ view model =
     }
 
 
-callbackForAuth0Auth : FrontendModel -> Url.Url -> Nav.Key -> ( FrontendModel, Cmd FrontendMsg )
+callbackForAuth0Auth : FrontendModel -> Url.Url -> Effect.Browser.Navigation.Key -> ( FrontendModel, Cmd FrontendMsg )
 callbackForAuth0Auth model url key =
     Auth.Flow.init model
         "OAuthAuth0"
         url
-        key
+        (Effect.Browser.Navigation.withRealKey key)
         (\msg -> Lamdera.sendToBackend (AuthToBackend msg))
 
 
-callbackForGoogleAuth : FrontendModel -> Url.Url -> Nav.Key -> ( FrontendModel, Cmd FrontendMsg )
+callbackForGoogleAuth : FrontendModel -> Url.Url -> Effect.Browser.Navigation.Key -> ( FrontendModel, Cmd FrontendMsg )
 callbackForGoogleAuth model url key =
     Auth.Flow.init model
         "OAuthGoogle"
         url
-        key
+        (Effect.Browser.Navigation.withRealKey key)
         (\msg -> Lamdera.sendToBackend (AuthToBackend msg))
 
 
-authCallbackCmd : FrontendModel -> Url.Url -> Nav.Key -> ( FrontendModel, Cmd FrontendMsg )
+authCallbackCmd : FrontendModel -> Url.Url -> Effect.Browser.Navigation.Key -> ( FrontendModel, Cmd FrontendMsg )
 authCallbackCmd model url key =
     let
         { path } =
@@ -375,14 +382,22 @@ authCallbackCmd model url key =
             ( model, Cmd.none )
 
 
-initWithAuth : Url.Url -> Nav.Key -> ( FrontendModel, Cmd FrontendMsg )
+initWithAuth : Url.Url -> Effect.Browser.Navigation.Key -> ( FrontendModel, Command FrontendOnly ToBackend FrontendMsg )
 initWithAuth url key =
     let
-        ( model, cmds ) =
+        ( model, initCmds ) =
             init url key
+
+        ( authModel, authCmd ) =
+            authCallbackCmd model url key
     in
-    authCallbackCmd model url key
-        |> Tuple.mapSecond (\cmd -> Cmd.batch [ cmds, cmd, Lamdera.sendToBackend GetUserToBackend ])
+    ( authModel
+    , Command.batch
+        [ initCmds
+        , Command.fromCmd "authCallback" authCmd
+        , Effect.Lamdera.sendToBackend GetUserToBackend
+        ]
+    )
 
 
 updateEmailPasswordAuth : EmailPasswordAuthMsg -> Model -> ( Model, Cmd FrontendMsg )

@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
 /**
- * create-lamdera-app
+ * lamdera-starter-kit
  *
- * CLI tool to scaffold new Lamdera projects with auth, WebSockets, and more.
+ * CLI tool to scaffold new Lamdera projects with auth, WebSockets, program-test, and more.
  * Works on Windows, macOS, and Linux.
  *
  * Usage:
- *   npx create-lamdera-app my-project        # Creates ./my-project
- *   npx create-lamdera-app .                 # Init in current directory
- *   npx create-lamdera-app my-project -y     # Non-interactive (for LLMs/scripts)
- *   npx create-lamdera-app my-project --json # JSON output for automation
+ *   npx lamdera-starter-kit my-project        # Creates ./my-project
+ *   npx lamdera-starter-kit .                 # Init in current directory
+ *   npx lamdera-starter-kit my-project -y     # Non-interactive (for LLMs/scripts)
+ *   npx lamdera-starter-kit my-project --json # JSON output for automation
  */
 
 const { execSync } = require('child_process');
@@ -253,19 +253,19 @@ const isProtectedDir = (dir) => {
 
 const printBanner = () => {
   println('');
-  println(`${COLORS.cyan}${COLORS.bold}create-lamdera-app${COLORS.reset}`);
-  println(`${COLORS.dim}Lamdera Starter with Auth, WebSockets & More${COLORS.reset}`);
+  println(`${COLORS.cyan}${COLORS.bold}lamdera-starter-kit${COLORS.reset}`);
+  println(`${COLORS.dim}Lamdera Starter with Auth, WebSockets, Program-Test & More${COLORS.reset}`);
   println('');
 };
 
 const printHelp = () => {
   println(`
-${COLORS.cyan}${COLORS.bold}create-lamdera-app${COLORS.reset} - Scaffold production-ready Lamdera apps
+${COLORS.cyan}${COLORS.bold}lamdera-starter-kit${COLORS.reset} - Scaffold production-ready Lamdera apps
 
 ${COLORS.yellow}USAGE${COLORS.reset}
-  npx create-lamdera-app <project-name>   Create in ./project-name
-  npx create-lamdera-app .                Init in current directory
-  npx create-lamdera-app                  Interactive mode
+  npx lamdera-starter-kit <project-name>   Create in ./project-name
+  npx lamdera-starter-kit .                Init in current directory
+  npx lamdera-starter-kit                  Interactive mode
 
 ${COLORS.yellow}OPTIONS${COLORS.reset}
   -y, --yes      Non-interactive mode (use defaults, no prompts)
@@ -276,17 +276,17 @@ ${COLORS.yellow}OPTIONS${COLORS.reset}
 
 ${COLORS.yellow}EXAMPLES${COLORS.reset}
   ${COLORS.dim}# Create new project${COLORS.reset}
-  npx create-lamdera-app my-app
+  npx lamdera-starter-kit my-app
 
   ${COLORS.dim}# Init in current empty directory${COLORS.reset}
   mkdir my-app && cd my-app
-  npx create-lamdera-app .
+  npx lamdera-starter-kit .
 
   ${COLORS.dim}# Non-interactive for scripts/LLMs${COLORS.reset}
-  npx create-lamdera-app my-app -y
+  npx lamdera-starter-kit my-app -y
 
   ${COLORS.dim}# JSON output for automation${COLORS.reset}
-  npx create-lamdera-app my-app --json
+  npx lamdera-starter-kit my-app --json
 `);
 };
 
@@ -388,11 +388,11 @@ const resolveProjectTarget = (projectArg, cwd, flags) => {
 
   // No argument - need interactive or error
   if (flags.yes) {
-    return { error: 'Project name required in non-interactive mode. Usage: npx create-lamdera-app <name> -y' };
+    return { error: 'Project name required in non-interactive mode. Usage: npx lamdera-starter-kit <name> -y' };
   }
 
   if (flags.json) {
-    return { error: 'Project name required with --json. Usage: npx create-lamdera-app <name> --json' };
+    return { error: 'Project name required with --json. Usage: npx lamdera-starter-kit <name> --json' };
   }
 
   return { needsPrompt: true };
@@ -547,7 +547,7 @@ const main = async () => {
     sourceDir = localRepoRoot;
   } else {
     info('Downloading from GitHub...');
-    tempDir = path.join(os.tmpdir(), `create-lamdera-app-${Date.now()}`);
+    tempDir = path.join(os.tmpdir(), `lamdera-starter-kit-${Date.now()}`);
 
     const stopSpinner = spinner('Cloning repository...');
     try {
@@ -655,7 +655,7 @@ const main = async () => {
     verbose('Running: git add -A');
     run('git add -A', { silent: true, cwd: targetDir });
     verbose('Running: git commit');
-    run('git commit -m "Initial commit from create-lamdera-app"', { silent: true, cwd: targetDir });
+    run('git commit -m "Initial commit from lamdera-starter-kit"', { silent: true, cwd: targetDir });
     success('Initial commit created');
   } catch (err) {
     warn(`Commit skipped: ${err.message || 'check git config'}`);

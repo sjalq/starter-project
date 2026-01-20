@@ -1,7 +1,7 @@
 {
-  "name": "create-lamdera-app",
+  "name": "lamdera-starter-kit",
   "version": "1.0.0",
-  "description": "Create production-ready Lamdera apps with authentication, WebSockets, and more",
+  "description": "Create production-ready Lamdera apps with authentication, WebSockets, program-test, and more",
   "author": "sjalq",
   "license": "MIT",
   "repository": {
@@ -13,10 +13,10 @@
     "url": "https://github.com/sjalq/starter-project/issues"
   },
   "bin": {
-    "create-lamdera-app": "./bin/create-lamdera-app.js"
+    "lamdera-starter-kit": "./bin/lamdera-starter-kit.js"
   },
   "files": [
-    "bin/create-lamdera-app.js"
+    "bin/lamdera-starter-kit.js"
   ],
   "keywords": [
     "lamdera",
@@ -26,6 +26,7 @@
     "scaffolding",
     "authentication",
     "websockets",
+    "program-test",
     "create",
     "cli",
     "generator"

@@ -8,16 +8,16 @@ alwaysApply: true
 
 ## src/AsyncRPC.elm
 ### AsyncRPC
-29 handleTaskChain _ model _ _ config
-54 handleTaskResult token encoder result
-70 handleTimeResult token result
-81 handlePollingResult _ model _ json
+28 handleTaskChain _ model _ _ config
+53 handleTaskResult token encoder result
+69 handleTimeResult token result
+80 handlePollingResult _ model _ json
 
 ## src/Auth/EmailPasswordAuth.elm
 ### Auth.EmailPasswordAuth
-33 handleLogin browserCookie connectionId email password model
-77 handleSignup browserCookie connectionId email password maybeName model
-104 completeSignup browserCookie connectionId email _ maybeName salt hash model
+32 handleLogin browserCookie connectionId email password model
+72 handleSignup browserCookie connectionId email password maybeName model
+95 completeSignup browserCookie connectionId email _ maybeName salt hash model
 
 ## src/Auth/PasswordHash.elm
 ### Auth.PasswordHash
@@ -30,11 +30,11 @@ alwaysApply: true
 39 subscriptions _
 44 init
 66 update msg model
-136 updateFromFrontend sessionId clientId msg model
-246 updateFromFrontendCheckingRights sessionId clientId msg model
-282 getUserFromCookie browserCookie model
-288 userToFrontend user
-297 handleEmailPasswordAuth browserCookie connectionId authMsg model
+145 updateFromFrontend sessionId clientId msg model
+258 updateFromFrontendCheckingRights sessionId clientId msg model
+294 getUserFromCookie browserCookie model
+300 userToFrontend user
+309 handleEmailPasswordAuth browserCookie connectionId authMsg model
 
 ## src/Components/AuthControls.elm
 ### Components.AuthControls
@@ -62,11 +62,11 @@ alwaysApply: true
 
 ## src/Components/EmailPasswordAuth.elm
 ### Components.EmailPasswordAuth
-23 init
-34 update msg model
-52 updateForm msg model
-74 validateAndGetSubmitModel model
-90 view config
+22 init
+33 update msg model
+51 updateForm msg model
+73 validateAndGetSubmitModel model
+89 view config
 
 ## src/Components/EmailPasswordForm.elm
 ### Components.EmailPasswordForm
@@ -94,13 +94,13 @@ alwaysApply: true
 
 ## src/EndpointExample/Price.elm
 ### EndpointExample.Price
-22 getPrice sessionId model headers json
-37 getPriceResult sessionId model headers json
-46 fetchEthPriceInZar
-119 fetchEthPrice
-140 fetchZarRate
-161 fetchJokeAboutEthPrice price
-203 openAiResponseDecoder responseBody
+21 getPrice sessionId model headers json
+36 getPriceResult sessionId model headers json
+45 fetchEthPriceInZar
+118 fetchEthPrice
+139 fetchZarRate
+160 fetchJokeAboutEthPrice price
+202 openAiResponseDecoder responseBody
 
 ## src/Env.elm
 ### Env
@@ -120,98 +120,98 @@ alwaysApply: true
 ### Frontend
 53 app
 66 subscriptions _
-74 init url key
-112 inits model route
-128 update msg model
-270 updateFromBackend msg model
-317 view model
-348 callbackForAuth0Auth model url key
-357 callbackForGoogleAuth model url key
-366 authCallbackCmd model url key
-383 initWithAuth url key
-393 updateEmailPasswordAuth authMsg model
-449 updateEmailPasswordForm msg model
-482 viewWithAuth model
-558 authUpdateFromBackend authToFrontendMsg model
+72 init url key
+110 inits model route
+129 update msg model
+272 updateFromBackend msg model
+320 view model
+351 callbackForAuth0Auth model url key
+360 callbackForGoogleAuth model url key
+369 authCallbackCmd model url key
+386 initWithAuth url key
+404 updateEmailPasswordAuth authMsg model
+460 updateEmailPasswordForm msg model
+493 viewWithAuth model
+569 authUpdateFromBackend authToFrontendMsg model
 
 ## src/LamderaRPC.elm
 ### LamderaRPC
-26 fail string
-44 resultWith statusCode body
-49 failWith statusCode stringBody
-64 bodyTypeToString body
-106 requestDecoder
-121 rawBody rawReq
-131 rawBodyDecoder
-148 process log rpcOut rawReq handler model
-210 asTask encoder decoder requestValue endpoint
-246 asTaskJson json endpoint
-267 asTaskString requestBody endpoint
-279 customResolver fn response
-305 handleEndpointBytes fn decoder encoder args model
-334 handleEndpoint fn args model
-343 handleEndpointJson fn args model
-367 handleEndpointJsonRaw fn args model
-391 handleEndpointString fn args model
-411 httpErrorToString err
-446 methodString method
-545 statusToInt code
-732 statusToString statusCode
+25 fail string
+43 resultWith statusCode body
+48 failWith statusCode stringBody
+63 bodyTypeToString body
+105 requestDecoder
+120 rawBody rawReq
+130 rawBodyDecoder
+147 process log rpcOut rawReq handler model
+209 asTask encoder decoder requestValue endpoint
+245 asTaskJson json endpoint
+266 asTaskString requestBody endpoint
+278 customResolver fn response
+304 handleEndpointBytes fn decoder encoder args model
+333 handleEndpoint fn args model
+342 handleEndpointJson fn args model
+366 handleEndpointJsonRaw fn args model
+390 handleEndpointString fn args model
+410 httpErrorToString err
+445 methodString method
+544 statusToInt code
+731 statusToString statusCode
 
 ## src/Logger.elm
 ### Logger
-125 init maxEntries
-143 addLog level message state
-154 addLogWithTime level message timestamp state
-178 updateTimestamp index timestamp state
-203 getRecent n state
-214 getSinceIndex minIndex state
-227 getSinceTimestamp minTimestamp state
-237 getRange fromIndex toIndex state
-246 toList state
-253 size state
-261 nextIndex state
-317 logInfo
-328 logWarn
-339 logError
-350 logDebug
-365 logWithCmd level message state
-386 logInfoWithCmd
-394 handleMsg msg state
-407 encodeLogEntry entry
-419 encodeLogEntries entries
-426 decodeLogEntry
-435 decodeLevelHelper str
-447 decodeLogEntries
-458 levelToString level
-476 levelFromString str
+123 init maxEntries
+141 addLog level message state
+152 addLogWithTime level message timestamp state
+176 updateTimestamp index timestamp state
+201 getRecent n state
+212 getSinceIndex minIndex state
+225 getSinceTimestamp minTimestamp state
+235 getRange fromIndex toIndex state
+244 toList state
+251 size state
+259 nextIndex state
+315 logInfo
+326 logWarn
+337 logError
+348 logDebug
+363 logWithCmd level message state
+384 logInfoWithCmd
+392 handleMsg msg state
+405 encodeLogEntry entry
+417 encodeLogEntries entries
+424 decodeLogEntry
+433 decodeLevelHelper str
+445 decodeLogEntries
+456 levelToString level
+474 levelFromString str
 
 ## src/Pages/Admin.elm
 ### Pages.Admin
-23 init model adminRoute
-46 view model colors
-68 viewNoAccess _ colors
-92 viewTabs model colors
-103 viewTab tab model colors label
-153 viewTabContent model colors
-171 viewDefaultTab _ colors
-179 viewLogsTab model colors params
-263 viewPagination colors params totalPages navigateTo
-311 viewFetchModelTab model colors
-342 viewFusionTab model
-357 viewLogEntry entry
-401 formatTimestamp millis
-419 viewLogin _ colors
+22 init model adminRoute
+45 view model colors
+67 viewNoAccess _ colors
+91 viewTabs model colors
+102 viewTab tab model colors label
+152 viewTabContent model colors
+170 viewDefaultTab _ colors
+178 viewLogsTab model colors params
+262 viewPagination colors params totalPages navigateTo
+310 viewFetchModelTab model colors
+341 viewFusionTab model
+356 viewLogEntry entry
+400 formatTimestamp millis
+418 viewLogin _ colors
 
 ## src/Pages/Default.elm
 ### Pages.Default
-13 init model
-18 view model colors
+12 init model
+17 view model colors
 
 ## src/Pages/Examples.elm
 ### Pages.Examples
-14 init model
-19 view model colors
+13 init model
+18 view model colors
 
 ## src/Pages/PageFrame.elm
 ### Pages.PageFrame
@@ -222,34 +222,31 @@ alwaysApply: true
 
 ## src/Ports/Clipboard.elm
 ### 
-16 copyToClipboard text
-21 copyResult toMsg
-34 copyResultSub toMsg
+14 copyToClipboard text
+19 copyResult toMsg
 
 ## src/Ports/ConsoleLogger.elm
 ### 
-16 log message
-21 logReceived toMsg
-34 logReceivedSub toMsg
+14 log message
+19 logReceived toMsg
 
 ## src/RPC.elm
 ### RPC
-26 lamdera_handleEndpoints rawReq args model
-75 getLogs _ model headers _
-99 getModel _ model request
-125 setModel _ currentModel request
-164 makeModelImportUrl remoteLamderaUrl
-170 fetchImportedModel remoteLamderaUrl modelKey
+25 lamdera_handleEndpoints rawReq args model
+74 getLogs _ model headers _
+98 getModel _ model request
+124 setModel _ currentModel request
+163 makeModelImportUrl remoteLamderaUrl
+169 fetchImportedModel remoteLamderaUrl modelKey
 
 ## src/Rights/Auth0.elm
 ### Rights.Auth0
-15 renewSession _ _ model
-28 handleAuthSuccess backendModel sessionId clientIdString userInfo _ _ _
-47 logout sessionId _ model
-52 sendToFrontendWrapper sessionIdString toFrontend
-57 backendConfig model
-71 config
-85 customizeAuth0Method method
+14 renewSession _ _ model
+27 handleAuthSuccess backendModel sessionId clientId userInfo _ _ _
+43 logout sessionId _ model
+48 backendConfig model
+62 config
+76 customizeAuth0Method method
 
 ## src/Rights/Permissions.elm
 ### Rights.Permissions
@@ -287,12 +284,12 @@ alwaysApply: true
 
 ## src/Supplemental.elm
 ### Supplemental
-23 addProxy url
-32 responseStringToResult response
-51 handleHttpResponse decoder response
-70 responseToString response
-89 httpErrorToString error
-108 handleJsonResponse decoder response
+20 addProxy url
+29 responseStringToResult response
+48 handleHttpResponse decoder response
+67 responseToString response
+86 httpErrorToString error
+105 handleJsonResponse decoder response
 144 performNow msg
 149 getTime msg
 154 waitThenPerform ms msg

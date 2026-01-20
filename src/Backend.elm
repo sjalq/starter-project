@@ -1,4 +1,4 @@
-module Backend exposing (Model, app)
+module Backend exposing (Model, app, init, update, updateFromFrontendCheckingRights, subscriptions)
 
 -- import Fusion.Generated.Types
 -- import Fusion.Patch
@@ -6,6 +6,9 @@ module Backend exposing (Model, app)
 import Auth.EmailPasswordAuth as EmailPasswordAuth
 import Auth.Flow
 import Dict
+import Effect.Command as Command exposing (BackendOnly, Command)
+import Effect.Lamdera
+import Effect.Subscription as Subscription exposing (Subscription)
 import Env
 import Lamdera
 import Logger
@@ -24,7 +27,7 @@ type alias Model =
 
 
 app =
-    Lamdera.backend
+    Effect.Lamdera.backend Lamdera.broadcast Lamdera.sendToFrontend
         { init = init
         , update = update
         , updateFromFrontend = updateFromFrontendCheckingRights
@@ -32,12 +35,12 @@ app =
         }
 
 
-subscriptions : Model -> Sub msg
+subscriptions : Model -> Subscription BackendOnly BackendMsg
 subscriptions _ =
-    Sub.none
+    Subscription.none
 
 
-init : ( Model, Cmd BackendMsg )
+init : ( Model, Command BackendOnly ToFrontend BackendMsg )
 init =
     let
         logSize =
@@ -56,37 +59,39 @@ init =
         modelWithTestData =
             TestData.initializeTestData initialModel
     in
-    ( modelWithTestData, Cmd.none )
+    ( modelWithTestData, Command.none )
 
 
-update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )
+update : BackendMsg -> Model -> ( Model, Command BackendOnly ToFrontend BackendMsg )
 update msg model =
     case msg of
         NoOpBackendMsg ->
-            ( model, Cmd.none )
+            ( model, Command.none )
 
         GotLogTime loggerMsg ->
             ( { model | logState = Logger.handleMsg loggerMsg model.logState }
-            , Cmd.none
+            , Command.none
             )
 
         GotRemoteModel result ->
             case result of
                 Ok model_ ->
-                    ( model_, Cmd.none )
-                        |> Logger.logInfo "GotRemoteModel Ok" GotLogTime
+                    Logger.logInfo "GotRemoteModel Ok" GotLogTime ( model_, Cmd.none )
+                        |> wrapLogCmd
 
                 Err err ->
-                    ( model, Cmd.none )
-                        |> Logger.logError ("GotRemoteModel Err: " ++ httpErrorToString err) GotLogTime
+                    Logger.logError ("GotRemoteModel Err: " ++ httpErrorToString err) GotLogTime ( model, Cmd.none )
+                        |> wrapLogCmd
 
         AuthBackendMsg authMsg ->
             Auth.Flow.backendUpdate (backendConfig model) authMsg
+                |> Tuple.mapSecond (Command.fromCmd "AuthBackendMsg")
 
         EmailPasswordAuthResult result ->
             case result of
                 EmailPasswordSignupWithHash browserCookie connectionId email password maybeName salt hash ->
                     EmailPasswordAuth.completeSignup browserCookie connectionId email password maybeName salt hash model
+                        |> Tuple.mapSecond (Command.fromCmd "EmailPasswordAuth")
 
         GotCryptoPriceResult token result ->
             case result of
@@ -95,16 +100,16 @@ update msg model =
                         updatedPollingJobs =
                             Dict.insert token (Ready (Ok priceStr)) model.pollingJobs
                     in
-                    ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                        |> Logger.logInfo ("Crypto price calculated: " ++ priceStr) GotLogTime
+                    Logger.logInfo ("Crypto price calculated: " ++ priceStr) GotLogTime ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
+                        |> wrapLogCmd
 
                 Err err ->
                     let
                         updatedPollingJobs =
                             Dict.insert token (Ready (Err (httpErrorToString err))) model.pollingJobs
                     in
-                    ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                        |> Logger.logError ("Failed to calculate crypto price: " ++ httpErrorToString err) GotLogTime
+                    Logger.logError ("Failed to calculate crypto price: " ++ httpErrorToString err) GotLogTime ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
+                        |> wrapLogCmd
 
         StoreTaskResult token result ->
             let
@@ -113,27 +118,42 @@ update msg model =
             in
             case result of
                 Ok _ ->
-                    ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                        |> Logger.logInfo ("Task completed successfully: " ++ token) GotLogTime
+                    Logger.logInfo ("Task completed successfully: " ++ token) GotLogTime ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
+                        |> wrapLogCmd
 
                 Err err ->
-                    ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                        |> Logger.logError ("Task failed: " ++ token ++ " - " ++ err) GotLogTime
+                    Logger.logError ("Task failed: " ++ token ++ " - " ++ err) GotLogTime ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
+                        |> wrapLogCmd
 
         GotJobTime token timestamp ->
             let
                 updatedPollingJobs =
                     Dict.insert token (BusyWithTime timestamp) model.pollingJobs
             in
-            ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                |> Logger.logDebug ("Updated job " ++ token ++ " with timestamp: " ++ String.fromInt timestamp) GotLogTime
+            Logger.logDebug ("Updated job " ++ token ++ " with timestamp: " ++ String.fromInt timestamp) GotLogTime ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
+                |> wrapLogCmd
 
 
-updateFromFrontend : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
-updateFromFrontend browserCookie connectionId msg model =
+{-| Helper to wrap Logger Cmd results into Command
+-}
+wrapLogCmd : ( Model, Cmd BackendMsg ) -> ( Model, Command BackendOnly ToFrontend BackendMsg )
+wrapLogCmd ( m, cmd ) =
+    ( m, Command.fromCmd "logger" cmd )
+
+
+updateFromFrontend : Effect.Lamdera.SessionId -> Effect.Lamdera.ClientId -> ToBackend -> Model -> ( Model, Command BackendOnly ToFrontend BackendMsg )
+updateFromFrontend sessionId clientId msg model =
+    let
+        -- Convert Effect types to strings for compatibility with existing code
+        browserCookie =
+            Effect.Lamdera.sessionIdToString sessionId
+
+        connectionId =
+            Effect.Lamdera.clientIdToString clientId
+    in
     case msg of
         NoOpToBackend ->
-            ( model, Cmd.none )
+            ( model, Command.none )
 
         Admin_FetchLogs searchQuery ->
             let
@@ -152,7 +172,7 @@ updateFromFrontend browserCookie connectionId msg model =
                                         (String.toLower logEntry.message)
                                 )
             in
-            ( model, Lamdera.sendToFrontend connectionId (Admin_Logs_ToFrontend filteredLogs) )
+            ( model, Effect.Lamdera.sendToFrontend clientId (Admin_Logs_ToFrontend filteredLogs) )
 
         Admin_ClearLogs ->
             let
@@ -162,24 +182,26 @@ updateFromFrontend browserCookie connectionId msg model =
                 newModel =
                     { model | logState = Logger.init logSize }
             in
-            ( newModel, Lamdera.sendToFrontend connectionId (Admin_Logs_ToFrontend []) )
+            ( newModel, Effect.Lamdera.sendToFrontend clientId (Admin_Logs_ToFrontend []) )
 
         Admin_FetchRemoteModel _ ->
             -- Remote model fetching removed (was RPC-based)
-            ( model, Cmd.none )
+            ( model, Command.none )
 
         AuthToBackend authToBackend ->
             Auth.Flow.updateFromFrontend (backendConfig model) connectionId browserCookie authToBackend model
+                |> Tuple.mapSecond (Command.fromCmd "AuthToBackend")
 
         EmailPasswordAuthToBackend authMsg ->
             handleEmailPasswordAuth browserCookie connectionId authMsg model
+                |> Tuple.mapSecond (Command.fromCmd "EmailPasswordAuth")
 
         GetUserToBackend ->
             case Dict.get browserCookie model.sessions of
                 Just userInfo ->
                     case getUserFromCookie browserCookie model of
                         Just user ->
-                            ( model, Cmd.batch [ Lamdera.sendToFrontend connectionId <| UserInfoMsg <| Just userInfo, Lamdera.sendToFrontend connectionId <| UserDataToFrontend <| userToFrontend user ] )
+                            ( model, Command.batch [ Effect.Lamdera.sendToFrontend clientId <| UserInfoMsg <| Just userInfo, Effect.Lamdera.sendToFrontend clientId <| UserDataToFrontend <| userToFrontend user ] )
 
                         Nothing ->
                             let
@@ -193,13 +215,13 @@ updateFromFrontend browserCookie connectionId msg model =
                                 newModel =
                                     insertUser userInfo.email user model
                             in
-                            ( newModel, Cmd.batch [ Lamdera.sendToFrontend connectionId <| UserInfoMsg <| Just userInfo, Lamdera.sendToFrontend connectionId <| UserDataToFrontend <| userToFrontend user ] )
+                            ( newModel, Command.batch [ Effect.Lamdera.sendToFrontend clientId <| UserInfoMsg <| Just userInfo, Effect.Lamdera.sendToFrontend clientId <| UserDataToFrontend <| userToFrontend user ] )
 
                 Nothing ->
-                    ( model, Lamdera.sendToFrontend connectionId <| UserInfoMsg Nothing )
+                    ( model, Effect.Lamdera.sendToFrontend clientId <| UserInfoMsg Nothing )
 
         LoggedOut ->
-            ( { model | sessions = Dict.remove browserCookie model.sessions }, Cmd.none )
+            ( { model | sessions = Dict.remove browserCookie model.sessions }, Command.none )
 
         SetDarkModePreference preference ->
             case getUserFromCookie browserCookie model of
@@ -221,19 +243,23 @@ updateFromFrontend browserCookie connectionId msg model =
                         updatedUsers =
                             Dict.insert user.email updatedUser model.users
                     in
-                    ( { model | users = updatedUsers }, Cmd.none )
+                    ( { model | users = updatedUsers }, Command.none )
 
                 Nothing ->
-                    ( model, Cmd.none )
-                        |> Logger.logWarn "User or session not found for SetDarkModePreference" GotLogTime
+                    Logger.logWarn "User or session not found for SetDarkModePreference" GotLogTime ( model, Cmd.none )
+                        |> wrapLogCmd
 
         A message ->
             -- Echo websocket message back to frontend
-            ( model, Lamdera.sendToFrontend connectionId (A0 ("Echo: " ++ message)) )
+            ( model, Effect.Lamdera.sendToFrontend clientId (A0 ("Echo: " ++ message)) )
 
 
-updateFromFrontendCheckingRights : BrowserCookie -> ConnectionId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
-updateFromFrontendCheckingRights browserCookie connectionId msg model =
+updateFromFrontendCheckingRights : Effect.Lamdera.SessionId -> Effect.Lamdera.ClientId -> ToBackend -> Model -> ( Model, Command BackendOnly ToFrontend BackendMsg )
+updateFromFrontendCheckingRights sessionId clientId msg model =
+    let
+        browserCookie =
+            Effect.Lamdera.sessionIdToString sessionId
+    in
     if
         case msg of
             NoOpToBackend ->
@@ -258,10 +284,10 @@ updateFromFrontendCheckingRights browserCookie connectionId msg model =
             _ ->
                 sessionCanPerformAction model browserCookie msg
     then
-        updateFromFrontend browserCookie connectionId msg model
+        updateFromFrontend sessionId clientId msg model
 
     else
-        ( model, Lamdera.sendToFrontend connectionId (PermissionDenied msg) )
+        ( model, Effect.Lamdera.sendToFrontend clientId (PermissionDenied msg) )
 
 
 getUserFromCookie : BrowserCookie -> Model -> Maybe User

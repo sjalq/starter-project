@@ -2,8 +2,8 @@ module Types exposing (AdminLogsUrlParams, AdminPageModel, AdminRoute(..), Backe
 
 import Auth.Common
 import Browser exposing (UrlRequest)
-import Browser.Navigation exposing (Key)
 import Dict exposing (Dict)
+import Effect.Browser.Navigation
 import Http
 import Lamdera
 import Logger
@@ -58,7 +58,7 @@ type alias AdminPageModel =
 
 
 type alias FrontendModel =
-    { key : Key
+    { key : Effect.Browser.Navigation.Key
     , currentRoute : Route
     , adminPage : AdminPageModel
     , authFlow : Auth.Common.Flow

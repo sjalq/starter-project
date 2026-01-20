@@ -26,15 +26,15 @@ alwaysApply: true
 
 ## src/Backend.elm
 ### Backend
-26 app
-36 subscriptions _
-41 init
-63 update msg model
-133 updateFromFrontend browserCookie connectionId msg model
-220 updateFromFrontendCheckingRights browserCookie connectionId msg model
-252 getUserFromCookie browserCookie model
-258 userToFrontend user
-267 handleEmailPasswordAuth browserCookie connectionId authMsg model
+29 app
+39 subscriptions _
+44 init
+66 update msg model
+145 updateFromFrontend sessionId clientId msg model
+258 updateFromFrontendCheckingRights sessionId clientId msg model
+294 getUserFromCookie browserCookie model
+300 userToFrontend user
+309 handleEmailPasswordAuth browserCookie connectionId authMsg model
 
 ## src/Components/AuthControls.elm
 ### Components.AuthControls
@@ -118,21 +118,21 @@ alwaysApply: true
 
 ## src/Frontend.elm
 ### Frontend
-49 app
-62 subscriptions _
-70 init url key
-108 inits model route
-124 update msg model
-261 updateFromBackend msg model
-308 view model
-339 callbackForAuth0Auth model url key
-348 callbackForGoogleAuth model url key
-357 authCallbackCmd model url key
-374 initWithAuth url key
-384 updateEmailPasswordAuth authMsg model
-440 updateEmailPasswordForm msg model
-473 viewWithAuth model
-549 authUpdateFromBackend authToFrontendMsg model
+53 app
+66 subscriptions _
+72 init url key
+110 inits model route
+129 update msg model
+272 updateFromBackend msg model
+320 view model
+351 callbackForAuth0Auth model url key
+360 callbackForGoogleAuth model url key
+369 authCallbackCmd model url key
+386 initWithAuth url key
+404 updateEmailPasswordAuth authMsg model
+460 updateEmailPasswordForm msg model
+493 viewWithAuth model
+569 authUpdateFromBackend authToFrontendMsg model
 
 ## src/LamderaRPC.elm
 ### LamderaRPC
@@ -188,19 +188,20 @@ alwaysApply: true
 
 ## src/Pages/Admin.elm
 ### Pages.Admin
-21 init model adminRoute
-44 view model colors
-66 viewNoAccess _ colors
-90 viewTabs model colors
-101 viewTab tab model colors label
-151 viewTabContent model colors
-169 viewDefaultTab _ colors
-177 viewLogsTab model colors
-198 viewFetchModelTab model colors
-229 viewFusionTab model
-244 viewLogEntry entry
-288 formatTimestamp millis
-306 viewLogin _ colors
+22 init model adminRoute
+45 view model colors
+67 viewNoAccess _ colors
+91 viewTabs model colors
+102 viewTab tab model colors label
+152 viewTabContent model colors
+170 viewDefaultTab _ colors
+178 viewLogsTab model colors params
+262 viewPagination colors params totalPages navigateTo
+310 viewFetchModelTab model colors
+341 viewFusionTab model
+356 viewLogEntry entry
+400 formatTimestamp millis
+418 viewLogin _ colors
 
 ## src/Pages/Default.elm
 ### Pages.Default
@@ -267,9 +268,12 @@ alwaysApply: true
 
 ## src/Route.elm
 ### Route
-9 parser
-22 fromUrl url
-28 toString route
+10 defaultLogsParams
+18 parser
+32 logsQueryParser
+40 fromUrl url
+46 toString route
+68 logsParamsToQuery params
 
 ## src/SignatureParser.elm
 ### SignatureParser

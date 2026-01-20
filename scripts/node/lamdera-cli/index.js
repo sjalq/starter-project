@@ -8,11 +8,14 @@
  *   node scripts/node/lamdera-cli/index.js logs -f        # Tail/follow
  *   node scripts/node/lamdera-cli/index.js logs -f -r     # Resume tail from last position
  *   node scripts/node/lamdera-cli/index.js logs --env prod
+ *   node scripts/node/lamdera-cli/index.js backup         # Backup model locally
+ *   node scripts/node/lamdera-cli/index.js backup --env prod -o ./prod-backup.bin
  *   node scripts/node/lamdera-cli/index.js envs           # List environments
  */
 
 import { program } from 'commander';
 import { logsCommand } from './commands/logs.js';
+import { backupCommand } from './commands/backup.js';
 import { loadConfig, listEnvironments } from './lib/config.js';
 
 // ============================================================================
@@ -45,6 +48,14 @@ program
   .option('-i, --interval <ms>', 'poll interval in milliseconds', parseInt, 2000)
   .option('--no-color', 'disable colored output')
   .action(logsCommand);
+
+// Backup command
+program
+  .command('backup')
+  .description('📦 Backup BackendModel to a file')
+  .option('-e, --env <name>', 'environment (local, prod, preview)')
+  .option('-o, --output <path>', 'output file path (default: backups/backup-{env}-{timestamp}.bin)')
+  .action(backupCommand);
 
 // Envs command
 program

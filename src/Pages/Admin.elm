@@ -3,9 +3,10 @@ module Pages.Admin exposing (..)
 import Env
 import Html exposing (..)
 import Html.Attributes as Attr
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Lamdera
 import Logger
+import Route
 import Theme
 import Time
 import Types exposing (..)
@@ -25,8 +26,8 @@ init model adminRoute =
             if user.isSysAdmin then
                 -- Allow admin access
                 case adminRoute of
-                    AdminLogs ->
-                        ( model, Lamdera.sendToBackend Admin_FetchLogs )
+                    AdminLogs params ->
+                        ( model, Lamdera.sendToBackend (Admin_FetchLogs params.search) )
 
                     _ ->
                         ( model, Cmd.none )
@@ -90,7 +91,7 @@ viewTabs : FrontendModel -> Theme.Colors -> Html FrontendMsg
 viewTabs model colors =
     div [ Attr.class "flex border-b mb-4", Attr.style "border-color" colors.border ]
         [ viewTab AdminDefault model colors "Default"
-        , viewTab AdminLogs model colors "Logs"
+        , viewTab (AdminLogs Route.defaultLogsParams) model colors "Logs"
         , viewTab AdminFetchModel model colors "Fetch Model"
 
         -- , viewTab AdminFusion model "Fusion"
@@ -101,7 +102,18 @@ viewTab : AdminRoute -> FrontendModel -> Theme.Colors -> String -> Html Frontend
 viewTab tab model colors label =
     let
         isActive =
-            Admin tab == model.currentRoute
+            case ( tab, model.currentRoute ) of
+                ( AdminDefault, Admin AdminDefault ) ->
+                    True
+
+                ( AdminLogs _, Admin (AdminLogs _) ) ->
+                    True
+
+                ( AdminFetchModel, Admin AdminFetchModel ) ->
+                    True
+
+                _ ->
+                    False
 
         activeClasses =
             if isActive then
@@ -125,18 +137,7 @@ viewTab tab model colors label =
                 Attr.style "color" colors.secondaryText
 
         route =
-            case tab of
-                AdminDefault ->
-                    "/admin"
-
-                AdminLogs ->
-                    "/admin/logs"
-
-                AdminFetchModel ->
-                    "/admin/fetch-model"
-
-        -- AdminFusion ->
-        --     "/admin/fusion"
+            Route.toString (Admin tab)
     in
     a
         [ Attr.href route
@@ -153,8 +154,8 @@ viewTabContent model colors =
         Admin AdminDefault ->
             viewDefaultTab model colors
 
-        Admin AdminLogs ->
-            viewLogsTab model colors
+        Admin (AdminLogs params) ->
+            viewLogsTab model colors params
 
         Admin AdminFetchModel ->
             viewFetchModelTab model colors
@@ -173,24 +174,135 @@ viewDefaultTab _ colors =
         ]
 
 
-viewLogsTab : FrontendModel -> Theme.Colors -> Html FrontendMsg
-viewLogsTab model colors =
+viewLogsTab : FrontendModel -> Theme.Colors -> AdminLogsUrlParams -> Html FrontendMsg
+viewLogsTab model colors params =
+    let
+        -- Logs come pre-filtered from backend, already sorted newest first
+        logs =
+            model.adminPage.logs
+
+        totalLogs =
+            List.length logs
+
+        -- Paginate
+        startIndex =
+            params.page * params.pageSize
+
+        paginatedLogs =
+            logs
+                |> List.drop startIndex
+                |> List.take params.pageSize
+
+        totalPages =
+            ceiling (toFloat totalLogs / toFloat params.pageSize)
+
+        -- Navigation helper
+        navigateTo newParams =
+            Admin_LogsNavigate newParams
+    in
     div [ Attr.class "p-4 rounded-lg shadow", Attr.style "background-color" colors.secondaryBg ]
         [ div [ Attr.class "flex justify-between items-center mb-4" ]
             [ h2 [ Attr.class "text-xl font-bold", Attr.style "color" colors.primaryText ] [ text "System Logs" ]
-            , button
-                [ onClick (DirectToBackend Admin_ClearLogs)
-                , Attr.class "px-3 py-1 rounded"
-                , Attr.style "background-color" colors.dangerBg
-                , Attr.style "color" colors.buttonText
+            , div [ Attr.class "flex items-center gap-4" ]
+                [ div [ Attr.class "flex items-center gap-2" ]
+                    [ label [ Attr.style "color" colors.primaryText ] [ text "Per page:" ]
+                    , select
+                        [ onInput (\v -> navigateTo { params | pageSize = String.toInt v |> Maybe.withDefault 100, page = 0 })
+                        , Attr.class "px-2 py-1 rounded border"
+                        , Attr.style "background-color" colors.primaryBg
+                        , Attr.style "color" colors.primaryText
+                        , Attr.style "border-color" colors.border
+                        ]
+                        [ option [ Attr.value "50", Attr.selected (params.pageSize == 50) ] [ text "50" ]
+                        , option [ Attr.value "100", Attr.selected (params.pageSize == 100) ] [ text "100" ]
+                        , option [ Attr.value "250", Attr.selected (params.pageSize == 250) ] [ text "250" ]
+                        , option [ Attr.value "500", Attr.selected (params.pageSize == 500) ] [ text "500" ]
+                        ]
+                    ]
+                , button
+                    [ onClick (DirectToBackend Admin_ClearLogs)
+                    , Attr.class "px-3 py-1 rounded"
+                    , Attr.style "background-color" colors.dangerBg
+                    , Attr.style "color" colors.buttonText
+                    ]
+                    [ text "Clear Logs" ]
                 ]
-                [ text "Clear Logs" ]
+            ]
+        , div [ Attr.class "mb-4" ]
+            [ input
+                [ Attr.type_ "text"
+                , Attr.placeholder "Search logs..."
+                , Attr.value params.search
+                , onInput (\v -> navigateTo { params | search = v, page = 0 })
+                , Attr.class "w-full px-3 py-2 rounded border"
+                , Attr.style "background-color" colors.primaryBg
+                , Attr.style "color" colors.primaryText
+                , Attr.style "border-color" colors.border
+                ]
+                []
+            ]
+        , div [ Attr.class "flex justify-between items-center mb-2", Attr.style "color" colors.secondaryText ]
+            [ span [] [ text ("Showing " ++ String.fromInt (startIndex + 1) ++ "-" ++ String.fromInt (min (startIndex + params.pageSize) totalLogs) ++ " of " ++ String.fromInt totalLogs) ]
+            , viewPagination colors params totalPages navigateTo
             ]
         , div [ Attr.class "bg-black text-gray-200 font-mono p-4 rounded space-y-1 text-sm overflow-x-auto", Attr.style "color" "#e2e8f0" ]
-            (model.adminPage.logs
-                |> List.reverse
+            (paginatedLogs
                 |> List.map viewLogEntry
             )
+        , if totalPages > 1 then
+            div [ Attr.class "flex justify-center mt-4" ]
+                [ viewPagination colors params totalPages navigateTo ]
+
+          else
+            text ""
+        ]
+
+
+viewPagination : Theme.Colors -> AdminLogsUrlParams -> Int -> (AdminLogsUrlParams -> FrontendMsg) -> Html FrontendMsg
+viewPagination colors params totalPages navigateTo =
+    let
+        currentPage =
+            params.page
+
+        pageButton page label_ isDisabled =
+            button
+                [ onClick (navigateTo { params | page = page })
+                , Attr.disabled isDisabled
+                , Attr.class "px-3 py-1 rounded mx-1"
+                , Attr.style "background-color"
+                    (if page == currentPage then
+                        colors.accent
+
+                     else if isDisabled then
+                        colors.border
+
+                     else
+                        colors.buttonBg
+                    )
+                , Attr.style "color"
+                    (if isDisabled then
+                        colors.secondaryText
+
+                     else
+                        colors.buttonText
+                    )
+                , Attr.style "cursor"
+                    (if isDisabled then
+                        "not-allowed"
+
+                     else
+                        "pointer"
+                    )
+                ]
+                [ text label_ ]
+    in
+    div [ Attr.class "flex items-center" ]
+        [ pageButton 0 "<<" (currentPage == 0)
+        , pageButton (max 0 (currentPage - 1)) "<" (currentPage == 0)
+        , span [ Attr.class "px-3", Attr.style "color" colors.primaryText ]
+            [ text (String.fromInt (currentPage + 1) ++ " / " ++ String.fromInt (max 1 totalPages)) ]
+        , pageButton (min (totalPages - 1) (currentPage + 1)) ">" (currentPage >= totalPages - 1)
+        , pageButton (totalPages - 1) ">>" (currentPage >= totalPages - 1)
         ]
 
 

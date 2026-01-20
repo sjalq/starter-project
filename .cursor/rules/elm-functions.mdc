@@ -26,15 +26,15 @@ alwaysApply: true
 
 ## src/Backend.elm
 ### Backend
-27 app
-37 subscriptions _
-42 init
-64 update msg model
-134 updateFromFrontend browserCookie connectionId msg model
-224 updateFromFrontendCheckingRights browserCookie connectionId msg model
-256 getUserFromCookie browserCookie model
-262 userToFrontend user
-271 handleEmailPasswordAuth browserCookie connectionId authMsg model
+26 app
+36 subscriptions _
+41 init
+63 update msg model
+133 updateFromFrontend browserCookie connectionId msg model
+220 updateFromFrontendCheckingRights browserCookie connectionId msg model
+252 getUserFromCookie browserCookie model
+258 userToFrontend user
+267 handleEmailPasswordAuth browserCookie connectionId authMsg model
 
 ## src/Components/AuthControls.elm
 ### Components.AuthControls
@@ -160,29 +160,31 @@ alwaysApply: true
 
 ## src/Logger.elm
 ### Logger
-121 init maxEntries
-139 addLog level message state
-150 addLogWithTime level message timestamp state
-174 updateTimestamp index timestamp state
-199 getRecent n state
-210 getSinceIndex minIndex state
-223 getSinceTimestamp minTimestamp state
-233 getRange fromIndex toIndex state
-242 toList state
-249 size state
-257 nextIndex state
-313 logInfo
-324 logWarn
-335 logError
-346 logDebug
-354 handleMsg msg state
-367 encodeLogEntry entry
-379 encodeLogEntries entries
-386 decodeLogEntry
-395 decodeLevelHelper str
-407 decodeLogEntries
-418 levelToString level
-436 levelFromString str
+123 init maxEntries
+141 addLog level message state
+152 addLogWithTime level message timestamp state
+176 updateTimestamp index timestamp state
+201 getRecent n state
+212 getSinceIndex minIndex state
+225 getSinceTimestamp minTimestamp state
+235 getRange fromIndex toIndex state
+244 toList state
+251 size state
+259 nextIndex state
+315 logInfo
+326 logWarn
+337 logError
+348 logDebug
+363 logWithCmd level message state
+384 logInfoWithCmd
+392 handleMsg msg state
+405 encodeLogEntry entry
+417 encodeLogEntries entries
+424 decodeLogEntry
+433 decodeLevelHelper str
+445 decodeLogEntries
+456 levelToString level
+474 levelFromString str
 
 ## src/Pages/Admin.elm
 ### Pages.Admin
@@ -229,13 +231,12 @@ alwaysApply: true
 
 ## src/RPC.elm
 ### RPC
-27 lamdera_handleEndpoints rawReq args model
-90 getLogs _ model headers jsonBody
-167 logLevelToInt level
-190 getModel _ model request
-213 setModel _ currentModel request
-252 makeModelImportUrl remoteLamderaUrl
-258 fetchImportedModel remoteLamderaUrl modelKey
+25 lamdera_handleEndpoints rawReq args model
+74 getLogs _ model headers _
+98 getModel _ model request
+124 setModel _ currentModel request
+163 makeModelImportUrl remoteLamderaUrl
+169 fetchImportedModel remoteLamderaUrl modelKey
 
 ## src/Rights/Auth0.elm
 ### Rights.Auth0
@@ -341,4 +342,14 @@ alwaysApply: true
 154 headerText isDarkMode
 159 activeTabText isDarkMode
 164 inactiveTabText isDarkMode
+
+## src/Wire3SortTest.elm
+### Wire3SortTest
+36 encodeAA
+43 encodeA_
+50 bytesToList bytes
+59 aaBytes
+64 a_Bytes
+71 sortOrderResult
+92 proofTest
 

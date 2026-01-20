@@ -7,9 +7,10 @@
  * Works on Windows, macOS, and Linux.
  *
  * Usage:
- *   npx create-lamdera-app [project-name]
- *   ./clone.sh [project-name]
- *   ./clone.ps1 [project-name]
+ *   npx create-lamdera-app my-project        # Creates ./my-project
+ *   npx create-lamdera-app .                 # Init in current directory
+ *   npx create-lamdera-app my-project -y     # Non-interactive (for LLMs/scripts)
+ *   npx create-lamdera-app my-project --json # JSON output for automation
  */
 
 const { execSync } = require('child_process');
@@ -29,15 +30,15 @@ const IS_WINDOWS = process.platform === 'win32';
 const EXCLUDE_PATTERNS = [
   '.git',
   '.gitmodules',
-  'bin',              // CLI scripts
-  'clone.sh',         // Unix wrapper
-  'clone.ps1',        // Windows wrapper
+  'bin',
+  'clone.sh',
+  'clone.ps1',
   'node_modules',
   'package-lock.json',
   '.npmignore',
-  'elm-stuff',        // Elm build cache - will be regenerated
-  'auth',             // Will be added as submodule
-  'lamdera-websocket-package', // Will be added as submodule
+  'elm-stuff',
+  'auth',
+  'lamdera-websocket-package',
 ];
 
 // Submodules to set up in new project
@@ -47,7 +48,42 @@ const SUBMODULES = [
 ];
 
 // ============================================================================
-// Terminal Colors (ANSI - works on modern Windows 10+, macOS, Linux)
+// CLI Argument Parsing
+// ============================================================================
+
+const parseArgs = (argv) => {
+  const args = argv.slice(2);
+  const flags = {
+    yes: false,
+    json: false,
+    quiet: false,
+    verbose: false,
+    help: false,
+  };
+  let projectArg = null;
+
+  for (const arg of args) {
+    if (arg === '-y' || arg === '--yes') {
+      flags.yes = true;
+    } else if (arg === '--json') {
+      flags.json = true;
+      flags.quiet = true; // JSON mode implies quiet
+    } else if (arg === '-q' || arg === '--quiet') {
+      flags.quiet = true;
+    } else if (arg === '-v' || arg === '--verbose') {
+      flags.verbose = true;
+    } else if (arg === '-h' || arg === '--help') {
+      flags.help = true;
+    } else if (!arg.startsWith('-') && projectArg === null) {
+      projectArg = arg;
+    }
+  }
+
+  return { flags, projectArg };
+};
+
+// ============================================================================
+// Terminal Colors
 // ============================================================================
 
 const COLORS = {
@@ -63,15 +99,68 @@ const COLORS = {
 };
 
 // ============================================================================
+// Output Helpers (respect quiet/json modes)
+// ============================================================================
+
+let outputMode = { quiet: false, json: false, verbose: false };
+const jsonOutput = { success: false, path: null, projectName: null, errors: [], warnings: [], nextSteps: [], details: [] };
+
+const println = (msg = '') => {
+  if (!outputMode.quiet) {
+    process.stdout.write(msg + '\n');
+  }
+};
+
+const print = (msg = '') => {
+  if (!outputMode.quiet) {
+    process.stdout.write(msg);
+  }
+};
+
+const warn = (msg) => {
+  if (outputMode.json) {
+    jsonOutput.warnings.push(msg);
+  } else if (!outputMode.quiet) {
+    println(`${COLORS.yellow}!${COLORS.reset} ${msg}`);
+  }
+};
+
+const error = (msg) => {
+  if (outputMode.json) {
+    jsonOutput.errors.push(msg);
+  } else {
+    println(`${COLORS.red}X${COLORS.reset} ${msg}`);
+  }
+};
+
+const success = (msg) => {
+  if (!outputMode.quiet) {
+    println(`${COLORS.green}+${COLORS.reset} ${msg}`);
+  }
+};
+
+const info = (msg) => {
+  if (!outputMode.quiet) {
+    println(`${COLORS.blue}>${COLORS.reset} ${msg}`);
+  }
+};
+
+const verbose = (msg) => {
+  if (outputMode.json) {
+    jsonOutput.details.push(msg);
+  } else if (outputMode.verbose) {
+    println(`${COLORS.dim}  ${msg}${COLORS.reset}`);
+  }
+};
+
+const outputJson = () => {
+  console.log(JSON.stringify(jsonOutput, null, 2));
+};
+
+// ============================================================================
 // Utility Functions
 // ============================================================================
 
-const println = (msg = '') => process.stdout.write(msg + '\n');
-const print = (msg = '') => process.stdout.write(msg);
-
-/**
- * Prompt user for input
- */
 const prompt = async (question) => {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -82,9 +171,6 @@ const prompt = async (question) => {
   return answer;
 };
 
-/**
- * Clean project name for use as folder name
- */
 const cleanProjectName = (name) => {
   return name
     .replace(/[^a-zA-Z0-9-_]/g, '-')
@@ -93,34 +179,6 @@ const cleanProjectName = (name) => {
     .toLowerCase();
 };
 
-/**
- * Expand ~ to home directory (cross-platform)
- */
-const expandHome = (p) => {
-  if (p.startsWith('~')) {
-    const home = os.homedir();
-    return path.join(home, p.slice(1));
-  }
-  return p;
-};
-
-/**
- * Resolve target path from user input
- */
-const resolveTargetPath = (inputPath, defaultPath, cwd) => {
-  if (!inputPath || inputPath.trim() === '') {
-    return path.resolve(defaultPath);
-  }
-  const expanded = expandHome(inputPath.trim());
-  if (path.isAbsolute(expanded)) {
-    return path.normalize(expanded);
-  }
-  return path.resolve(cwd, expanded);
-};
-
-/**
- * Check if a command exists (cross-platform)
- */
 const commandExists = (cmd) => {
   try {
     const checkCmd = IS_WINDOWS ? `where ${cmd}` : `command -v ${cmd}`;
@@ -131,27 +189,19 @@ const commandExists = (cmd) => {
   }
 };
 
-/**
- * Run a shell command
- */
 const run = (cmd, options = {}) => {
   const { silent = false, cwd = process.cwd() } = options;
   execSync(cmd, {
     stdio: silent ? 'ignore' : 'inherit',
     cwd,
-    // Use shell for better cross-platform compatibility
     shell: true,
   });
 };
 
-/**
- * Copy directory recursively (pure Node.js - no shell dependencies)
- */
 const copyRecursive = (src, dest, excludeSet) => {
   const stat = fs.statSync(src);
   const basename = path.basename(src);
 
-  // Skip excluded items
   if (excludeSet.has(basename)) {
     return;
   }
@@ -168,19 +218,33 @@ const copyRecursive = (src, dest, excludeSet) => {
       }
     }
   } else {
-    // Ensure parent directory exists
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.copyFileSync(src, dest);
   }
 };
 
-/**
- * Remove directory recursively (cross-platform)
- */
 const removeDir = (dir) => {
   if (fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+};
+
+const isDirEmpty = (dir) => {
+  if (!fs.existsSync(dir)) return true;
+  const files = fs.readdirSync(dir);
+  // Consider empty if only has .git or nothing
+  return files.length === 0 || (files.length === 1 && files[0] === '.git');
+};
+
+const isProtectedDir = (dir) => {
+  const resolved = path.resolve(dir);
+  const home = os.homedir();
+  // Don't allow init in root, home, or common system dirs
+  return resolved === '/' ||
+         resolved === home ||
+         resolved === '/tmp' ||
+         resolved === os.tmpdir() ||
+         (IS_WINDOWS && /^[A-Z]:\\?$/i.test(resolved));
 };
 
 // ============================================================================
@@ -189,28 +253,49 @@ const removeDir = (dir) => {
 
 const printBanner = () => {
   println('');
-  println(`${COLORS.cyan}${COLORS.bold}+----------------------------------------------------------------+${COLORS.reset}`);
-  println(`${COLORS.cyan}${COLORS.bold}|${COLORS.reset}  ${COLORS.magenta}${COLORS.bold}create-lamdera-app${COLORS.reset}                                        ${COLORS.cyan}${COLORS.bold}|${COLORS.reset}`);
-  println(`${COLORS.cyan}${COLORS.bold}|${COLORS.reset}  ${COLORS.dim}The Ultimate Lamdera Starter - Auth, WebSockets & More${COLORS.reset}      ${COLORS.cyan}${COLORS.bold}|${COLORS.reset}`);
-  println(`${COLORS.cyan}${COLORS.bold}+----------------------------------------------------------------+${COLORS.reset}`);
+  println(`${COLORS.cyan}${COLORS.bold}create-lamdera-app${COLORS.reset}`);
+  println(`${COLORS.dim}Lamdera Starter with Auth, WebSockets & More${COLORS.reset}`);
   println('');
 };
 
-const printFolderHelp = (cwd) => {
-  const home = os.homedir();
-  println(`${COLORS.yellow}${COLORS.bold}Path Options:${COLORS.reset}`);
-  println(`${COLORS.dim}+----------------------------------------------------------------+${COLORS.reset}`);
-  println(`${COLORS.dim}|${COLORS.reset} ${COLORS.cyan}Relative:${COLORS.reset}  ${COLORS.green}my-app${COLORS.reset}           -> ${COLORS.dim}${path.join(cwd, 'my-app')}${COLORS.reset}`);
-  println(`${COLORS.dim}|${COLORS.reset} ${COLORS.cyan}Home:${COLORS.reset}      ${COLORS.green}~/projects/app${COLORS.reset}   -> ${COLORS.dim}${path.join(home, 'projects/app')}${COLORS.reset}`);
-  println(`${COLORS.dim}|${COLORS.reset} ${COLORS.cyan}Absolute:${COLORS.reset}  ${COLORS.green}${IS_WINDOWS ? 'C:\\projects' : '/opt/projects'}${COLORS.reset}    -> ${COLORS.dim}${IS_WINDOWS ? 'C:\\projects' : '/opt/projects'}${COLORS.reset}`);
-  println(`${COLORS.dim}|${COLORS.reset} ${COLORS.cyan}Parent:${COLORS.reset}    ${COLORS.green}../sibling${COLORS.reset}       -> ${COLORS.dim}${path.resolve(cwd, '../sibling')}${COLORS.reset}`);
-  println(`${COLORS.dim}+----------------------------------------------------------------+${COLORS.reset}`);
-  println('');
+const printHelp = () => {
+  println(`
+${COLORS.cyan}${COLORS.bold}create-lamdera-app${COLORS.reset} - Scaffold production-ready Lamdera apps
+
+${COLORS.yellow}USAGE${COLORS.reset}
+  npx create-lamdera-app <project-name>   Create in ./project-name
+  npx create-lamdera-app .                Init in current directory
+  npx create-lamdera-app                  Interactive mode
+
+${COLORS.yellow}OPTIONS${COLORS.reset}
+  -y, --yes      Non-interactive mode (use defaults, no prompts)
+  --json         Output JSON (for LLMs/scripts)
+  -q, --quiet    Suppress decorative output
+  -v, --verbose  Show detailed output
+  -h, --help     Show this help
+
+${COLORS.yellow}EXAMPLES${COLORS.reset}
+  ${COLORS.dim}# Create new project${COLORS.reset}
+  npx create-lamdera-app my-app
+
+  ${COLORS.dim}# Init in current empty directory${COLORS.reset}
+  mkdir my-app && cd my-app
+  npx create-lamdera-app .
+
+  ${COLORS.dim}# Non-interactive for scripts/LLMs${COLORS.reset}
+  npx create-lamdera-app my-app -y
+
+  ${COLORS.dim}# JSON output for automation${COLORS.reset}
+  npx create-lamdera-app my-app --json
+`);
 };
 
 let activeSpinner = null;
 
 const spinner = (text) => {
+  if (outputMode.quiet) {
+    return () => {}; // No-op for quiet mode
+  }
   const frames = ['|', '/', '-', '\\'];
   let i = 0;
   const id = setInterval(() => {
@@ -225,10 +310,14 @@ const spinner = (text) => {
   return stop;
 };
 
-// Clean up spinner on Ctrl+C
 process.on('SIGINT', () => {
   if (activeSpinner) activeSpinner();
-  println(`\n${COLORS.yellow}Cancelled.${COLORS.reset}`);
+  if (outputMode.json) {
+    jsonOutput.errors.push('Cancelled by user');
+    outputJson();
+  } else {
+    println(`\n${COLORS.yellow}Cancelled.${COLORS.reset}`);
+  }
   process.exit(130);
 });
 
@@ -236,9 +325,6 @@ process.on('SIGINT', () => {
 // Package.json handling
 // ============================================================================
 
-/**
- * Modify package.json for the new project
- */
 const updatePackageJson = (targetDir, projectName, cleanName) => {
   const pkgPath = path.join(targetDir, 'package.json');
 
@@ -249,12 +335,10 @@ const updatePackageJson = (targetDir, projectName, cleanName) => {
   try {
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
-    // Update for new project
     pkg.name = cleanName;
     pkg.version = '0.1.0';
     pkg.description = `${projectName} - A Lamdera application`;
 
-    // Remove CLI-specific fields
     delete pkg.bin;
     delete pkg.files;
     delete pkg.repository;
@@ -262,13 +346,56 @@ const updatePackageJson = (targetDir, projectName, cleanName) => {
     delete pkg.bugs;
     delete pkg.keywords;
 
-    // Keep devDependencies (elm-review, etc.) but remove publishing stuff
-
     fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
   } catch (err) {
-    // Non-fatal - project will still work
-    println(`${COLORS.yellow}!${COLORS.reset} Could not update package.json: ${err.message}`);
+    warn(`Could not update package.json: ${err.message}`);
   }
+};
+
+// ============================================================================
+// Core Logic
+// ============================================================================
+
+const resolveProjectTarget = (projectArg, cwd, flags) => {
+  // "." means init in current directory
+  if (projectArg === '.') {
+    const dirName = path.basename(cwd);
+    const cleanName = cleanProjectName(dirName);
+    if (!cleanName) {
+      return { error: 'Current directory name cannot be used as project name' };
+    }
+    return {
+      targetDir: cwd,
+      projectName: dirName,
+      cleanName,
+      initInPlace: true,
+    };
+  }
+
+  // Named project - create subdirectory
+  if (projectArg) {
+    const cleanName = cleanProjectName(projectArg);
+    if (!cleanName) {
+      return { error: `Invalid project name: ${projectArg}` };
+    }
+    return {
+      targetDir: path.join(cwd, cleanName),
+      projectName: projectArg,
+      cleanName,
+      initInPlace: false,
+    };
+  }
+
+  // No argument - need interactive or error
+  if (flags.yes) {
+    return { error: 'Project name required in non-interactive mode. Usage: npx create-lamdera-app <name> -y' };
+  }
+
+  if (flags.json) {
+    return { error: 'Project name required with --json. Usage: npx create-lamdera-app <name> --json' };
+  }
+
+  return { needsPrompt: true };
 };
 
 // ============================================================================
@@ -277,99 +404,108 @@ const updatePackageJson = (targetDir, projectName, cleanName) => {
 
 const main = async () => {
   const cwd = process.cwd();
+  const { flags, projectArg } = parseArgs(process.argv);
 
-  printBanner();
+  // Set output mode
+  outputMode = { quiet: flags.quiet || flags.json, json: flags.json, verbose: flags.verbose };
+
+  // Help
+  if (flags.help) {
+    printHelp();
+    process.exit(0);
+  }
+
+  // Banner (only in interactive verbose mode)
+  if (!flags.quiet && !flags.yes) {
+    printBanner();
+  }
 
   // -------------------------------------------------------------------------
   // Check prerequisites
   // -------------------------------------------------------------------------
 
   if (!commandExists('git')) {
-    println(`${COLORS.red}X${COLORS.reset} Git is required but not installed.`);
-    println(`${COLORS.yellow}  Install: https://git-scm.com/downloads${COLORS.reset}`);
+    error('Git is required but not installed. Install: https://git-scm.com/downloads');
+    if (outputMode.json) {
+      outputJson();
+    }
     process.exit(1);
   }
 
   if (!commandExists('lamdera')) {
-    println(`${COLORS.yellow}!${COLORS.reset} Lamdera CLI not found - you'll need it to run your project`);
-    println(`${COLORS.dim}  Install: https://lamdera.com/start${COLORS.reset}`);
-    println('');
+    warn('Lamdera CLI not found - install from https://lamdera.com/start');
   }
 
   // -------------------------------------------------------------------------
-  // Step 1: Project Name
+  // Resolve project name and target directory
   // -------------------------------------------------------------------------
 
-  println(`${COLORS.yellow}${COLORS.bold}Step 1/2: Project Name${COLORS.reset}`);
-  println(`${COLORS.dim}This will be used for the folder name${COLORS.reset}`);
-  println('');
+  let resolution = resolveProjectTarget(projectArg, cwd, flags);
 
-  const argName = process.argv[2];
-  let projectName = argName;
+  // Interactive prompt if needed
+  if (resolution.needsPrompt) {
+    const answer = await prompt(`${COLORS.cyan}?${COLORS.reset} Project name: `);
+    const projectName = answer?.trim();
 
-  if (!projectName) {
-    projectName = await prompt(`${COLORS.cyan}?${COLORS.reset} Project name: `);
-    if (!projectName || !projectName.trim()) {
-      println(`${COLORS.red}X${COLORS.reset} Project name cannot be empty`);
+    if (!projectName) {
+      error('Project name cannot be empty');
       process.exit(1);
     }
-    projectName = projectName.trim();
-  } else {
-    println(`${COLORS.cyan}?${COLORS.reset} Project name: ${COLORS.green}${projectName}${COLORS.reset} ${COLORS.dim}(from argument)${COLORS.reset}`);
+
+    resolution = resolveProjectTarget(projectName, cwd, flags);
   }
 
-  const cleanName = cleanProjectName(projectName);
-  if (cleanName !== projectName) {
-    println(`${COLORS.dim}  Normalized to: ${cleanName}${COLORS.reset}`);
-  }
-
-  if (!cleanName) {
-    println(`${COLORS.red}X${COLORS.reset} Invalid project name`);
+  if (resolution.error) {
+    error(resolution.error);
+    if (outputMode.json) {
+      outputJson();
+    }
     process.exit(1);
   }
 
-  // Windows has a 260 character path limit
-  if (IS_WINDOWS && cleanName.length > 50) {
-    println(`${COLORS.yellow}!${COLORS.reset} Long project name may cause path issues on Windows`);
-  }
+  const { targetDir, projectName, cleanName, initInPlace } = resolution;
 
-  // -------------------------------------------------------------------------
-  // Step 2: Location
-  // -------------------------------------------------------------------------
-
-  println('');
-  println(`${COLORS.yellow}${COLORS.bold}Step 2/2: Project Location${COLORS.reset}`);
-  println('');
-  printFolderHelp(cwd);
-
-  const defaultPath = path.join(cwd, cleanName);
-  println(`${COLORS.dim}Default: ${defaultPath}${COLORS.reset}`);
-  println('');
-
-  const customPath = await prompt(`${COLORS.cyan}?${COLORS.reset} Path ${COLORS.dim}(Enter for default)${COLORS.reset}: `);
-  const target = resolveTargetPath(customPath, defaultPath, cwd);
+  verbose(`Target directory: ${targetDir}`);
+  verbose(`Project name: ${projectName} (clean: ${cleanName})`);
+  verbose(`Init in place: ${initInPlace}`);
 
   // -------------------------------------------------------------------------
   // Safety checks
   // -------------------------------------------------------------------------
 
-  // Don't allow creating inside the starter-project repo itself
-  const scriptDir = path.resolve(__dirname, '..');
-  const relToScript = path.relative(scriptDir, target);
-  const isInsideScript = !relToScript.startsWith('..') && !path.isAbsolute(relToScript);
-
-  if (isInsideScript && fs.existsSync(path.join(scriptDir, 'elm.json'))) {
-    println(`${COLORS.red}X${COLORS.reset} Cannot create project inside the starter-project repo`);
-    println(`${COLORS.yellow}  Try: ${path.resolve(scriptDir, '..', cleanName)}${COLORS.reset}`);
+  if (isProtectedDir(targetDir)) {
+    error(`Cannot create project in ${targetDir} - protected directory`);
+    if (outputMode.json) {
+      outputJson();
+    }
     process.exit(1);
   }
 
-  // Check if directory exists and has content
-  if (fs.existsSync(target)) {
-    const files = fs.readdirSync(target);
-    if (files.length > 0) {
-      println('');
-      println(`${COLORS.yellow}!${COLORS.reset} Directory exists and is not empty: ${target}`);
+  // Check if inside starter-project repo
+  const scriptDir = path.resolve(__dirname, '..');
+  const relToScript = path.relative(scriptDir, targetDir);
+  const isInsideScript = !relToScript.startsWith('..') && !path.isAbsolute(relToScript);
+
+  if (isInsideScript && fs.existsSync(path.join(scriptDir, 'elm.json'))) {
+    error('Cannot create project inside the starter-project repo');
+    if (outputMode.json) {
+      outputJson();
+    }
+    process.exit(1);
+  }
+
+  // Check if target exists and has content
+  if (fs.existsSync(targetDir) && !isDirEmpty(targetDir)) {
+    if (flags.yes) {
+      // Non-interactive mode: error on non-empty directory (safe default)
+      error(`Directory not empty: ${targetDir}. Remove contents or choose different name.`);
+      if (outputMode.json) {
+        outputJson();
+      }
+      process.exit(1);
+    } else {
+      // Interactive: prompt for confirmation
+      warn(`Directory exists and is not empty: ${targetDir}`);
       const confirm = await prompt(`${COLORS.cyan}?${COLORS.reset} Continue anyway? ${COLORS.dim}(y/N)${COLORS.reset}: `);
       if (!/^y(es)?$/i.test(confirm.trim())) {
         println(`${COLORS.yellow}Cancelled.${COLORS.reset}`);
@@ -379,21 +515,20 @@ const main = async () => {
   }
 
   // -------------------------------------------------------------------------
-  // Summary
+  // Show what we're doing
   // -------------------------------------------------------------------------
 
-  println('');
-  println(`${COLORS.cyan}${COLORS.bold}--------------------------------------------------${COLORS.reset}`);
-  println(`${COLORS.green}${COLORS.bold}Creating: ${projectName}${COLORS.reset}`);
-  println(`${COLORS.green}Path:     ${target}${COLORS.reset}`);
-  println(`${COLORS.cyan}${COLORS.bold}--------------------------------------------------${COLORS.reset}`);
-  println('');
+  if (initInPlace) {
+    info(`Initializing in current directory as "${cleanName}"...`);
+  } else {
+    info(`Creating ${cleanName} in ${targetDir}...`);
+  }
 
   // -------------------------------------------------------------------------
   // Create target directory
   // -------------------------------------------------------------------------
 
-  fs.mkdirSync(target, { recursive: true });
+  fs.mkdirSync(targetDir, { recursive: true });
 
   // -------------------------------------------------------------------------
   // Determine source: local repo or clone from GitHub
@@ -402,111 +537,132 @@ const main = async () => {
   let sourceDir;
   let tempDir = null;
 
-  // Check if we're running from a local clone (has src/ and elm.json)
   const localRepoRoot = path.resolve(__dirname, '..');
   const isLocalRepo = fs.existsSync(path.join(localRepoRoot, 'src')) &&
                       fs.existsSync(path.join(localRepoRoot, 'elm.json'));
 
   if (isLocalRepo) {
-    println(`${COLORS.blue}>${COLORS.reset} Using local starter-project...`);
+    info('Using local starter-project...');
+    verbose(`Source: ${localRepoRoot}`);
     sourceDir = localRepoRoot;
   } else {
-    // Clone from GitHub to temp directory
-    println(`${COLORS.blue}>${COLORS.reset} Downloading from GitHub...`);
+    info('Downloading from GitHub...');
     tempDir = path.join(os.tmpdir(), `create-lamdera-app-${Date.now()}`);
 
     const stopSpinner = spinner('Cloning repository...');
     try {
       run(`git clone --depth 1 "${REPO_URL}" "${tempDir}"`, { silent: true });
       stopSpinner();
-      println(`${COLORS.green}+${COLORS.reset} Downloaded starter template`);
+      success('Downloaded starter template');
     } catch (err) {
       stopSpinner();
-      println(`${COLORS.red}X${COLORS.reset} Failed to clone repository`);
-      println(`${COLORS.dim}  ${err.message || err}${COLORS.reset}`);
+      error(`Failed to clone repository: ${err.message || err}`);
+      if (outputMode.json) {
+        outputJson();
+      }
       process.exit(1);
     }
     sourceDir = tempDir;
   }
 
   // -------------------------------------------------------------------------
-  // Copy project files (excluding CLI-related stuff)
+  // Copy project files
   // -------------------------------------------------------------------------
 
-  println(`${COLORS.blue}>${COLORS.reset} Copying project files...`);
+  info('Copying project files...');
+  verbose(`Excluding: ${EXCLUDE_PATTERNS.join(', ')}`);
 
   const excludeSet = new Set(EXCLUDE_PATTERNS);
+  let copiedCount = 0;
+  let skippedCount = 0;
 
-  // Copy files using pure Node.js (works on all platforms)
   for (const item of fs.readdirSync(sourceDir)) {
     if (!excludeSet.has(item)) {
+      const destPath = path.join(targetDir, item);
+      // Skip if file already exists in init-in-place mode
+      if (initInPlace && fs.existsSync(destPath)) {
+        verbose(`Skipped (exists): ${item}`);
+        skippedCount++;
+        continue;
+      }
+      verbose(`Copying: ${item}`);
       copyRecursive(
         path.join(sourceDir, item),
-        path.join(target, item),
+        destPath,
         excludeSet
       );
+      copiedCount++;
     }
   }
-  println(`${COLORS.green}+${COLORS.reset} Project files copied`);
+  verbose(`Copied ${copiedCount} items, skipped ${skippedCount}`);
+  success('Project files copied');
 
   // -------------------------------------------------------------------------
-  // Update package.json for new project
+  // Update package.json
   // -------------------------------------------------------------------------
 
-  updatePackageJson(target, projectName, cleanName);
+  updatePackageJson(targetDir, projectName, cleanName);
 
   // -------------------------------------------------------------------------
   // Initialize git repository
   // -------------------------------------------------------------------------
 
-  println(`${COLORS.blue}>${COLORS.reset} Initializing git repository...`);
-  run('git init', { silent: true, cwd: target });
-  println(`${COLORS.green}+${COLORS.reset} Git initialized`);
+  const hasGit = fs.existsSync(path.join(targetDir, '.git'));
+
+  if (!hasGit) {
+    info('Initializing git repository...');
+    run('git init', { silent: true, cwd: targetDir });
+    success('Git initialized');
+  } else {
+    verbose('Git repository already exists, skipping init');
+  }
 
   // -------------------------------------------------------------------------
   // Set up submodules
   // -------------------------------------------------------------------------
 
-  println(`${COLORS.blue}>${COLORS.reset} Setting up dependencies...`);
+  info('Setting up dependencies...');
 
   for (const sub of SUBMODULES) {
-    const subPath = path.join(target, sub.name);
+    const subPath = path.join(targetDir, sub.name);
+    verbose(`Submodule ${sub.name}: ${sub.url}`);
 
-    // Remove if copied from source (we want fresh submodule)
     if (fs.existsSync(subPath)) {
+      verbose(`Removing existing ${sub.name} directory`);
       removeDir(subPath);
     }
 
     try {
-      run(`git submodule add "${sub.url}" "${sub.name}"`, { silent: true, cwd: target });
-      println(`${COLORS.green}+${COLORS.reset} Added ${sub.name}`);
+      run(`git submodule add "${sub.url}" "${sub.name}"`, { silent: true, cwd: targetDir });
+      success(`Added ${sub.name}`);
     } catch (err) {
-      println(`${COLORS.yellow}!${COLORS.reset} ${sub.name}: ${err.message || 'setup failed'}`);
+      warn(`${sub.name}: ${err.message || 'setup failed'}`);
     }
   }
 
-  // Initialize submodules
   try {
-    run('git submodule update --init --recursive', { silent: true, cwd: target });
+    run('git submodule update --init --recursive', { silent: true, cwd: targetDir });
   } catch (err) {
-    println(`${COLORS.yellow}!${COLORS.reset} Submodule init: ${err.message || 'failed'}`);
+    warn(`Submodule init: ${err.message || 'failed'}`);
   }
 
   // -------------------------------------------------------------------------
   // Create initial commit
   // -------------------------------------------------------------------------
 
-  println(`${COLORS.blue}>${COLORS.reset} Creating initial commit...`);
+  info('Creating initial commit...');
   try {
-    run('git add -A', { silent: true, cwd: target });
-    run('git commit -m "Initial commit from create-lamdera-app"', { silent: true, cwd: target });
-    println(`${COLORS.green}+${COLORS.reset} Initial commit created`);
+    verbose('Running: git add -A');
+    run('git add -A', { silent: true, cwd: targetDir });
+    verbose('Running: git commit');
+    run('git commit -m "Initial commit from create-lamdera-app"', { silent: true, cwd: targetDir });
+    success('Initial commit created');
   } catch (err) {
-    println(`${COLORS.yellow}!${COLORS.reset} Commit skipped: ${err.message || 'check git config'}`);
+    warn(`Commit skipped: ${err.message || 'check git config'}`);
   }
 
   // -------------------------------------------------------------------------
-  // Cleanup temp directory
+  // Cleanup
   // -------------------------------------------------------------------------
 
   if (tempDir) {
@@ -514,27 +670,34 @@ const main = async () => {
   }
 
   // -------------------------------------------------------------------------
-  // Success!
+  // Success output
   // -------------------------------------------------------------------------
 
-  println('');
-  println(`${COLORS.green}${COLORS.bold}+----------------------------------------------------------------+${COLORS.reset}`);
-  println(`${COLORS.green}${COLORS.bold}|${COLORS.reset}  ${COLORS.green}${COLORS.bold}SUCCESS!${COLORS.reset} Project ${COLORS.cyan}${projectName}${COLORS.reset} created!`);
-  println(`${COLORS.green}${COLORS.bold}+----------------------------------------------------------------+${COLORS.reset}`);
-  println('');
-  println(`${COLORS.yellow}${COLORS.bold}Next steps:${COLORS.reset}`);
-  println('');
-  println(`   ${COLORS.cyan}1.${COLORS.reset} cd "${target}"`);
-  println(`   ${COLORS.cyan}2.${COLORS.reset} ${IS_WINDOWS ? '.\\compile.ps1' : './compile.sh'}`);
-  println(`   ${COLORS.cyan}3.${COLORS.reset} lamdera live`);
-  println('');
-  println(`${COLORS.dim}+----------------------------------------------------------------+${COLORS.reset}`);
-  println(`${COLORS.dim}|${COLORS.reset} ${COLORS.yellow}Test login:${COLORS.reset} ${COLORS.bold}sys@admin.com${COLORS.reset} / ${COLORS.bold}admin${COLORS.reset}`);
-  println(`${COLORS.dim}|${COLORS.reset} ${COLORS.yellow}AI docs:${COLORS.reset}    Open ${COLORS.cyan}CLAUDE.md${COLORS.reset} for development guide`);
-  println(`${COLORS.dim}+----------------------------------------------------------------+${COLORS.reset}`);
-  println('');
-  println(`${COLORS.magenta}Happy coding!${COLORS.reset}`);
-  println('');
+  const nextSteps = [
+    initInPlace ? null : `cd "${targetDir}"`,
+    IS_WINDOWS ? '.\\compile.ps1' : './compile.sh',
+    'lamdera live',
+  ].filter(Boolean);
+
+  if (outputMode.json) {
+    jsonOutput.success = true;
+    jsonOutput.path = targetDir;
+    jsonOutput.projectName = cleanName;
+    jsonOutput.nextSteps = nextSteps;
+    outputJson();
+  } else {
+    println('');
+    println(`${COLORS.green}${COLORS.bold}Success!${COLORS.reset} Created ${COLORS.cyan}${cleanName}${COLORS.reset} at ${targetDir}`);
+    println('');
+    println(`${COLORS.yellow}Next steps:${COLORS.reset}`);
+    nextSteps.forEach((step, i) => {
+      println(`  ${COLORS.cyan}${i + 1}.${COLORS.reset} ${step}`);
+    });
+    println('');
+    println(`${COLORS.dim}Test login: sys@admin.com / admin${COLORS.reset}`);
+    println(`${COLORS.dim}AI docs: Open CLAUDE.md for development guide${COLORS.reset}`);
+    println('');
+  }
 };
 
 // ============================================================================
@@ -542,7 +705,10 @@ const main = async () => {
 // ============================================================================
 
 main().catch((err) => {
-  println(`${COLORS.red}X${COLORS.reset} Error: ${err?.message || err}`);
+  error(err?.message || String(err));
+  if (outputMode.json) {
+    outputJson();
+  }
   if (process.env.DEBUG) {
     console.error(err);
   }

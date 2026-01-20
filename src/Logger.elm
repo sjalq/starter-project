@@ -19,6 +19,8 @@ module Logger exposing
     , logWarn
     , logError
     , logDebug
+    , logWithCmd
+    , logInfoWithCmd
     , handleMsg
     , encodeLogEntry
     , encodeLogEntries
@@ -345,6 +347,42 @@ logDebug :
     -> ( { a | logState : LogState }, Cmd msg )
 logDebug =
     log Debug
+
+
+{-| Log a message and return the new state with a Cmd.
+Useful when you don't have a model+cmd tuple pattern.
+
+    let
+        ( newLogState, logCmd ) =
+            Logger.logWithCmd Info "Message" model.logState
+    in
+    ( { model | logState = newLogState }, Cmd.map GotLogTime logCmd )
+
+-}
+logWithCmd : LogLevel -> String -> LogState -> ( LogState, Cmd Msg )
+logWithCmd level message state =
+    let
+        ( entry, newLogState ) =
+            addLog level message state
+
+        timestampCmd =
+            Time.now
+                |> Task.perform
+                    (\time ->
+                        GotTimestamp entry.index (Time.posixToMillis time)
+                    )
+
+        _ =
+            Debug.log (levelToString level) message
+    in
+    ( newLogState, timestampCmd )
+
+
+{-| Convenience: Log at Info level returning state and cmd.
+-}
+logInfoWithCmd : String -> LogState -> ( LogState, Cmd Msg )
+logInfoWithCmd =
+    logWithCmd Info
 
 
 {-| Handle Logger messages (timestamp updates).

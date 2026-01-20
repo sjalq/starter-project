@@ -167,6 +167,11 @@ update msg model =
             in
             ( { model | adminPage = { oldAdminPage | remoteUrl = url } }, Cmd.none )
 
+        Admin_LogsNavigate params ->
+            ( model
+            , Nav.pushUrl model.key (Route.toString (Admin (AdminLogs params)))
+            )
+
         Logout ->
             let
                 -- Reset form to initial clean state

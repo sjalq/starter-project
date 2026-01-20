@@ -1,4 +1,4 @@
-module Types exposing (AdminPageModel, AdminRoute(..), BackendModel, BackendMsg(..), BrowserCookie, ConnectionId, Email, EmailPasswordAuthMsg(..), EmailPasswordAuthResult(..), EmailPasswordAuthToBackend(..), EmailPasswordCredentials, EmailPasswordFormModel, EmailPasswordFormMsg(..), FrontendModel, FrontendMsg(..), LoginState(..), PollData, PollingStatus(..), PollingToken, Preferences, Role(..), Route(..), ToBackend(..), ToFrontend(..), User, UserFrontend)
+module Types exposing (AdminLogsUrlParams, AdminPageModel, AdminRoute(..), BackendModel, BackendMsg(..), BrowserCookie, ConnectionId, Email, EmailPasswordAuthMsg(..), EmailPasswordAuthResult(..), EmailPasswordAuthToBackend(..), EmailPasswordCredentials, EmailPasswordFormModel, EmailPasswordFormMsg(..), FrontendModel, FrontendMsg(..), LoginState(..), PollData, PollingStatus(..), PollingToken, Preferences, Role(..), Route(..), ToBackend(..), ToFrontend(..), User, UserFrontend)
 
 import Auth.Common
 import Browser exposing (UrlRequest)
@@ -35,12 +35,19 @@ type Route
 
 type AdminRoute
     = AdminDefault
-    | AdminLogs
+    | AdminLogs AdminLogsUrlParams
     | AdminFetchModel
 
 
 
 -- | AdminFusion
+
+
+type alias AdminLogsUrlParams =
+    { page : Int
+    , pageSize : Int
+    , search : String
+    }
 
 
 type alias AdminPageModel =
@@ -128,6 +135,7 @@ type FrontendMsg
     | DirectToBackend ToBackend
       --- Admin
     | Admin_RemoteUrlChanged String
+    | Admin_LogsNavigate AdminLogsUrlParams
     | Auth0SigninRequested
     | EmailPasswordAuthMsg EmailPasswordAuthMsg
     | Logout
@@ -151,7 +159,7 @@ type FrontendMsg
 type ToBackend
     = A String -- WebSocket message from JS (guaranteed tag 0)
     | Admin_ClearLogs
-    | Admin_FetchLogs
+    | Admin_FetchLogs String -- Search query parameter
     | Admin_FetchRemoteModel String
     | AuthToBackend Auth.Common.ToBackend
     | EmailPasswordAuthToBackend EmailPasswordAuthToBackend

@@ -1,28 +1,78 @@
-# create-lamdera-app 🚀
+# lamdera-starter-kit 🚀
 
-> The ultimate Lamdera starter — production-ready with auth, WebSockets, and everything you need to ship.
+> Production-ready Lamdera starter with auth, WebSockets, program-test, and everything you need to ship.
 
 ## Quick Start
 
 ```bash
-npx create-lamdera-app
-```
-
-That's it! The CLI will guide you through:
-1. **Project name** — what to call your new app
-2. **Location** — where to create it (supports `~/`, relative, and absolute paths)
-
-Then just:
-```bash
-cd your-project
+npx lamdera-starter-kit my-app
+cd my-app
 ./compile.sh
 lamdera live
 ```
 
-### One-liner (if you know what you want)
+Open http://localhost:8000 — you're running!
 
+---
+
+## Installation Options
+
+### Interactive (human-friendly)
 ```bash
-npx create-lamdera-app my-awesome-project
+npx lamdera-starter-kit
+# Prompts for project name
+```
+
+### Direct (script-friendly)
+```bash
+npx lamdera-starter-kit my-app
+```
+
+### Non-interactive (CI/automation)
+```bash
+npx lamdera-starter-kit my-app -y
+```
+
+### JSON output (LLM/automation)
+```bash
+npx lamdera-starter-kit my-app --json
+```
+
+Returns structured JSON:
+```json
+{
+  "success": true,
+  "path": "/path/to/my-app",
+  "projectName": "my-app",
+  "nextSteps": ["cd \"/path/to/my-app\"", "./compile.sh", "lamdera live"],
+  "errors": [],
+  "warnings": []
+}
+```
+
+### Init in current directory
+```bash
+mkdir my-app && cd my-app
+npx lamdera-starter-kit .
+```
+
+---
+
+## CLI Reference
+
+```
+npx lamdera-starter-kit [project-name] [options]
+
+Arguments:
+  project-name    Name for new project (creates ./project-name)
+  .               Initialize in current directory
+
+Options:
+  -y, --yes       Non-interactive mode (no prompts, fails if dir not empty)
+  --json          Output JSON instead of human text (implies --quiet)
+  -q, --quiet     Suppress decorative output
+  -v, --verbose   Show detailed progress
+  -h, --help      Show help
 ```
 
 ---
@@ -30,68 +80,74 @@ npx create-lamdera-app my-awesome-project
 ## What's Included 📦
 
 ### 🔐 Authentication & Authorization
-- **Auth0 & Google OAuth** — complete integration, not just demos
+- **Email/Password + Google OAuth** — complete integration
 - **Role-based permissions** — SysAdmin, UserRole, Anonymous with granular controls
 - **Session management** — persistent login across browser sessions
 - **Test account** — `sys@admin.com` / `admin` (SysAdmin access)
 
+### 🧪 Testing Infrastructure
+- **lamdera/program-test** — full end-to-end testing framework
+- **Property-based tests** — fuzz testing with elm-explorations/test
+- **Visual test viewer** — see rendered UI snapshots in browser
+- **298 tests included** — routes, permissions, auth flows, themes, and more
+
 ### 🌐 WebSockets & External APIs
-- **Pure functional WebSocket library** — drop-in replacement with Lamdera wire format
-- **RPC system** — complete HTTP endpoint framework with async operations
-- **External API examples** — crypto prices, Slack notifications, OpenAI integration
-- **Task chains** — elegant async operation handling (railway programming)
+- **Pure functional WebSocket library** — drop-in with Lamdera wire format
+- **RPC system** — HTTP endpoint framework with async operations
+- **External API examples** — crypto prices, Slack, OpenAI integration
 
 ### 🔌 JavaScript Interop
-- **Port system** — console logging, clipboard, with error handling
-- **elm-pkg-js standard** — clean JavaScript integration pattern
-- **External WebSocket client** — Node.js examples for external systems
+- **Port system** — console logging, clipboard, error handling
+- **elm-pkg-js standard** — clean JavaScript integration
 
 ### 🛠️ Developer Experience
-- **Complete admin panel** — logs, system monitoring
-- **Environment configuration** — dev/prod modes with API key management
-- **Utility library** — HTTP helpers, JSON decoders, date formatting
-- **LLM-friendly structure** — organized for AI-assisted development (see `CLAUDE.md`)
+- **Admin panel** — logs, system monitoring at `/admin`
+- **Environment config** — dev/prod modes with API key management
+- **CLAUDE.md** — comprehensive LLM development guide
+- **Hot reload** — `lamdera live` watches for changes
 
 ---
 
 ## Project Structure
 
 ```
-your-project/
+my-app/
 ├── src/
-│   ├── Frontend.elm          # Browser-side controller
-│   ├── Backend.elm           # Server-side controller
+│   ├── Frontend.elm          # Browser-side app
+│   ├── Backend.elm           # Server-side app
 │   ├── Types.elm             # All application types
-│   ├── Theme.elm             # Complete theming system
+│   ├── Route.elm             # URL routing
 │   ├── Pages/                # Route-based pages
 │   ├── Components/           # Reusable UI components
 │   ├── Rights/               # Auth & permissions
-│   └── Ports/                # JavaScript interop
+│   └── RPC.elm               # HTTP endpoints
+├── tests/
+│   ├── Program/              # End-to-end tests
+│   ├── Property/             # Property-based tests
+│   └── Helpers/              # Test utilities
 ├── auth/                     # Auth submodule
 ├── lamdera-websocket-package/# WebSocket submodule
-├── elm.json                  # Elm dependencies
-├── compile.sh                # Build script
-└── CLAUDE.md                 # AI development guide
+├── compile.sh                # Build + test script
+├── CLAUDE.md                 # LLM development guide
+└── elm.json                  # Dependencies
 ```
 
 ---
 
 ## Prerequisites
 
-- **Node.js** (v14+) — for the CLI
-- **Git** — for version control and submodules
-- **Lamdera CLI** — `npm install -g lamdera`
+- **Node.js** (v14+)
+- **Git**
+- **Lamdera CLI** — install from https://lamdera.com/start
 
 ---
 
-## Development
-
-After creating your project:
+## Development Commands
 
 ```bash
-cd your-project
-./compile.sh       # Build the project
-lamdera live       # Start dev server at http://localhost:8000
+./compile.sh              # Build + run tests
+lamdera live              # Dev server at http://localhost:8000
+elm-test-rs --compiler lamdera "tests/**/*.elm"  # Run tests only
 ```
 
 ### Test Credentials
@@ -102,37 +158,39 @@ lamdera live       # Start dev server at http://localhost:8000
 | Password | `admin` |
 | Role | System Administrator |
 
-⚠️ **Remove or change these before deploying to production!**
+⚠️ **Change these before production!**
+
+---
+
+## For LLM Agents
+
+This starter is optimized for AI-assisted development:
+
+1. **Read `CLAUDE.md`** — contains architecture, patterns, and conventions
+2. **Use `--json` flag** — get structured output for parsing
+3. **Run `./compile.sh`** — validates changes (tests + type checking)
+4. **Check `/admin`** — inspect logs via RPC endpoints
+
+Example agent workflow:
+```bash
+# Create project
+npx lamdera-starter-kit my-app --json
+
+# Verify setup
+cd my-app && ./compile.sh
+
+# Read development guide
+cat CLAUDE.md
+```
 
 ---
 
 ## Learn More
 
-- **AI Guide**: Check `CLAUDE.md` for LLM-friendly patterns
-- **Examples**: Browse the `/examples` page for interactive demos
-- **Admin Panel**: Explore `/admin` for system management tools
-
----
-
-## Alternative Install Methods
-
-### From local clone
-
-```bash
-git clone https://github.com/sjalq/starter-project.git
-cd starter-project
-./clone.sh
-```
-
-### Manual setup
-
-```bash
-git clone --recurse-submodules https://github.com/sjalq/starter-project.git my-project
-cd my-project
-rm -rf .git && git init
-git submodule update --init --recursive
-lamdera live
-```
+- **LLM Guide**: `CLAUDE.md` for AI development patterns
+- **Examples**: `/examples` page for interactive demos
+- **Admin Panel**: `/admin` for logs and monitoring
+- **Tests**: `tests/` directory for testing patterns
 
 ---
 
@@ -142,4 +200,4 @@ MIT
 
 ---
 
-*Built with ❤️ and an unhealthy obsession with type safety*
+*Built with ❤️ and type safety*

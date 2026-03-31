@@ -87,31 +87,34 @@ suite =
 
 ## Reading Production Logs
 
-To read logs from the production Lamdera backend, use the RPC endpoint directly via curl. Do NOT try to use the frontend admin interface.
+There are two log systems available. See `LAMDERA-LOGS.md` for full details on the Lamdera.log system.
+
+### Lamdera.log (disk-backed, recommended for debugging)
+
+Every `Debug.log` call in backend code is automatically captured to a disk-backed log file by the Lamdera runtime, with timestamps added. This includes all `Logger.logInfo`/`logWarn`/`logError`/`logDebug` calls since they use `Debug.log` internally. The log file is served via an authenticated HTTP endpoint.
 
 ```bash
-# Fetch all logs (returns JSON array of {time, message} objects)
-curl -s -X POST "https://YOUR_APP.lamdera.app/_r/getLogs/" \
-  -H "Content-Type: application/json" \
-  -H "x-lamdera-model-key: YOUR_MODEL_KEY" \
-  -d '{}'
+# CLI tool (recommended)
+node scripts/node/lamdera-logs.mjs read --lines 50
+node scripts/node/lamdera-logs.mjs read --lines 500 --grep "ERROR"
+node scripts/node/lamdera-logs.mjs count
 
-# Get last 30 log messages (formatted)
-curl -s -X POST "https://YOUR_APP.lamdera.app/_r/getLogs/" \
-  -H "Content-Type: application/json" \
-  -H "x-lamdera-model-key: YOUR_MODEL_KEY" \
-  -d '{}' | jq -r '.[-30:][] | .message'
-
-# Search logs for specific content
-curl -s -X POST "https://YOUR_APP.lamdera.app/_r/getLogs/" \
-  -H "Content-Type: application/json" \
-  -H "x-lamdera-model-key: YOUR_MODEL_KEY" \
-  -d '{}' | jq -r '.[] | select(.message | test("search_term"; "i")) | .message'
+# Or curl directly (URL-encode the key: + -> %2B, = -> %3D, / -> %2F)
+curl -s "https://YOUR_APP.lamdera.app/_logs/read?key=URL_ENCODED_KEY&lines=100&direction=tail"
 ```
 
-**Required values:**
-- `YOUR_APP` - Your Lamdera app name (e.g., `myapp` for `myapp.lamdera.app`)
-- `YOUR_MODEL_KEY` - The model key defined in `src/Env.elm` (look for `modelKey`)
+The CLI tool reads the app name from `.lamdera-app` or `package.json`, and the key from `LAMDERA_LOG_KEY` env var or `.env.logkey` file. Use `--app` and `--key` to override.
+
+### RPC endpoint (in-memory Logger.LogState)
+
+The in-memory `Logger.LogState` in BackendModel is also available via RPC. This is capped at 2000 entries and resets on restart, but provides structured JSON with log levels.
+
+```bash
+curl -s -X POST "https://YOUR_APP.lamdera.app/_r/getLogs/" \
+  -H "Content-Type: application/json" \
+  -H "x-lamdera-model-key: YOUR_MODEL_KEY" \
+  -d '{}' | jq -r '.[-30:][] | .m'
+```
 
 The `x-lamdera-model-key` header must match the value in your Env.elm for authentication.
 

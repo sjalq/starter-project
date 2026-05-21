@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Wrapper script for create-lamdera-app CLI
+# Wrapper script for lamdera-starter-kit CLI
 # Usage: .\clone.ps1 [project-name]
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -11,4 +11,4 @@ if (-not $nodeCmd) {
     exit 1
 }
 
-& node "$ScriptDir\bin\create-lamdera-app.js" $args
+& node "$ScriptDir\bin\lamdera-starter-kit.js" $args

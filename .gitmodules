@@ -4,3 +4,6 @@
 [submodule "lamdera-websocket-package"]
 	path = lamdera-websocket-package
 	url = https://github.com/sjalq/lamdera-websocket.git
+[submodule "tools/wire-extractor"]
+	path = tools/wire-extractor
+	url = https://github.com/sjalq/wire-extractor.git

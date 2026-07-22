@@ -42,6 +42,9 @@ actionRoleMap msg =
         A _ ->
             Anonymous
 
+        UploadMesh _ ->
+            Anonymous
+
 
 
 -- Allow anyone to send websocket messages

@@ -253,6 +253,9 @@ updateFromFrontend sessionId clientId msg model =
             -- Echo websocket message back to frontend
             ( model, Effect.Lamdera.sendToFrontend clientId (A0 ("Echo: " ++ message)) )
 
+        UploadMesh point ->
+            ( model, Effect.Lamdera.sendToFrontend clientId (MeshPointEcho point) )
+
 
 updateFromFrontendCheckingRights : Effect.Lamdera.SessionId -> Effect.Lamdera.ClientId -> ToBackend -> Model -> ( Model, Command BackendOnly ToFrontend BackendMsg )
 updateFromFrontendCheckingRights sessionId clientId msg model =
@@ -279,6 +282,9 @@ updateFromFrontendCheckingRights sessionId clientId msg model =
 
             SetDarkModePreference _ ->
                 -- Allow everyone to set their own preference
+                True
+
+            UploadMesh _ ->
                 True
 
             _ ->

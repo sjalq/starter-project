@@ -315,6 +315,9 @@ updateFromBackend msg model =
             -- Log websocket messages for debugging
             ( model, Command.none )
 
+        MeshPointEcho _ ->
+            ( model, Command.none )
+
 
 view : Model -> Browser.Document FrontendMsg
 view model =

@@ -31,10 +31,10 @@ alwaysApply: true
 44 init
 66 update msg model
 145 updateFromFrontend sessionId clientId msg model
-258 updateFromFrontendCheckingRights sessionId clientId msg model
-294 getUserFromCookie browserCookie model
-300 userToFrontend user
-309 handleEmailPasswordAuth browserCookie connectionId authMsg model
+261 updateFromFrontendCheckingRights sessionId clientId msg model
+300 getUserFromCookie browserCookie model
+306 userToFrontend user
+315 handleEmailPasswordAuth browserCookie connectionId authMsg model
 
 ## src/Components/AuthControls.elm
 ### Components.AuthControls
@@ -124,15 +124,15 @@ alwaysApply: true
 110 inits model route
 129 update msg model
 272 updateFromBackend msg model
-320 view model
-351 callbackForAuth0Auth model url key
-360 callbackForGoogleAuth model url key
-369 authCallbackCmd model url key
-386 initWithAuth url key
-404 updateEmailPasswordAuth authMsg model
-460 updateEmailPasswordForm msg model
-493 viewWithAuth model
-569 authUpdateFromBackend authToFrontendMsg model
+323 view model
+354 callbackForAuth0Auth model url key
+363 callbackForGoogleAuth model url key
+372 authCallbackCmd model url key
+389 initWithAuth url key
+407 updateEmailPasswordAuth authMsg model
+463 updateEmailPasswordForm msg model
+496 viewWithAuth model
+572 authUpdateFromBackend authToFrontendMsg model
 
 ## src/LamderaRPC.elm
 ### LamderaRPC
@@ -251,8 +251,8 @@ alwaysApply: true
 ## src/Rights/Permissions.elm
 ### Rights.Permissions
 12 actionRoleMap msg
-57 canPerformAction user action
-71 sessionCanPerformAction model browserCookie action
+60 canPerformAction user action
+74 sessionCanPerformAction model browserCookie action
 
 ## src/Rights/Role.elm
 ### Rights.Role

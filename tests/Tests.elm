@@ -14,6 +14,7 @@ import Property.ThemeTests
 import Test exposing (Test)
 import Wire3FirstConstructorProof
 import Wire3SortProof
+import ProtocolWireProof
 
 
 suite : Test
@@ -37,7 +38,8 @@ suite =
             [ CodegenTests.suite
             ]
         , Test.describe "Wire3 Proofs"
-            [ Wire3FirstConstructorProof.suite
+            [ ProtocolWireProof.suite
+            , Wire3FirstConstructorProof.suite
             , Wire3SortProof.suite
             ]
         ]

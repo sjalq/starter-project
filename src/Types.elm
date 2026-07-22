@@ -1,4 +1,4 @@
-module Types exposing (AdminLogsUrlParams, AdminPageModel, AdminRoute(..), BackendModel, BackendMsg(..), BrowserCookie, ConnectionId, Email, EmailPasswordAuthMsg(..), EmailPasswordAuthResult(..), EmailPasswordAuthToBackend(..), EmailPasswordCredentials, EmailPasswordFormModel, EmailPasswordFormMsg(..), FrontendModel, FrontendMsg(..), LoginState(..), PollData, PollingStatus(..), PollingToken, Preferences, Role(..), Route(..), ToBackend(..), ToFrontend(..), User, UserFrontend)
+module Types exposing (AdminLogsUrlParams, AdminPageModel, AdminRoute(..), BackendModel, BackendMsg(..), BrowserCookie, ConnectionId, Email, EmailPasswordAuthMsg(..), EmailPasswordAuthResult(..), EmailPasswordAuthToBackend(..), EmailPasswordCredentials, EmailPasswordFormModel, EmailPasswordFormMsg(..), FrontendModel, FrontendMsg(..), LoginState(..), PollData, PollingStatus(..), PollingToken, Preferences, Role(..), Route(..), ToBackend(..), ToFrontend(..), User, UserFrontend, WorldCoordinates(..))
 
 import Auth.Common
 import Browser exposing (UrlRequest)
@@ -6,7 +6,9 @@ import Dict exposing (Dict)
 import Effect.Browser.Navigation
 import Http
 import Lamdera
+import Length exposing (Meters)
 import Logger
+import Point3d exposing (Point3d)
 import Url exposing (Url)
 
 
@@ -156,6 +158,10 @@ type FrontendMsg
 -- | Admin_FusionQuery Fusion.Query
 
 
+type WorldCoordinates
+    = WorldCoordinates
+
+
 type ToBackend
     = A String -- WebSocket message from JS (guaranteed tag 0)
     | Admin_ClearLogs
@@ -167,6 +173,7 @@ type ToBackend
     | LoggedOut
     | NoOpToBackend
     | SetDarkModePreference Bool
+    | UploadMesh (Point3d Meters WorldCoordinates)
 
 
 
@@ -192,6 +199,7 @@ type ToFrontend
     | Admin_Logs_ToFrontend (List Logger.LogEntry)
     | AuthSuccess Auth.Common.UserInfo
     | AuthToFrontend Auth.Common.ToFrontend
+    | MeshPointEcho (Point3d Meters WorldCoordinates)
     | NoOpToFrontend
     | PermissionDenied ToBackend
     | UserDataToFrontend UserFrontend

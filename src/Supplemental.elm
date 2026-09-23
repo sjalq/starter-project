@@ -127,15 +127,6 @@ handleJsonResponse decoder response =
 
 
 {-
-   Logging - DEPRECATED: Use Logger module instead
-
-   These functions are kept for backwards compatibility but should not be used
-   in new code. Use Logger.log, Logger.logInfo, Logger.logError, etc.
--}
-
-
-
-{-
    Message triggers
 -}
 
@@ -199,9 +190,6 @@ sendSlackMessage token channel message =
         headers =
             [ Http.header "Authorization" ("Bearer " ++ token)
             ]
-
-        _ =
-            Debug.log "sendSlackMessage__" ()
     in
     Http.task
         { method = "POST"

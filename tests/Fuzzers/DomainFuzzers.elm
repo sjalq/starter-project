@@ -1,16 +1,12 @@
 module Fuzzers.DomainFuzzers exposing
-    ( adminLogsParamsFuzzer
-    , adminRouteFuzzer
-    , logLevelFuzzer
-    , preferencesFuzzer
+    ( logLevelFuzzer
     , roleFuzzer
     , routeFuzzer
-    , safeSearchStringFuzzer
     )
 
 import Fuzz exposing (Fuzzer)
 import Logger
-import Types exposing (AdminLogsUrlParams, AdminRoute(..), Preferences, Role(..), Route(..))
+import Types exposing (AdminLogsUrlParams, AdminRoute(..), Role(..), Route(..))
 
 
 
@@ -31,7 +27,6 @@ adminRouteFuzzer =
     Fuzz.oneOf
         [ Fuzz.constant AdminDefault
         , Fuzz.map AdminLogs adminLogsParamsFuzzer
-        , Fuzz.constant AdminFetchModel
         ]
 
 
@@ -79,12 +74,3 @@ logLevelFuzzer =
         , Fuzz.constant Logger.Warn
         , Fuzz.constant Logger.Error
         ]
-
-
-
--- PREFERENCE FUZZERS
-
-
-preferencesFuzzer : Fuzzer Preferences
-preferencesFuzzer =
-    Fuzz.map Preferences Fuzz.bool

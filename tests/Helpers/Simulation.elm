@@ -1,8 +1,6 @@
 module Helpers.Simulation exposing
     ( config
-    , defaultDomain
     , start
-    , testUrl
     )
 
 {-| Helpers for program testing with lamdera/program-test.
@@ -13,7 +11,6 @@ for integration testing.
 -}
 
 import Backend
-import Effect.Subscription as Subscription
 import Effect.Test as Test
 import Frontend
 import Time
@@ -34,13 +31,6 @@ defaultDomain =
     }
 
 
-{-| Create a test path (just the path portion, not full URL).
--}
-testUrl : String -> String
-testUrl path =
-    path
-
-
 {-| Frontend app configuration for testing.
 -}
 frontendApp : Test.FrontendApp ToBackend FrontendMsg FrontendModel ToFrontend
@@ -50,7 +40,7 @@ frontendApp =
     , onUrlChange = UrlChanged
     , update = Frontend.update
     , updateFromBackend = Frontend.updateFromBackend
-    , subscriptions = \_ -> Subscription.none
+    , subscriptions = Frontend.subscriptions
     , view = Frontend.view
     }
 

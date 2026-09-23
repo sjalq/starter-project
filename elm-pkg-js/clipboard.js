@@ -5,25 +5,23 @@ port clipboard_from_js : (Json.Encode.Value -> msg) -> Sub msg
 */
 
 exports.init = async function (app) {
-    // Subscribe to copy-to-clipboard requests from Elm
-    if (app.ports.clipboard_to_js) {
-        app.ports.clipboard_to_js.subscribe(async function(text) {
-            try {
-                // Use the modern Clipboard API
-                await navigator.clipboard.writeText(text);
-                
-                // Send success message back to Elm
-                if (app.ports.clipboard_from_js) {
-                    app.ports.clipboard_from_js.send("Copied to clipboard!");
-                }
-            } catch (err) {
-                console.error('Failed to copy to clipboard:', err);
-                
-                // Send error message back to Elm
-                if (app.ports.clipboard_from_js) {
-                    app.ports.clipboard_from_js.send("Failed to copy: " + err.message);
-                }
-            }
-        });
+    if (!app.ports.clipboard_to_js) {
+        return;
     }
-}
+
+    const reply = (ok, message) => {
+        if (app.ports.clipboard_from_js) {
+            app.ports.clipboard_from_js.send({ ok, message });
+        }
+    };
+
+    app.ports.clipboard_to_js.subscribe(async function (text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            reply(true, "Copied to clipboard");
+        } catch (err) {
+            console.error("Failed to copy to clipboard:", err);
+            reply(false, "Failed to copy: " + err.message);
+        }
+    });
+};

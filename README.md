@@ -1,203 +1,169 @@
-# lamdera-starter-kit 🚀
+# lamdera-starter-kit
 
-> Production-ready Lamdera starter with auth, WebSockets, program-test, and everything you need to ship.
-
-## Quick Start
+A production-minded starting point for [Lamdera](https://lamdera.com) apps: authentication, role-based permissions, an HTTP RPC layer, structured logging, an admin area and a full program-test suite, wired together and passing CI.
 
 ```bash
 npx lamdera-starter-kit my-app
 cd my-app
+npm install
 ./compile.sh
 lamdera live
 ```
 
-Open http://localhost:8000 — you're running!
+Open <http://localhost:8000> and sign in with the development account `admin@example.com` / `admin` (seeded locally only).
 
----
+## What you get
 
-## Installation Options
-
-### Interactive (human-friendly)
-```bash
-npx lamdera-starter-kit
-# Prompts for project name
+```
+Authentication    Email/password accounts plus Auth0 (Google) OAuth
+                  Signup refuses emails that already belong to an account
+Authorization     SysAdmin / User / Anonymous roles, one permission table
+                  (Rights/Permissions.elm) checked for every ToBackend message
+Admin area        /admin: searchable, paginated backend logs for SysAdmins
+HTTP RPC          /_r/<endpoint> JSON, string and bytes endpoints (RPC.elm),
+                  async task-chain + polling pattern (AsyncRPC.elm)
+Model backup      /_r/getModel and /_r/setModel behind a shared secret header
+Logging           Logger.elm: in-memory ring buffer for the admin UI, mirrored
+                  to Lamdera's disk-backed production log
+Ports             elm-pkg-js examples (console logger, clipboard) wired through
+                  Effect so program tests can simulate them
+Theming           Light and dark themes, contrast checked against WCAG AA
+Testing           lamdera/program-test end-to-end tests, property tests, a
+                  frozen Wire3 protocol proof and a visual snapshot viewer
+Tooling           CI workflow, elm-review config, lamdera-cli for logs/backups
 ```
 
-### Direct (script-friendly)
-```bash
-npx lamdera-starter-kit my-app
+## Prerequisites
+
+- [Lamdera](https://lamdera.com/start) 1.4 or newer
+- [elm-test-rs](https://github.com/mpizenberg/elm-test-rs) (the standard `elm-test` cannot compile Lamdera codecs)
+- Node.js 18 or newer and Git
+
+## Creating a project
+
+```
+npx lamdera-starter-kit [project-name] [options]
+
+Arguments
+  project-name    Create ./<project-name, lowercased, other characters as "-">
+  .               Initialise the current (empty) directory
+
+Options
+  -y, --yes       Non-interactive; errors where it would otherwise prompt
+                  (missing name, non-empty directory)
+  --json          Machine-readable result on stdout (implies --quiet, never prompts)
+  -q, --quiet     Suppress decorative output
+  -v, --verbose   Show each step
+  -h, --help      Show help
 ```
 
-### Non-interactive (CI/automation)
-```bash
-npx lamdera-starter-kit my-app -y
-```
+The generator copies the template's tracked files, gives the app your project name, adds the `auth`, `lamdera-websocket-package` and `tools/wire-extractor` submodules at the commits the template was tested with, and creates an initial commit. `--json` prints:
 
-### JSON output (LLM/automation)
-```bash
-npx lamdera-starter-kit my-app --json
-```
-
-Returns structured JSON:
 ```json
 {
   "success": true,
   "path": "/path/to/my-app",
   "projectName": "my-app",
-  "nextSteps": ["cd \"/path/to/my-app\"", "./compile.sh", "lamdera live"],
+  "nextSteps": ["cd \"/path/to/my-app\"", "npm install", "./compile.sh", "lamdera live"],
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "details": []
 }
 ```
 
-### Init in current directory
-```bash
-mkdir my-app && cd my-app
-npx lamdera-starter-kit .
-```
-
----
-
-## CLI Reference
+## Everyday commands
 
 ```
-npx lamdera-starter-kit [project-name] [options]
-
-Arguments:
-  project-name    Name for new project (creates ./project-name)
-  .               Initialize in current directory
-
-Options:
-  -y, --yes       Non-interactive mode (no prompts, fails if dir not empty)
-  --json          Output JSON instead of human text (implies --quiet)
-  -q, --quiet     Suppress decorative output
-  -v, --verbose   Show detailed progress
-  -h, --help      Show help
+./compile.sh               Regenerate the function index, run tests, compile
+                           (compile.ps1 on Windows, or: npm run build)
+lamdera live               Dev server on http://localhost:8000
+npm install                Install elm-review and other dev tools (once)
+npm test                   Run the Elm test suite
+npm run review             Run elm-review
+npm run test:cli           Test lamdera-cli (run `npm ci --prefix scripts/node/lamdera-cli` once)
+./scripts/run-test-viewer.sh
+                           Build the snapshot viewer, serve it on http://localhost:8888/viewer.html
+./reset.sh                 Clear the Elm/Lamdera caches and restart lamdera live
+                           (wipes ~/.elm for every project; use when the compiler cache is corrupt)
 ```
 
----
+## Configuration
 
-## What's Included 📦
-
-### 🔐 Authentication & Authorization
-- **Email/Password + Google OAuth** — complete integration
-- **Role-based permissions** — SysAdmin, UserRole, Anonymous with granular controls
-- **Session management** — persistent login across browser sessions
-- **Test account** — `sys@admin.com` / `admin` (SysAdmin access)
-
-### 🧪 Testing Infrastructure
-- **lamdera/program-test** — full end-to-end testing framework
-- **Property-based tests** — fuzz testing with elm-explorations/test
-- **Visual test viewer** — see rendered UI snapshots in browser
-- **298 tests included** — routes, permissions, auth flows, themes, and more
-
-### 🌐 WebSockets & External APIs
-- **Pure functional WebSocket library** — drop-in with Lamdera wire format
-- **RPC system** — HTTP endpoint framework with async operations
-- **External API examples** — crypto prices, Slack, OpenAI integration
-
-### 🔌 JavaScript Interop
-- **Port system** — console logging, clipboard, error handling
-- **elm-pkg-js standard** — clean JavaScript integration
-
-### 🛠️ Developer Experience
-- **Admin panel** — logs, system monitoring at `/admin`
-- **Environment config** — dev/prod modes with API key management
-- **CLAUDE.md** — comprehensive LLM development guide
-- **Hot reload** — `lamdera live` watches for changes
-
----
-
-## Project Structure
+Local development uses the defaults in `src/Env.elm`. Set production values in the [Lamdera dashboard](https://dashboard.lamdera.app/docs/environment):
 
 ```
-my-app/
-├── src/
-│   ├── Frontend.elm          # Browser-side app
-│   ├── Backend.elm           # Server-side app
-│   ├── Types.elm             # All application types
-│   ├── Route.elm             # URL routing
-│   ├── Pages/                # Route-based pages
-│   ├── Components/           # Reusable UI components
-│   ├── Rights/               # Auth & permissions
-│   └── RPC.elm               # HTTP endpoints
-├── tests/
-│   ├── Program/              # End-to-end tests
-│   ├── Property/             # Property-based tests
-│   └── Helpers/              # Test utilities
-├── auth/                     # Auth submodule
-├── lamdera-websocket-package/# WebSocket submodule
-├── compile.sh                # Build + test script
-├── CLAUDE.md                 # LLM development guide
-└── elm.json                  # Dependencies
+modelKey              Secret for /_r/getModel, /_r/setModel and /_r/getLogs.
+                      The development default is refused in Production.
+sysAdminEmail         The account with this email gets the SysAdmin role.
+auth0AppClientId      Auth0 application credentials. Leave the tenant empty
+auth0AppClientSecret  to hide the "Continue with Google" button.
+auth0AppTenant
+slackApiToken         Optional Slack logging for the task-chain example.
+slackChannel
+logSize               In-memory log entries kept for the admin page.
 ```
 
----
+The demo SysAdmin account is only seeded when `Env.mode` is `Development`, and password signup refuses `sysAdminEmail`. In Production the SysAdmin signs in through Auth0 with that email. Restrict your Auth0 tenant to verified-email connections (the login button requests Google), since roles are granted by email. Without Auth0, seed the account yourself by restoring a model that contains it with `/_r/setModel`.
 
-## Prerequisites
+Email/password signup trims and lowercases emails and requires passwords of at least 8 characters, on the backend as well as in the form.
 
-- **Node.js** (v14+)
-- **Git**
-- **Lamdera CLI** — install from https://lamdera.com/start
+Password hashing in `src/Auth/PasswordHash.elm` is a single salted SHA-256 round so the template runs without native code. Replace it with a slow KDF before storing real users' passwords.
 
----
+## Project layout
 
-## Development Commands
+```
+src/
+  Frontend.elm, Backend.elm   Lamdera entry points
+  Types.elm                   All shared types
+  Route.elm                   URL parsing and printing
+  Pages/                      One module per top-level route
+  Components/                 Reusable view components
+  Rights/                     Roles, permissions, Auth0 configuration
+  Auth/                       Email/password login and password hashing
+  RPC.elm, LamderaRPC.elm     HTTP endpoints under /_r/
+  AsyncRPC.elm                Polling pattern for long-running endpoints
+  EndpointExample/Price.elm   Example task chain (ETH price in ZAR)
+  Logger.elm                  Structured logging
+  Ports/, elm-pkg-js/         Port modules and their JavaScript
+tests/
+  Program/                    End-to-end program tests
+  Property/                   Property and unit tests
+  Protocol*.elm               Generated Wire3 protocol freeze (see below)
+  TestViewer.elm              Visual snapshot viewer
+scripts/node/lamdera-cli/     Fetch logs and back up the BackendModel
+scripts/node/lamdera-logs.mjs Read Lamdera's production log file
+LLMBuildTools/                Generates .cursor/rules/elm-functions.mdc
+auth/                         Auth library (submodule)
+lamdera-websocket-package/    JavaScript WebSocket client for Lamdera (submodule)
+tools/wire-extractor/         Protocol freezer (submodule)
+```
+
+## Wire protocol freeze
+
+`tests/Protocol.elm` and `tests/ProtocolWireProof.elm` snapshot `ToBackend` and `ToFrontend` and prove the app still encodes them byte-for-byte the same. When you change either type on purpose, regenerate them:
 
 ```bash
-./compile.sh              # Build + run tests
-lamdera live              # Dev server at http://localhost:8000
-elm-test-rs --compiler lamdera "tests/**/*.elm"  # Run tests only
+PATH="$PWD/scripts/bin:$PATH" node tools/wire-extractor/bin/wire-extractor.js
 ```
 
-### Test Credentials
+(`scripts/bin/elm` points `elm` at the Lamdera compiler for elm-review.) `tests/Property/WebSocketWireTests.elm` separately guarantees that `A` and `A0` keep constructor tag 0, which the WebSocket client relies on.
 
-| Field | Value |
-|-------|-------|
-| Email | `sys@admin.com` |
-| Password | `admin` |
-| Role | System Administrator |
+## Operations
 
-⚠️ **Change these before production!**
+- Admin UI: sign in as the SysAdmin and open `/admin/logs`.
+- Logs and backups from the command line: run `npm ci --prefix scripts/node/lamdera-cli` once, copy `.lamdera-cli.example.json` to `.lamdera-cli.json` (gitignored), fill in your model keys, then:
 
----
+  ```bash
+  node scripts/node/lamdera-cli/index.js logs --env prod --follow
+  node scripts/node/lamdera-cli/index.js backup --env prod
+  ```
 
-## For LLM Agents
+- Production log file: see [LAMDERA-LOGS.md](LAMDERA-LOGS.md).
 
-This starter is optimized for AI-assisted development:
+## Working with AI assistants
 
-1. **Read `CLAUDE.md`** — contains architecture, patterns, and conventions
-2. **Use `--json` flag** — get structured output for parsing
-3. **Run `./compile.sh`** — validates changes (tests + type checking)
-4. **Check `/admin`** — inspect logs via RPC endpoints
-
-Example agent workflow:
-```bash
-# Create project
-npx lamdera-starter-kit my-app --json
-
-# Verify setup
-cd my-app && ./compile.sh
-
-# Read development guide
-cat CLAUDE.md
-```
-
----
-
-## Learn More
-
-- **LLM Guide**: `CLAUDE.md` for AI development patterns
-- **Examples**: `/examples` page for interactive demos
-- **Admin Panel**: `/admin` for logs and monitoring
-- **Tests**: `tests/` directory for testing patterns
-
----
+[CLAUDE.md](CLAUDE.md) and `.cursor/rules/` describe the architecture, conventions and test commands for coding agents. `compile.sh` keeps `.cursor/rules/elm-functions.mdc`, an index of every function in `src/`, up to date.
 
 ## License
 
-MIT
-
----
-
-*Built with ❤️ and type safety*
+[MIT](LICENSE)

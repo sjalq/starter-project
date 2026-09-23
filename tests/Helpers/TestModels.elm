@@ -1,12 +1,9 @@
 module Helpers.TestModels exposing
-    ( anonymousUser
-    , defaultPreferences
-    , emptyBackendModel
+    ( emptyBackendModel
     , regularUser
     , sysAdminUser
     )
 
-import Auth.Common
 import Dict
 import Logger
 import Types exposing (BackendModel, Preferences, User)
@@ -14,14 +11,6 @@ import Types exposing (BackendModel, Preferences, User)
 
 
 -- USER BUILDERS
-
-
-anonymousUser : User
-anonymousUser =
-    { email = "anon@example.com"
-    , name = Nothing
-    , preferences = defaultPreferences
-    }
 
 
 regularUser : User
@@ -34,7 +23,7 @@ regularUser =
 
 sysAdminUser : User
 sysAdminUser =
-    { email = "sys@admin.com"
+    { email = "admin@example.com"
     , name = Just "System Administrator"
     , preferences = defaultPreferences
     }

@@ -126,10 +126,10 @@ profileDropdown config =
                     , span []
                         [ text
                             (if config.isDarkMode then
-                                "🌙 Dark"
+                                "Dark"
 
                              else
-                                "☀️ Light"
+                                "Light"
                             )
                         ]
                     ]
@@ -155,13 +155,6 @@ loginButton config =
             [ Attr.class "px-4 py-2 rounded-lg transition-all text-sm font-medium"
             ]
 
-        loginButtonStyles =
-            baseButtonStyles
-                ++ [ Attr.style "background-color" config.colors.buttonBg
-                   , Attr.style "color" config.colors.buttonText
-                   , Attr.style "hover:opacity" "0.9"
-                   ]
-
         loadingStyles =
             baseButtonStyles
                 ++ [ Attr.style "background-color" config.colors.secondaryBg
@@ -183,17 +176,19 @@ loginButton config =
                     [ text "Authenticating..." ]
 
             else
+                let
+                    loginButtonStyles =
+                        baseButtonStyles
+                            ++ [ Attr.style "background-color" config.colors.buttonBg
+                               , Attr.style "color" config.colors.buttonText
+                               , Attr.style "hover:opacity" "0.9"
+                               ]
+                in
                 button
                     (loginButtonStyles ++ [ onClick config.onLogin ])
                     [ text "Login" ]
 
-        JustArrived ->
-            button
-                (loginButtonStyles ++ [ onClick config.onLogin ])
-                [ text "Login" ]
-
         LoggedIn _ ->
-            -- This shouldn't happen as we handle LoggedIn in the main view
             text ""
 
 

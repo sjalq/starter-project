@@ -1,52 +1,66 @@
-module Env exposing (Mode(..), auth0AppClientId, auth0AppClientSecret, auth0AppTenant, logSize, mode, modelKey, openAiApiKey, slackApiToken, slackChannel, stillTesting, sysAdminEmail)
+module Env exposing (Mode(..), auth0AppClientId, auth0AppClientSecret, auth0AppTenant, logSize, mode, modelKey, slackApiToken, slackChannel, sysAdminEmail)
 
--- The Env.elm file is for per-environment configuration.
--- See https://dashboard.lamdera.app/docs/environment for more info.
+{-| Per-environment configuration.
+
+Values here are the local development defaults. Set production values in the
+Lamdera dashboard: <https://dashboard.lamdera.app/docs/environment>
+
+-}
 
 
+{-| Shared secret for the `getModel`, `setModel` and `getLogs` RPC endpoints
+(sent as the `x-lamdera-model-key` header). The default only works locally:
+in Production the RPC endpoints refuse it, so set your own in the dashboard.
+-}
+modelKey : String
 modelKey =
     "1234567890"
 
 
+{-| Optional Slack bot token and channel used by the task chain example.
+Leave empty to disable Slack logging.
+-}
+slackApiToken : String
 slackApiToken =
-    "1234567890"
+    ""
 
 
+slackChannel : String
 slackChannel =
-    "#test"
+    ""
 
 
+{-| Maximum number of in-memory log entries kept by `Logger`.
+-}
+logSize : String
 logSize =
     "2000"
 
 
-stillTesting =
-    "1"
-
-
+{-| Auth0 application credentials. Create an application at
+<https://manage.auth0.com> and set these in the Lamdera dashboard.
+Never commit a real client secret.
+-}
 auth0AppClientId : String
 auth0AppClientId =
-    "qqkzut4gKyC6Y2lB3nlPsOBwnLmTQxfx"
+    ""
 
 
 auth0AppClientSecret : String
 auth0AppClientSecret =
-    "-2bRUV-1JXwO9sqCuTdKziBYG1Rn83bfRvB9LPBqsp5yFcVClx19G-6dI0XtDmEU"
+    ""
 
 
 auth0AppTenant : String
 auth0AppTenant =
-    "dev-ioeftjgqbnfyd4lp.us.auth0.com"
+    ""
 
 
+{-| The account with this email gets the SysAdmin role.
+-}
 sysAdminEmail : String
 sysAdminEmail =
-    "sys@admin.com"
-
-
-openAiApiKey : String
-openAiApiKey =
-    ""
+    "admin@example.com"
 
 
 type Mode
@@ -54,5 +68,6 @@ type Mode
     | Production
 
 
+mode : Mode
 mode =
     Development

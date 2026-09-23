@@ -18,6 +18,7 @@ type alias Config msg =
     , onEmailPasswordMsg : EmailPasswordAuthMsg -> msg
     , onNoOp : msg
     , isAuthenticating : Bool
+    , showOAuth : Bool
     }
 
 
@@ -75,89 +76,51 @@ view config =
                         , onSubmit = EmailPasswordFormSubmit |> EmailPasswordFormMsg |> config.onEmailPasswordMsg
                         }
                     ]
-                , -- Divider
-                  div
-                    [ Attr.class "px-6 py-4" ]
-                    [ div
-                        [ Attr.class "relative" ]
-                        [ hr
-                            [ Attr.style "border-color" config.colors.border ]
-                            []
-                        , div
-                            [ Attr.class "absolute inset-0 flex justify-center"
-                            , Attr.style "top" "-10px"
-                            ]
-                            [ div
-                                [ Attr.class "px-3 text-sm"
-                                , Attr.style "background-color" config.colors.primaryBg
-                                , Attr.style "color" config.colors.secondaryText
+                , if config.showOAuth then
+                    div
+                        [ Attr.class "px-6 py-4" ]
+                        [ div
+                            [ Attr.class "relative" ]
+                            [ hr
+                                [ Attr.style "border-color" config.colors.border ]
+                                []
+                            , div
+                                [ Attr.class "absolute inset-0 flex justify-center"
+                                , Attr.style "top" "-10px"
                                 ]
-                                [ text "or" ]
+                                [ div
+                                    [ Attr.class "px-3 text-sm"
+                                    , Attr.style "background-color" config.colors.primaryBg
+                                    , Attr.style "color" config.colors.secondaryText
+                                    ]
+                                    [ text "or" ]
+                                ]
                             ]
                         ]
-                    ]
-                , -- OAuth Options
-                  div
-                    [ Attr.class "px-6 pb-6" ]
-                    [ p
-                        [ Attr.class "text-sm mb-4"
-                        , Attr.style "color" config.colors.secondaryText
+
+                  else
+                    text ""
+                , if config.showOAuth then
+                    div
+                        [ Attr.class "px-6 pb-6" ]
+                        [ p
+                            [ Attr.class "text-sm mb-4"
+                            , Attr.style "color" config.colors.secondaryText
+                            ]
+                            [ text "Sign in with your social account" ]
+                        , div
+                            [ Attr.class "space-y-3" ]
+                            [ oauthButtonWithIcon config "Continue with Google" config.onAuth0Login config.colors.secondaryBg "/google-logo.svg"
+                            ]
                         ]
-                        [ text "Sign in with your social account" ]
-                    , div
-                        [ Attr.class "space-y-3" ]
-                        [ oauthButtonWithIcon config "Continue with Google" config.onAuth0Login config.colors.secondaryBg "/google-logo.svg"
-                        ]
-                    ]
+
+                  else
+                    text ""
                 ]
             ]
 
     else
         text ""
-
-
-oauthButton : Config msg -> String -> msg -> String -> Html msg
-oauthButton config label onClickMsg backgroundColor =
-    let
-        buttonText =
-            if config.isAuthenticating then
-                "Authenticating..."
-
-            else
-                label
-
-        opacity =
-            if config.isAuthenticating then
-                "0.7"
-
-            else
-                "1"
-
-        cursor =
-            if config.isAuthenticating then
-                "not-allowed"
-
-            else
-                "pointer"
-    in
-    button
-        [ onClick
-            (if config.isAuthenticating then
-                config.onNoOp
-
-             else
-                onClickMsg
-            )
-        , Attr.class "w-full flex items-center justify-center px-4 py-3 rounded-lg transition-all font-medium"
-        , Attr.style "background-color" backgroundColor
-        , Attr.style "color" "#ffffff"
-        , Attr.style "border" "none"
-        , Attr.style "cursor" cursor
-        , Attr.style "opacity" opacity
-        , Attr.style "hover:opacity" "0.9"
-        , Attr.disabled config.isAuthenticating
-        ]
-        [ text buttonText ]
 
 
 oauthButtonWithIcon : Config msg -> String -> msg -> String -> String -> Html msg

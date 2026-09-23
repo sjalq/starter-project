@@ -7,29 +7,28 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Lamdera exposing (SessionId)
 import LamderaRPC exposing (Headers)
-import Process
 import Supplemental exposing (..)
 import Task exposing (Task)
 import Types exposing (..)
 
 
 
--- Fetches both ETH price and ZAR rate, multiplies them and returns result through polling
+-- Starts the ETH/ZAR task chain and immediately returns a polling token
 
 
 getPrice : SessionId -> BackendModel -> Headers -> Encode.Value -> ( Result Http.Error Encode.Value, BackendModel, Cmd BackendMsg )
 getPrice sessionId model headers json =
-    let
-        config =
-            { taskChain = fetchEthPriceInZar
-            , resultEncoder = identity
-            }
-    in
-    AsyncRPC.handleTaskChain sessionId model headers json config
+    AsyncRPC.handleTaskChain sessionId
+        model
+        headers
+        json
+        { taskChain = fetchEthPriceInZar
+        , resultEncoder = identity
+        }
 
 
 
--- Generic polling result handler
+-- Returns the status or result of a job started by getPrice
 
 
 getPriceResult : SessionId -> BackendModel -> Headers -> Encode.Value -> ( Result Http.Error Encode.Value, BackendModel, Cmd BackendMsg )
@@ -38,75 +37,45 @@ getPriceResult sessionId model headers json =
 
 
 
--- Fetches ETH price and ZAR rate in a single task chain with logging, and gets an ETH joke from OpenAI
+-- Fetches the ETH/USD price and USD/ZAR rate in a single task chain, logging each step to Slack when configured
 
 
 fetchEthPriceInZar : Task Http.Error String
 fetchEthPriceInZar =
     let
         log message =
-            sendSlackMessage Env.slackApiToken Env.slackChannel message
-                |> Task.map (\_ -> ())
-                |> Task.onError (\_ -> Task.succeed ())
+            if String.isEmpty Env.slackApiToken then
+                Task.succeed ()
+
+            else
+                sendSlackMessage Env.slackApiToken Env.slackChannel message
+                    |> Task.map (\_ -> ())
+                    |> Task.onError (\_ -> Task.succeed ())
     in
-    log "Starting to fetch ETH price"
+    log "Fetching ETH price"
         |> Task.andThen (\_ -> fetchEthPrice)
         |> Task.andThen
-            (\ethPrice ->
-                log ("ETH price fetched: " ++ String.fromFloat ethPrice ++ " USD")
-                    |> Task.map (\_ -> ethPrice)
+            (\ethUsd ->
+                log ("ETH price fetched: " ++ String.fromFloat ethUsd ++ " USD")
+                    |> Task.andThen (\_ -> fetchZarRate)
+                    |> Task.map (\usdZar -> { ethUsd = ethUsd, usdZar = usdZar })
             )
         |> Task.andThen
-            (\ethPrice ->
-                log "Starting 10-second delay between API calls"
-                    |> Task.map (\_ -> ethPrice)
-            )
-        |> Task.andThen
-            (\ethPrice ->
-                Process.sleep (10 * second)
-                    |> Task.map (\_ -> ethPrice)
-            )
-        |> Task.andThen
-            (\ethPrice ->
-                log "Delay finished, fetching ZAR rate"
-                    |> Task.map (\_ -> ethPrice)
-            )
-        |> Task.andThen
-            (\ethPrice ->
-                fetchZarRate
-                    |> Task.map (\zarRate -> { ethPrice = ethPrice, zarRate = zarRate })
-            )
-        |> Task.andThen
-            (\data ->
+            (\rates ->
                 let
-                    finalPrice =
-                        data.ethPrice * data.zarRate
+                    ethZar =
+                        rates.ethUsd * rates.usdZar
                 in
-                log ("ZAR rate fetched: " ++ String.fromFloat data.zarRate ++ ", final price: " ++ String.fromFloat finalPrice ++ " ZAR")
-                    |> Task.map (\_ -> { price = finalPrice, ethPrice = data.ethPrice, zarRate = data.zarRate })
-            )
-        |> Task.andThen
-            (\priceData ->
-                log "Fetching joke about ETH price from OpenAI"
-                    |> Task.map (\_ -> priceData)
-            )
-        |> Task.andThen
-            (\priceData ->
-                fetchJokeAboutEthPrice priceData.price
-                    |> Task.map (\joke -> { price = priceData.price, joke = joke })
-            )
-        |> Task.andThen
-            (\result ->
-                log ("Got joke: " ++ result.joke)
-                    |> Task.map (\_ -> result)
-            )
-        |> Task.map
-            (\result ->
-                Encode.object
-                    [ ( "price", Encode.float result.price )
-                    , ( "joke", Encode.string result.joke )
-                    ]
-                    |> Encode.encode 0
+                log ("Final price calculated: " ++ String.fromFloat ethZar ++ " ZAR")
+                    |> Task.map
+                        (\_ ->
+                            Encode.object
+                                [ ( "ethUsd", Encode.float rates.ethUsd )
+                                , ( "usdZar", Encode.float rates.usdZar )
+                                , ( "ethZar", Encode.float ethZar )
+                                ]
+                                |> Encode.encode 0
+                        )
             )
 
 
@@ -132,7 +101,7 @@ fetchEthPrice =
 
 
 
--- Fetches ZAR/USD rate from Exchange Rates API
+-- Fetches USD/ZAR rate from Exchange Rates API
 
 
 fetchZarRate : Task Http.Error Float
@@ -150,68 +119,3 @@ fetchZarRate =
                     )
         , timeout = Just 10000
         }
-
-
-
--- Fetches a joke about ETH price in ZAR from OpenAI
-
-
-fetchJokeAboutEthPrice : Float -> Task Http.Error String
-fetchJokeAboutEthPrice price =
-    let
-        prompt =
-            "Tell me a short, funny joke about the price of Ethereum being " ++ String.fromFloat price ++ " South African Rand (ZAR). Make it ONE short sentence only."
-
-        requestBody =
-            Encode.object
-                [ ( "model", Encode.string "gpt-3.5-turbo" )
-                , ( "messages"
-                  , Encode.list
-                        (\msg -> Encode.object msg)
-                        [ [ ( "role", Encode.string "system" )
-                          , ( "content", Encode.string "You are a helpful assistant that creates short, funny jokes." )
-                          ]
-                        , [ ( "role", Encode.string "user" )
-                          , ( "content", Encode.string prompt )
-                          ]
-                        ]
-                  )
-                ]
-    in
-    if String.isEmpty Env.openAiApiKey then
-        Task.succeed "Ethereum price is so high in Rands, even my wallet is crying in two languages!"
-
-    else
-        Http.task
-            { method = "POST"
-            , headers =
-                [ Http.header "Authorization" ("Bearer " ++ Env.openAiApiKey)
-                ]
-            , url = addProxy "https://api.openai.com/v1/chat/completions"
-            , body = Http.jsonBody requestBody
-            , resolver = Http.stringResolver <| handleHttpResponse openAiResponseDecoder
-            , timeout = Nothing
-            }
-
-
-
--- Decoder for OpenAI's response
-
-
-openAiResponseDecoder : String -> Result Http.Error String
-openAiResponseDecoder responseBody =
-    let
-        decoder =
-            Decode.field "choices"
-                (Decode.index 0
-                    (Decode.field "message"
-                        (Decode.field "content" Decode.string)
-                    )
-                )
-    in
-    case Decode.decodeString decoder responseBody of
-        Ok content ->
-            Ok (String.trim content)
-
-        Err err ->
-            Err (Http.BadBody (Decode.errorToString err))

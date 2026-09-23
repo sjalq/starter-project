@@ -115,14 +115,14 @@ export const backupCommand = async (options) => {
   const envConfig = envResult.value;
   const envName = envConfig.name;
 
-  console.log(`${CYAN}📦 Backing up model from ${BOLD}${envName}${RESET}${CYAN}...${RESET}`);
+  console.log(`${CYAN}Backing up model from ${BOLD}${envName}${RESET}${CYAN}...${RESET}`);
   console.log(`${DIM}   ${envConfig.url}${RESET}\n`);
 
   // Fetch model
   const result = await fetchModel(envConfig);
 
   if (!result.ok) {
-    console.error(`${RED}✗ Failed: ${result.error}${RESET}`);
+    console.error(`${RED}Failed: ${result.error}${RESET}`);
     process.exit(1);
   }
 
@@ -132,11 +132,11 @@ export const backupCommand = async (options) => {
   // Save to file
   try {
     await saveToFile(result.value, outputPath);
-    console.log(`${GREEN}✓ Backup saved${RESET}`);
+    console.log(`${GREEN}Backup saved${RESET}`);
     console.log(`${DIM}  File: ${outputPath}${RESET}`);
     console.log(`${DIM}  Size: ${formatBytes(result.value.length)}${RESET}`);
   } catch (err) {
-    console.error(`${RED}✗ Failed to save: ${err.message}${RESET}`);
+    console.error(`${RED}Failed to save: ${err.message}${RESET}`);
     process.exit(1);
   }
 };

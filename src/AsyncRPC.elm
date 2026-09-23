@@ -1,5 +1,6 @@
 module AsyncRPC exposing (Config, handlePollingResult, handleTaskChain)
 
+import Crypto.Hash
 import Dict
 import Http
 import Json.Decode as Decode
@@ -25,10 +26,11 @@ type alias Config a =
 
 
 handleTaskChain : SessionId -> BackendModel -> Headers -> Encode.Value -> Config a -> ( Result Http.Error Encode.Value, BackendModel, Cmd BackendMsg )
-handleTaskChain _ model _ _ config =
+handleTaskChain sessionId model _ _ config =
     let
+        -- Derived from the caller's session so other clients cannot guess it
         token =
-            String.fromInt (Dict.size model.pollingJobs)
+            Crypto.Hash.sha256 (sessionId ++ ":" ++ String.fromInt (Dict.size model.pollingJobs))
 
         updatedModel =
             { model | pollingJobs = Dict.insert token Busy model.pollingJobs }

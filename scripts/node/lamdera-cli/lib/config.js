@@ -110,13 +110,13 @@ export const loadConfig = () => {
 
   const readResult = readFileSafe(configPath);
   if (!readResult.ok) {
-    console.error(`⚠️  Error reading ${configPath}: ${readResult.error}`);
+    console.error(`Error reading ${configPath}: ${readResult.error}`);
     return { ...DEFAULT_CONFIG, _configPath: null };
   }
 
   const parseResult = parseConfig(readResult.value);
   if (!parseResult.ok) {
-    console.error(`⚠️  Error parsing ${configPath}: ${parseResult.error}`);
+    console.error(`Error parsing ${configPath}: ${parseResult.error}`);
     return { ...DEFAULT_CONFIG, _configPath: null };
   }
 

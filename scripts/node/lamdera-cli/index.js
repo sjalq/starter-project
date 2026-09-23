@@ -33,13 +33,13 @@ const CYAN = '\x1b[36m';
 
 program
   .name('lamdera-cli')
-  .description('🦩 CLI tools for Lamdera starter project')
+  .description('CLI tools for lamdera-starter-kit')
   .version('1.0.0');
 
 // Logs command
 program
   .command('logs')
-  .description('📋 Fetch and display logs from backend')
+  .description('Fetch and display logs from backend')
   .option('-e, --env <name>', 'environment (local, prod, preview)')
   .option('-n, --limit <number>', 'number of logs to fetch', parseInt, 50)
   .option('-l, --level <level>', 'minimum log level (DEBUG, INFO, WARN, ERROR)')
@@ -52,7 +52,7 @@ program
 // Backup command
 program
   .command('backup')
-  .description('📦 Backup BackendModel to a file')
+  .description('Backup BackendModel to a file')
   .option('-e, --env <name>', 'environment (local, prod, preview)')
   .option('-o, --output <path>', 'output file path (default: backups/backup-{env}-{timestamp}.bin)')
   .action(backupCommand);
@@ -60,7 +60,7 @@ program
 // Envs command
 program
   .command('envs')
-  .description('🌍 List available environments')
+  .description('List available environments')
   .action(() => {
     const config = loadConfig();
     const envs = listEnvironments(config);
@@ -81,7 +81,7 @@ program
     console.log('');
 
     if (!config._configPath) {
-      console.log(`${DIM}💡 No .lamdera-cli.json found - using defaults${RESET}`);
+      console.log(`${DIM}No .lamdera-cli.json found, using defaults${RESET}`);
       console.log(`${DIM}   Copy .lamdera-cli.example.json to add prod/preview environments${RESET}`);
     }
   });

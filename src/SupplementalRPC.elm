@@ -1,5 +1,6 @@
 module SupplementalRPC exposing (..)
 
+import Dict exposing (Dict)
 import Json.Encode as Encode
 import LamderaRPC exposing (..)
 
@@ -30,11 +31,25 @@ stringifyHttpRequest request =
                 [ ( "sessionId", Encode.string request.sessionId )
                 , ( "endpoint", Encode.string request.endpoint )
                 , ( "requestId", Encode.string request.requestId )
-                , ( "headers", Encode.dict identity Encode.string request.headers )
+                , ( "headers", Encode.dict identity Encode.string (redactSensitiveHeaders request.headers) )
                 , ( "body", encodeBody request.body )
                 ]
     in
     Encode.encode 0 encodedRequest
+
+
+{-| Header values that must never reach the logs.
+-}
+redactSensitiveHeaders : Dict String String -> Dict String String
+redactSensitiveHeaders =
+    Dict.map
+        (\name value ->
+            if List.member (String.toLower name) [ "authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key", "x-lamdera-model-key" ] then
+                "[redacted]"
+
+            else
+                value
+        )
 
 
 stringifyRPCResult : RPCResult -> String

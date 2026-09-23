@@ -1,11 +1,10 @@
 module Property.RouteTests exposing (suite)
 
 import Expect
-import Fuzz exposing (Fuzzer)
-import Fuzzers.DomainFuzzers exposing (adminLogsParamsFuzzer, routeFuzzer)
-import Route exposing (defaultLogsParams, fromUrl, toString)
+import Fuzzers.DomainFuzzers exposing (routeFuzzer)
+import Route exposing (defaultLogsParams)
 import Test exposing (..)
-import Types exposing (AdminLogsUrlParams, AdminRoute(..), Route(..))
+import Types exposing (AdminRoute(..), Route(..))
 import Url exposing (Url)
 
 
@@ -58,41 +57,7 @@ suite =
                         |> Expect.equal NotFound
             ]
         , describe "Round-trip"
-            [ test "Default survives round-trip" <|
-                \_ ->
-                    expectRouteRoundTrip Default
-            , test "Admin AdminDefault survives round-trip" <|
-                \_ ->
-                    expectRouteRoundTrip (Admin AdminDefault)
-            , test "Admin AdminFetchModel survives round-trip" <|
-                \_ ->
-                    expectRouteRoundTrip (Admin AdminFetchModel)
-            , test "Examples survives round-trip" <|
-                \_ ->
-                    expectRouteRoundTrip Examples
-            , fuzz adminLogsParamsFuzzer "AdminLogs params survive round-trip" <|
-                \params ->
-                    let
-                        route =
-                            Admin (AdminLogs params)
-
-                        path =
-                            Route.toString route
-
-                        url =
-                            makeUrl path
-                    in
-                    case Route.fromUrl url of
-                        Admin (AdminLogs resultParams) ->
-                            Expect.all
-                                [ \_ -> Expect.equal resultParams.page params.page
-                                , \_ -> Expect.equal resultParams.pageSize params.pageSize
-                                , \_ -> Expect.equal resultParams.search params.search
-                                ]
-                                ()
-
-                        other ->
-                            Expect.fail ("Expected AdminLogs route, got: " ++ Debug.toString other)
+            [ fuzz routeFuzzer "every route survives toString >> fromUrl" expectRouteRoundTrip
             ]
         , describe "defaultLogsParams"
             [ test "has sensible defaults" <|

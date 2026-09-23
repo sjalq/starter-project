@@ -1,29 +1,22 @@
-module Types exposing (AdminLogsUrlParams, AdminPageModel, AdminRoute(..), BackendModel, BackendMsg(..), BrowserCookie, ConnectionId, Email, EmailPasswordAuthMsg(..), EmailPasswordAuthResult(..), EmailPasswordAuthToBackend(..), EmailPasswordCredentials, EmailPasswordFormModel, EmailPasswordFormMsg(..), FrontendModel, FrontendMsg(..), LoginState(..), PollData, PollingStatus(..), PollingToken, Preferences, Role(..), Route(..), ToBackend(..), ToFrontend(..), User, UserFrontend, WorldCoordinates(..))
+module Types exposing (AdminLogsUrlParams, AdminPageModel, AdminRoute(..), BackendModel, BackendMsg(..), BrowserCookie, ConnectionId, Email, EmailPasswordAuthMsg(..), EmailPasswordAuthResult(..), EmailPasswordAuthToBackend(..), EmailPasswordCredentials, EmailPasswordFormModel, EmailPasswordFormMsg(..), FrontendModel, FrontendMsg(..), LoginState(..), PollData, PollingStatus(..), PollingToken, Preferences, Role(..), Route(..), ToBackend(..), ToFrontend(..), User, UserFrontend, defaultPreferences)
 
 import Auth.Common
 import Browser exposing (UrlRequest)
 import Dict exposing (Dict)
 import Effect.Browser.Navigation
-import Http
 import Lamdera
-import Length exposing (Meters)
 import Logger
-import Point3d exposing (Point3d)
 import Url exposing (Url)
 
 
-
-{- Represents a currently connection to a Lamdera client -}
-
-
+{-| A single browser tab connected to the Lamdera backend
+-}
 type alias ConnectionId =
     Lamdera.ClientId
 
 
-
-{- Represents the browser cookie Lamdera uses to identify a browser -}
-
-
+{-| The session cookie Lamdera uses to identify a browser
+-}
 type alias BrowserCookie =
     Lamdera.SessionId
 
@@ -38,11 +31,6 @@ type Route
 type AdminRoute
     = AdminDefault
     | AdminLogs AdminLogsUrlParams
-    | AdminFetchModel
-
-
-
--- | AdminFusion
 
 
 type alias AdminLogsUrlParams =
@@ -54,8 +42,6 @@ type alias AdminLogsUrlParams =
 
 type alias AdminPageModel =
     { logs : List Logger.LogEntry
-    , isAuthenticated : Bool
-    , remoteUrl : String
     }
 
 
@@ -68,12 +54,11 @@ type alias FrontendModel =
     , login : LoginState
     , currentUser : Maybe UserFrontend
     , pendingAuth : Bool
-
-    -- , fusionState : Fusion.Value
     , preferences : Preferences
     , emailPasswordForm : EmailPasswordFormModel
     , profileDropdownOpen : Bool
     , loginModalOpen : Bool
+    , portFeedback : Maybe String
     }
 
 
@@ -107,8 +92,6 @@ type alias EmailPasswordCredentials =
 
 type EmailPasswordAuthMsg
     = EmailPasswordFormMsg EmailPasswordFormMsg
-    | EmailPasswordLoginRequested String String
-    | EmailPasswordSignupRequested String String (Maybe String)
 
 
 type EmailPasswordFormMsg
@@ -126,17 +109,14 @@ type EmailPasswordAuthToBackend
 
 
 type EmailPasswordAuthResult
-    = EmailPasswordSignupWithHash BrowserCookie ConnectionId String String (Maybe String) String String
+    = EmailPasswordSignupWithHash BrowserCookie ConnectionId Email (Maybe String) String String
 
 
 type FrontendMsg
     = UrlClicked UrlRequest
     | UrlChanged Url
-    | UrlRequested UrlRequest
     | NoOpFrontendMsg
     | DirectToBackend ToBackend
-      --- Admin
-    | Admin_RemoteUrlChanged String
     | Admin_LogsNavigate AdminLogsUrlParams
     | Auth0SigninRequested
     | EmailPasswordAuthMsg EmailPasswordAuthMsg
@@ -152,45 +132,24 @@ type FrontendMsg
     | ClipboardResult (Result String String)
 
 
-
---- Fusion
--- | Admin_FusionPatch Fusion.Patch.Patch
--- | Admin_FusionQuery Fusion.Query
-
-
-type WorldCoordinates
-    = WorldCoordinates
-
-
 type ToBackend
     = A String -- WebSocket message from JS (guaranteed tag 0)
     | Admin_ClearLogs
     | Admin_FetchLogs String -- Search query parameter
-    | Admin_FetchRemoteModel String
     | AuthToBackend Auth.Common.ToBackend
     | EmailPasswordAuthToBackend EmailPasswordAuthToBackend
     | GetUserToBackend
     | LoggedOut
     | NoOpToBackend
     | SetDarkModePreference Bool
-    | UploadMesh (Point3d Meters WorldCoordinates)
-
-
-
---- Fusion
--- | Fusion_PersistPatch Fusion.Patch.Patch
--- | Fusion_Query Fusion.Query
 
 
 type BackendMsg
     = NoOpBackendMsg
     | GotLogTime Logger.Msg
-    | GotRemoteModel (Result Http.Error BackendModel)
     | AuthBackendMsg Auth.Common.BackendMsg
     | EmailPasswordAuthResult EmailPasswordAuthResult
     | GotJobTime PollingToken Int
-      -- example to show polling mechanism
-    | GotCryptoPriceResult PollingToken (Result Http.Error String)
     | StoreTaskResult PollingToken (Result String String)
 
 
@@ -199,15 +158,10 @@ type ToFrontend
     | Admin_Logs_ToFrontend (List Logger.LogEntry)
     | AuthSuccess Auth.Common.UserInfo
     | AuthToFrontend Auth.Common.ToFrontend
-    | MeshPointEcho (Point3d Meters WorldCoordinates)
     | NoOpToFrontend
     | PermissionDenied ToBackend
     | UserDataToFrontend UserFrontend
     | UserInfoMsg (Maybe Auth.Common.UserInfo)
-
-
-
--- | Admin_FusionResponse Fusion.Value
 
 
 type alias Email =
@@ -230,8 +184,7 @@ type alias UserFrontend =
 
 
 type LoginState
-    = JustArrived
-    | NotLogged Bool
+    = NotLogged Bool
     | LoginTokenSent
     | LoggedIn Auth.Common.UserInfo
 
@@ -270,4 +223,10 @@ type alias PollData =
 
 type alias Preferences =
     { darkMode : Bool
+    }
+
+
+defaultPreferences : Preferences
+defaultPreferences =
+    { darkMode = True
     }

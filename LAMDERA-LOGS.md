@@ -1,4 +1,4 @@
-# Lamdera.log - How It Works and How to Use It
+# Production Logs (Lamdera.log)
 
 ## What is Lamdera.log?
 
@@ -27,9 +27,9 @@ HTTP endpoint:        GET /_logs/read?key=...&lines=100&direction=tail
 ```
 
 
-## Why this matters for the starter-project
+## How this starter uses it
 
-Logger.elm already calls `Debug.log` on every log call (line 301):
+`src/Logger.elm` calls `Debug.log` for every entry it records:
 
 ```elm
 log level message toMsg ( model, cmd ) =
@@ -83,31 +83,31 @@ Both approaches write to the same log file.
 ### From your app's admin page
 
 The current admin page at /admin/logs reads from `model.logState` (in-memory).
-This works but is capped at 2000 entries and loses history on restart.
+This works but is capped at `Env.logSize` entries (default 2000) and loses history on restart.
 
 ### From the command line (recommended for debugging)
 
 ```bash
 # Read last 50 lines
-./scripts/node/lamdera-logs.mjs read --lines 50
+node scripts/node/lamdera-logs.mjs read --lines 50
 
 # Read first 100 lines
-./scripts/node/lamdera-logs.mjs read --lines 100 --direction head
+node scripts/node/lamdera-logs.mjs read --lines 100 --direction head
 
 # Read a range
-./scripts/node/lamdera-logs.mjs read --from 1000 --to 1100
+node scripts/node/lamdera-logs.mjs read --from 1000 --to 1100
 
 # Get total line count
-./scripts/node/lamdera-logs.mjs count
+node scripts/node/lamdera-logs.mjs count
 
 # Check if logging is enabled
-./scripts/node/lamdera-logs.mjs status
+node scripts/node/lamdera-logs.mjs status
 
 # Filter with grep (pipe-friendly)
-./scripts/node/lamdera-logs.mjs read --lines 500 | grep "ERROR"
+node scripts/node/lamdera-logs.mjs read --lines 500 | grep "ERROR"
 
 # Follow-style: grab last 20 lines every 5 seconds
-watch -n 5 './scripts/node/lamdera-logs.mjs read --lines 20'
+watch -n 5 'node scripts/node/lamdera-logs.mjs read --lines 20'
 ```
 
 ### From curl directly
@@ -176,15 +176,16 @@ GET /_logs/status       Returns "true" or "false"
 
 ## Getting your log key
 
-Log keys are per-app and currently provided by Mario Rogic (Lamdera founder)
-on request via Discord DM. Send him your app name(s).
+Log keys are per-app and are currently issued by the Lamdera team on request
+(ask in the Lamdera Discord with your app name). Save it to `.env.logkey`
+(gitignored) or pass it with `--key`.
 
 The key contains +, =, / characters that MUST be URL-encoded for HTTP use:
   + -> %2B
   = -> %3D
   / -> %2F
 
-Store the raw key in Env.elm, URL-encode it when building request URLs.
+The CLI encodes the key for you; URL-encode it yourself when using curl.
 
 
 ## What the log file looks like
@@ -195,10 +196,10 @@ Store the raw key in Env.elm, URL-encode it when building request URLs.
 [2026-03-26 15:18:51.106] [v126] [active] ☀️  upgraded from previous model
 [2026-03-26 15:18:51.107] [v126] ✅ v126 is now in control
 [2026-03-26 15:19:07.109] [v126][🧠] 32.97 🐿  manual gc started
-[2026-03-26 17:30:01.234] INFO: Starting contact sync
-[2026-03-26 17:30:01.567] INFO: Fetched 42 contacts from Paystack
-[2026-03-26 17:30:02.890] ERROR: HubSpot API timeout after 30s
-[2026-03-26 17:30:02.891] WARN: Retrying HubSpot sync in 60s
+[2026-03-26 17:30:01.234] INFO: Starting nightly sync
+[2026-03-26 17:30:01.567] INFO: Fetched 42 records
+[2026-03-26 17:30:02.890] ERROR: Upstream API timeout after 30s
+[2026-03-26 17:30:02.891] WARN: Retrying sync in 60s
 ```
 
 Lines with [vN] prefixes are Lamdera runtime infrastructure messages
@@ -211,13 +212,12 @@ application logs from Logger.elm / Debug.log.
 1. URL-encode the key. Raw keys with +, =, / break query strings.
 
 2. Apps need a recent deploy for the logging runtime to be active.
-   If the endpoint returns nothing, ask Mario to cycle the app.
+   If the endpoint returns nothing, ask the Lamdera team to cycle the app.
 
 3. Debug.log is allowed in `lamdera check` and `lamdera deploy` but
    NOT with the `--optimize` flag. Never use --optimize with Debug.log.
 
 4. The log file grows indefinitely. For high-traffic apps, discuss
-   log rotation with Mario.
+   log rotation with the Lamdera team.
 
-5. The key is not yet self-service. Mario plans to add a dashboard
-   UI for key retrieval and make the key format URL-safe.
+5. Keys are not yet self-service.

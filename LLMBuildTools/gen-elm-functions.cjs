@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 function parseArgs() {
     const args = process.argv.slice(2);
@@ -17,16 +16,26 @@ function parseArgs() {
     }
 
     return {
-        excludedDirs: excludedDirs.length > 0 ? excludedDirs : ['src/Fusion', 'src/Evergreen', 'src/generated'],
+        excludedDirs: excludedDirs.length > 0 ? excludedDirs : ['src/Evergreen'],
         verbose
     };
 }
 
+// Recursively collect .elm files under `root` as forward-slash paths
+// (e.g. "src/Foo/Bar.elm"), so output is identical on every OS.
+function walkElmFiles(root) {
+    return fs.readdirSync(root, { withFileTypes: true }).flatMap(entry => {
+        const entryPath = `${root}/${entry.name}`;
+        if (entry.isDirectory()) return walkElmFiles(entryPath);
+        return entry.isFile() && entry.name.endsWith('.elm') ? [entryPath] : [];
+    });
+}
+
+// An excluded dir such as "src/Evergreen" skips any path containing "/Evergreen/".
 function findElmFiles(excludedDirs) {
     try {
-        let excludePattern = excludedDirs.map(dir => `-not -path "*/${dir.replace('src/', '')}/*"`).join(' ');
-        const output = execSync(`find src -name "*.elm" -type f ${excludePattern}`, { encoding: 'utf8' });
-        return output.trim().split('\n').filter(f => f);
+        const excludedSegments = excludedDirs.map(dir => `/${dir.replace('src/', '')}/`);
+        return walkElmFiles('src').filter(file => !excludedSegments.some(segment => file.includes(segment)));
     } catch (e) {
         console.error('Error finding elm files:', e.message);
         return [];

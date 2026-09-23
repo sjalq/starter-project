@@ -52,7 +52,7 @@ backendConfig model =
     , backendModel = model
     , loadMethod = Auth.Flow.methodLoader config.methods
     , handleAuthSuccess = handleAuthSuccess model
-    , isDev = True
+    , isDev = Env.mode == Env.Development
     , renewSession = renewSession
     , logout = logout
     }

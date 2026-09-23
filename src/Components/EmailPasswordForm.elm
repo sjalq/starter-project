@@ -1,6 +1,6 @@
 module Components.EmailPasswordForm exposing (..)
 
-import Html exposing (Html, a, button, div, form, h3, input, p, text)
+import Html exposing (Html, button, div, form, h3, input, p, text)
 import Html.Attributes as Attr
 import Html.Events as Events
 import Json.Decode as Decode
@@ -97,7 +97,7 @@ view config =
             , case config.formModel.error of
                 Just errorMsg ->
                     p
-                        [ Attr.style "color" config.colors.dangerBg
+                        [ Attr.style "color" config.colors.dangerText
                         , Attr.style "font-size" "0.875rem"
                         , Attr.style "margin" "0"
                         , Attr.style "text-align" "center"
@@ -171,8 +171,3 @@ inputStyles colors =
     , Attr.style "color" colors.primaryText
     , Attr.style "width" "100%"
     ]
-
-
-buttonStyles : Theme.Colors -> Html.Attribute msg
-buttonStyles colors =
-    Attr.class "w-full bg-green-600 text-white py-3 rounded hover:bg-green-700 transition-colors"

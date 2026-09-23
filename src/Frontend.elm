@@ -1,17 +1,18 @@
 module Frontend exposing (..)
 
 import Auth.Common
+import Auth.EmailPasswordAuth
 import Auth.Flow
 import Browser exposing (UrlRequest(..))
-import Browser.Navigation as Nav
+import Browser.Navigation
 import Components.LoginModal
 import Effect.Browser.Navigation
 import Effect.Command as Command exposing (Command, FrontendOnly)
 import Effect.Lamdera
 import Effect.Subscription as Subscription exposing (Subscription)
+import Env
 import Html exposing (..)
 import Html.Attributes as Attr
-import Html.Events as HE
 import Lamdera
 import Pages.Admin
 import Pages.Default
@@ -26,30 +27,19 @@ import Types exposing (..)
 import Url exposing (Url)
 
 
-
--- import Fusion.Patch
--- import Fusion
-
-
 type alias Model =
     FrontendModel
 
 
-
--- app =
---     Lamdera.frontend
---         { init = initWithAuth
---         , onUrlRequest = UrlClicked
---         , onUrlChange = UrlChanged
---         , update = update
---         , updateFromBackend = updateFromBackend
---         , subscriptions = subscriptions
---         , view = view
---         }
-
-
-{-| replace with your app function to try it out
--}
+app :
+    { init : Url -> Browser.Navigation.Key -> ( Model, Cmd FrontendMsg )
+    , view : Model -> Browser.Document FrontendMsg
+    , update : FrontendMsg -> Model -> ( Model, Cmd FrontendMsg )
+    , updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
+    , subscriptions : Model -> Sub FrontendMsg
+    , onUrlRequest : UrlRequest -> FrontendMsg
+    , onUrlChange : Url -> FrontendMsg
+    }
 app =
     Effect.Lamdera.frontend Lamdera.sendToBackend
         { init = initWithAuth
@@ -64,8 +54,10 @@ app =
 
 subscriptions : Model -> Subscription FrontendOnly FrontendMsg
 subscriptions _ =
-    -- TODO: Port subscriptions need Effect module migration
-    Subscription.none
+    Subscription.batch
+        [ Ports.ConsoleLogger.logReceived ConsoleLogReceived
+        , Ports.Clipboard.copyResult ClipboardResult
+        ]
 
 
 init : Url -> Effect.Browser.Navigation.Key -> ( FrontendModel, Command FrontendOnly ToBackend FrontendMsg )
@@ -74,33 +66,20 @@ init url key =
         route =
             Route.fromUrl url
 
-        initialPreferences =
-            { darkMode = True }
-
         model =
             { key = key
             , currentRoute = route
-            , adminPage =
-                { logs = []
-                , isAuthenticated = False
-                , remoteUrl = ""
-                }
+            , adminPage = { logs = [] }
             , authFlow = Auth.Common.Idle
             , authRedirectBaseUrl = { url | query = Nothing, fragment = Nothing }
             , login = NotLogged False
             , currentUser = Nothing
             , pendingAuth = False
-            , preferences = initialPreferences
-            , emailPasswordForm =
-                { email = ""
-                , password = ""
-                , confirmPassword = ""
-                , name = ""
-                , isSignupMode = False
-                , error = Nothing
-                }
+            , preferences = defaultPreferences
+            , emailPasswordForm = emptyEmailPasswordForm
             , profileDropdownOpen = False
             , loginModalOpen = False
+            , portFeedback = Nothing
             }
     in
     inits model route
@@ -131,18 +110,6 @@ update msg model =
         NoOpFrontendMsg ->
             ( model, Command.none )
 
-        UrlRequested urlRequest ->
-            case urlRequest of
-                Internal url ->
-                    ( model
-                    , Effect.Browser.Navigation.pushUrl model.key (Url.toString url)
-                    )
-
-                External url ->
-                    ( model
-                    , Effect.Browser.Navigation.load url
-                    )
-
         UrlClicked urlRequest ->
             case urlRequest of
                 Internal url ->
@@ -165,35 +132,19 @@ update msg model =
         DirectToBackend msg_ ->
             ( model, Effect.Lamdera.sendToBackend msg_ )
 
-        Admin_RemoteUrlChanged url ->
-            let
-                oldAdminPage =
-                    model.adminPage
-            in
-            ( { model | adminPage = { oldAdminPage | remoteUrl = url } }, Command.none )
-
         Admin_LogsNavigate params ->
             ( model
             , Effect.Browser.Navigation.pushUrl model.key (Route.toString (Admin (AdminLogs params)))
             )
 
         Logout ->
-            let
-                -- Reset form to initial clean state
-                cleanForm =
-                    { email = ""
-                    , password = ""
-                    , confirmPassword = ""
-                    , name = ""
-                    , isSignupMode = False
-                    , error = Nothing
-                    }
-            in
             ( { model
                 | login = NotLogged False
+                , currentUser = Nothing
+                , adminPage = { logs = [] }
                 , pendingAuth = False
-                , preferences = { darkMode = True }
-                , emailPasswordForm = cleanForm
+                , preferences = defaultPreferences
+                , emailPasswordForm = emptyEmailPasswordForm
               }
             , Effect.Lamdera.sendToBackend LoggedOut
             )
@@ -204,22 +155,18 @@ update msg model =
 
         EmailPasswordAuthMsg authMsg ->
             updateEmailPasswordAuth authMsg model
-                |> Tuple.mapSecond (Command.fromCmd "EmailPasswordAuth")
 
         ToggleDarkMode ->
             let
                 newDarkModeState =
                     not model.preferences.darkMode
 
-                -- Explicitly alias the nested record
                 currentFrontendPreferences =
                     model.preferences
 
                 updatedFrontendPreferences : Preferences
                 updatedFrontendPreferences =
                     { currentFrontendPreferences | darkMode = newDarkModeState }
-
-                -- Update the alias
             in
             ( { model | preferences = updatedFrontendPreferences }
             , Effect.Lamdera.sendToBackend (SetDarkModePreference newDarkModeState)
@@ -243,29 +190,26 @@ update msg model =
             ( { model | emailPasswordForm = updatedForm, loginModalOpen = True }, Command.none )
 
         ConsoleLogClicked ->
-            ( model, Command.fromCmd "ConsoleLog" (Ports.ConsoleLogger.log "Hello from Elm!") )
+            ( model, Ports.ConsoleLogger.log "Hello from Elm!" )
 
         ConsoleLogReceived message ->
-            ( model, Command.none )
+            ( { model | portFeedback = Just message }, Command.none )
 
         CopyToClipboard text ->
-            ( model, Command.fromCmd "Clipboard" (Ports.Clipboard.copyToClipboard text) )
+            ( model, Ports.Clipboard.copyToClipboard text )
 
         ClipboardResult result ->
-            ( model, Command.none )
+            ( { model
+                | portFeedback =
+                    case result of
+                        Ok message ->
+                            Just message
 
-
-
--- Admin_FusionPatch patch ->
---     ( { model
---         | fusionState =
---             Fusion.Patch.patch { force = False } patch model.fusionState
---                 |> Result.withDefault model.fusionState
---       }
---     , Lamdera.sendToBackend (Fusion_PersistPatch patch)
---     )
--- Admin_FusionQuery query ->
---     ( model, Lamdera.sendToBackend (Fusion_Query query) )
+                        Err error ->
+                            Just error
+              }
+            , Command.none
+            )
 
 
 updateFromBackend : ToFrontend -> Model -> ( Model, Command FrontendOnly ToBackend FrontendMsg )
@@ -300,22 +244,25 @@ updateFromBackend msg model =
                     ( { model | login = LoggedIn userInfo, pendingAuth = False }, Command.none )
 
                 Nothing ->
-                    ( { model | login = NotLogged False, pendingAuth = False, preferences = { darkMode = True } }, Command.none )
+                    ( { model | login = NotLogged False, currentUser = Nothing, adminPage = { logs = [] }, pendingAuth = False, preferences = defaultPreferences }, Command.none )
 
         UserDataToFrontend currentUser ->
-            ( { model | currentUser = Just currentUser, preferences = currentUser.preferences }, Command.none )
+            let
+                modelWithUser =
+                    { model | currentUser = Just currentUser, preferences = currentUser.preferences }
+            in
+            case model.currentRoute of
+                Admin adminRoute ->
+                    Pages.Admin.init modelWithUser adminRoute
+                        |> Tuple.mapSecond (Command.fromCmd "Admin.init")
 
-        -- Admin_FusionResponse value ->
-        --     ( { model | fusionState = value }, Command.none )
+                _ ->
+                    ( modelWithUser, Command.none )
+
         PermissionDenied _ ->
-            -- Simply ignore the denied action without any UI notification
             ( model, Command.none )
 
-        A0 message ->
-            -- Log websocket messages for debugging
-            ( model, Command.none )
-
-        MeshPointEcho _ ->
+        A0 _ ->
             ( model, Command.none )
 
 
@@ -325,7 +272,7 @@ view model =
         colors =
             Theme.getColors model.preferences.darkMode
     in
-    { title = "Dashboard"
+    { title = Pages.PageFrame.appName
     , body =
         [ div
             [ Theme.primaryBg model.preferences.darkMode
@@ -345,6 +292,7 @@ view model =
             , onEmailPasswordMsg = EmailPasswordAuthMsg
             , onNoOp = NoOpFrontendMsg
             , isAuthenticating = model.pendingAuth
+            , showOAuth = not (String.isEmpty Env.auth0AppTenant)
             }
         ]
     }
@@ -403,7 +351,7 @@ initWithAuth url key =
     )
 
 
-updateEmailPasswordAuth : EmailPasswordAuthMsg -> Model -> ( Model, Cmd FrontendMsg )
+updateEmailPasswordAuth : EmailPasswordAuthMsg -> Model -> ( Model, Command FrontendOnly ToBackend FrontendMsg )
 updateEmailPasswordAuth authMsg model =
     case authMsg of
         EmailPasswordFormMsg formMsg ->
@@ -411,7 +359,6 @@ updateEmailPasswordAuth authMsg model =
                 newForm =
                     updateEmailPasswordForm formMsg model.emailPasswordForm
 
-                -- Check if form was validated and should submit
                 cmd =
                     case formMsg of
                         EmailPasswordFormSubmit ->
@@ -431,13 +378,13 @@ updateEmailPasswordAuth authMsg model =
                                         else
                                             EmailPasswordLoginToBackend newForm.email newForm.password
                                 in
-                                Lamdera.sendToBackend (EmailPasswordAuthToBackend backendMsg)
+                                Effect.Lamdera.sendToBackend (EmailPasswordAuthToBackend backendMsg)
 
                             else
-                                Cmd.none
+                                Command.none
 
                         _ ->
-                            Cmd.none
+                            Command.none
 
                 newModel =
                     if formMsg == EmailPasswordFormSubmit && newForm.error == Nothing then
@@ -448,15 +395,16 @@ updateEmailPasswordAuth authMsg model =
             in
             ( newModel, cmd )
 
-        EmailPasswordLoginRequested email password ->
-            ( { model | login = NotLogged True, pendingAuth = True }
-            , Lamdera.sendToBackend (EmailPasswordAuthToBackend (EmailPasswordLoginToBackend email password))
-            )
 
-        EmailPasswordSignupRequested email password maybeName ->
-            ( { model | login = NotLogged True, pendingAuth = True }
-            , Lamdera.sendToBackend (EmailPasswordAuthToBackend (EmailPasswordSignupToBackend email password maybeName))
-            )
+emptyEmailPasswordForm : EmailPasswordFormModel
+emptyEmailPasswordForm =
+    { email = ""
+    , password = ""
+    , confirmPassword = ""
+    , name = ""
+    , isSignupMode = False
+    , error = Nothing
+    }
 
 
 updateEmailPasswordForm : EmailPasswordFormMsg -> EmailPasswordFormModel -> EmailPasswordFormModel
@@ -481,91 +429,14 @@ updateEmailPasswordForm msg model =
             if String.isEmpty (String.trim model.email) || String.isEmpty (String.trim model.password) then
                 { model | error = Just "Please fill in all required fields" }
 
+            else if model.isSignupMode && String.length model.password < Auth.EmailPasswordAuth.minimumPasswordLength then
+                { model | error = Just ("Passwords must be at least " ++ String.fromInt Auth.EmailPasswordAuth.minimumPasswordLength ++ " characters") }
+
             else if model.isSignupMode && model.password /= model.confirmPassword then
                 { model | error = Just "Passwords do not match" }
 
             else
                 model
-
-
-
--- Valid form
-
-
-viewWithAuth : Model -> Browser.Document FrontendMsg
-viewWithAuth model =
-    let
-        isDark =
-            model.preferences.darkMode
-
-        colors =
-            Theme.getColors isDark
-    in
-    { title = "View Auth Test"
-    , body =
-        [ div
-            [ Attr.style "margin" "20px"
-            , Attr.style "font-family" "Arial, sans-serif"
-            , Theme.primaryBg isDark
-            , Theme.primaryText isDark
-            ]
-            [ h1
-                [ Theme.primaryText isDark ]
-                [ text "Auth0 Test" ]
-            , case model.login of
-                LoggedIn userInfo ->
-                    div
-                        [ Attr.style "padding" "20px"
-                        , Attr.style "border" ("1px solid " ++ colors.border)
-                        , Attr.style "border-radius" "5px"
-                        , Attr.style "background-color" colors.secondaryBg
-                        , Attr.style "max-width" "400px"
-                        ]
-                        [ div
-                            [ Attr.style "margin-bottom" "15px"
-                            , Attr.style "font-size" "16px"
-                            , Attr.style "color" colors.primaryText
-                            ]
-                            [ text ("👤 Logged in as: " ++ userInfo.email) ]
-                        , button
-                            [ HE.onClick Logout
-                            , Attr.style "background-color" colors.dangerBg
-                            , Attr.style "color" colors.buttonText
-                            , Attr.style "padding" "10px 15px"
-                            , Attr.style "border" "none"
-                            , Attr.style "border-radius" "4px"
-                            , Attr.style "cursor" "pointer"
-                            ]
-                            [ text "Logout" ]
-                        ]
-
-                _ ->
-                    div
-                        [ Attr.style "padding" "20px"
-                        , Attr.style "border" ("1px solid " ++ colors.border)
-                        , Attr.style "border-radius" "5px"
-                        , Attr.style "background-color" colors.secondaryBg
-                        , Attr.style "max-width" "400px"
-                        ]
-                        [ p
-                            [ Attr.style "margin-bottom" "15px"
-                            , Attr.style "color" colors.primaryText
-                            ]
-                            [ text "Please sign in to continue" ]
-                        , button
-                            [ HE.onClick Auth0SigninRequested
-                            , Attr.style "background-color" colors.buttonBg
-                            , Attr.style "color" colors.buttonText
-                            , Attr.style "padding" "10px 15px"
-                            , Attr.style "border" "none"
-                            , Attr.style "border-radius" "4px"
-                            , Attr.style "cursor" "pointer"
-                            ]
-                            [ text "Sign in with Auth0" ]
-                        ]
-            ]
-        ]
-    }
 
 
 authUpdateFromBackend : Auth.Common.ToFrontend -> FrontendModel -> ( FrontendModel, Cmd FrontendMsg )
@@ -595,7 +466,6 @@ authUpdateFromBackend authToFrontendMsg model =
                         _ ->
                             "Authentication failed"
 
-                -- Send error to form via message
                 errorCmd =
                     Task.perform identity (Task.succeed (EmailPasswordAuthError errorMsg))
             in

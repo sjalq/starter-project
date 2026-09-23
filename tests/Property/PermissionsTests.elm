@@ -1,128 +1,97 @@
 module Property.PermissionsTests exposing (suite)
 
+import Auth.Common
+import Dict
 import Expect
-import Helpers.TestModels exposing (regularUser, sysAdminUser)
-import Rights.Permissions exposing (actionRoleMap, canPerformAction)
+import Helpers.TestModels exposing (emptyBackendModel, regularUser, sysAdminUser)
+import Rights.Permissions exposing (actionRoleMap, canPerformAction, sessionCanPerformAction)
 import Test exposing (..)
-import Types exposing (Role(..), ToBackend(..))
+import Types exposing (BackendModel, Role(..), ToBackend(..), User)
+
+
+publicActions : List ToBackend
+publicActions =
+    [ NoOpToBackend
+    , AuthToBackend Auth.Common.AuthRenewSessionRequested
+    , GetUserToBackend
+    , LoggedOut
+    , SetDarkModePreference True
+    , A "websocket message"
+    ]
+
+
+adminActions : List ToBackend
+adminActions =
+    [ Admin_FetchLogs ""
+    , Admin_ClearLogs
+    ]
 
 
 suite : Test
 suite =
-    describe "Permissions Properties"
+    describe "Permissions"
         [ describe "actionRoleMap"
-            [ describe "Anonymous actions (anyone can do)"
-                [ test "NoOpToBackend requires Anonymous" <|
-                    \_ ->
-                        actionRoleMap NoOpToBackend
-                            |> Expect.equal Anonymous
-                , test "AuthToBackend requires Anonymous" <|
-                    \_ ->
-                        -- Using a placeholder since we can't easily construct Auth.Common.ToBackend
-                        -- This test verifies the pattern exists
-                        Expect.pass
-                , test "GetUserToBackend requires Anonymous" <|
-                    \_ ->
-                        actionRoleMap GetUserToBackend
-                            |> Expect.equal Anonymous
-                , test "LoggedOut requires Anonymous" <|
-                    \_ ->
-                        actionRoleMap LoggedOut
-                            |> Expect.equal Anonymous
-                , test "SetDarkModePreference requires Anonymous" <|
-                    \_ ->
-                        actionRoleMap (SetDarkModePreference True)
-                            |> Expect.equal Anonymous
-                , test "A (websocket) requires Anonymous" <|
-                    \_ ->
-                        actionRoleMap (A "test message")
-                            |> Expect.equal Anonymous
-                ]
-            , describe "SysAdmin actions"
-                [ test "Admin_FetchLogs requires SysAdmin" <|
-                    \_ ->
-                        actionRoleMap (Admin_FetchLogs "")
-                            |> Expect.equal SysAdmin
-                , test "Admin_ClearLogs requires SysAdmin" <|
-                    \_ ->
-                        actionRoleMap Admin_ClearLogs
-                            |> Expect.equal SysAdmin
-                , test "Admin_FetchRemoteModel requires SysAdmin" <|
-                    \_ ->
-                        actionRoleMap (Admin_FetchRemoteModel "")
-                            |> Expect.equal SysAdmin
-                ]
+            [ test "public actions require Anonymous" <|
+                \_ ->
+                    List.map actionRoleMap publicActions
+                        |> Expect.equalLists (List.map (always Anonymous) publicActions)
+            , test "admin actions require SysAdmin" <|
+                \_ ->
+                    List.map actionRoleMap adminActions
+                        |> Expect.equalLists (List.map (always SysAdmin) adminActions)
             ]
         , describe "canPerformAction"
-            [ describe "SysAdmin user"
-                [ test "can perform Admin_FetchLogs" <|
-                    \_ ->
-                        canPerformAction sysAdminUser (Admin_FetchLogs "")
-                            |> Expect.equal True
-                , test "can perform Admin_ClearLogs" <|
-                    \_ ->
-                        canPerformAction sysAdminUser Admin_ClearLogs
-                            |> Expect.equal True
-                , test "can perform NoOpToBackend" <|
-                    \_ ->
-                        canPerformAction sysAdminUser NoOpToBackend
-                            |> Expect.equal True
-                , test "can perform SetDarkModePreference" <|
-                    \_ ->
-                        canPerformAction sysAdminUser (SetDarkModePreference False)
-                            |> Expect.equal True
-                ]
-            , describe "Regular user"
-                [ test "cannot perform Admin_FetchLogs" <|
-                    \_ ->
-                        canPerformAction regularUser (Admin_FetchLogs "")
-                            |> Expect.equal False
-                , test "cannot perform Admin_ClearLogs" <|
-                    \_ ->
-                        canPerformAction regularUser Admin_ClearLogs
-                            |> Expect.equal False
-                , test "can perform NoOpToBackend" <|
-                    \_ ->
-                        canPerformAction regularUser NoOpToBackend
-                            |> Expect.equal True
-                , test "can perform SetDarkModePreference" <|
-                    \_ ->
-                        canPerformAction regularUser (SetDarkModePreference True)
-                            |> Expect.equal True
-                , test "can perform GetUserToBackend" <|
-                    \_ ->
-                        canPerformAction regularUser GetUserToBackend
-                            |> Expect.equal True
-                ]
+            [ test "SysAdmin can perform every action" <|
+                \_ ->
+                    List.all (canPerformAction sysAdminUser) (publicActions ++ adminActions)
+                        |> Expect.equal True
+            , test "regular user can perform public actions" <|
+                \_ ->
+                    List.all (canPerformAction regularUser) publicActions
+                        |> Expect.equal True
+            , test "regular user cannot perform admin actions" <|
+                \_ ->
+                    List.any (canPerformAction regularUser) adminActions
+                        |> Expect.equal False
             ]
-        , describe "Consistency"
-            [ test "All admin actions require SysAdmin" <|
+        , describe "sessionCanPerformAction"
+            [ test "anonymous session can perform public actions" <|
                 \_ ->
-                    let
-                        adminActions =
-                            [ Admin_FetchLogs ""
-                            , Admin_ClearLogs
-                            , Admin_FetchRemoteModel ""
-                            ]
-
-                        allRequireSysAdmin =
-                            List.all (\action -> actionRoleMap action == SysAdmin) adminActions
-                    in
-                    Expect.equal True allRequireSysAdmin
-            , test "All public actions require Anonymous" <|
+                    List.all (sessionCanPerformAction emptyBackendModel "anonymous-cookie") publicActions
+                        |> Expect.equal True
+            , test "anonymous session cannot perform admin actions" <|
                 \_ ->
-                    let
-                        publicActions =
-                            [ NoOpToBackend
-                            , GetUserToBackend
-                            , LoggedOut
-                            , SetDarkModePreference True
-                            , A "test"
-                            ]
-
-                        allRequireAnonymous =
-                            List.all (\action -> actionRoleMap action == Anonymous) publicActions
-                    in
-                    Expect.equal True allRequireAnonymous
+                    List.any (sessionCanPerformAction emptyBackendModel "anonymous-cookie") adminActions
+                        |> Expect.equal False
+            , test "session with no matching user record can still perform public actions" <|
+                \_ ->
+                    List.all (sessionCanPerformAction (withSessionOnly "orphan-cookie" regularUser) "orphan-cookie") publicActions
+                        |> Expect.equal True
+            , test "SysAdmin session can perform admin actions" <|
+                \_ ->
+                    List.all (sessionCanPerformAction (withSession "admin-cookie" sysAdminUser) "admin-cookie") adminActions
+                        |> Expect.equal True
+            , test "regular user session cannot perform admin actions" <|
+                \_ ->
+                    List.any (sessionCanPerformAction (withSession "user-cookie" regularUser) "user-cookie") adminActions
+                        |> Expect.equal False
             ]
         ]
+
+
+withSessionOnly : String -> User -> BackendModel
+withSessionOnly cookie user =
+    { emptyBackendModel
+        | sessions =
+            Dict.singleton cookie
+                { email = user.email, name = user.name, username = Nothing, picture = Nothing }
+    }
+
+
+withSession : String -> User -> BackendModel
+withSession cookie user =
+    let
+        model =
+            withSessionOnly cookie user
+    in
+    { model | users = Dict.singleton user.email user }

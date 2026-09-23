@@ -2,7 +2,7 @@
   "name": "lamdera-starter-kit",
   "version": "1.0.0",
   "description": "Create production-ready Lamdera apps with authentication, WebSockets, program-test, and more",
-  "author": "sjalq",
+  "author": "Schalk Dormehl",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -18,6 +18,12 @@
   "files": [
     "bin/lamdera-starter-kit.js"
   ],
+  "scripts": {
+    "build": "node compile.js",
+    "test": "elm-test-rs --compiler lamdera",
+    "review": "elm-review --compiler lamdera",
+    "test:cli": "npm --prefix scripts/node/lamdera-cli test"
+  },
   "keywords": [
     "lamdera",
     "elm",
@@ -32,10 +38,9 @@
     "generator"
   ],
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18"
   },
   "devDependencies": {
-    "elm-review": "^2.13.4",
-    "puppeteer": "^24.23.0"
+    "elm-review": "^2.13.4"
   }
 }

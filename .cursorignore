@@ -1,5 +1,5 @@
-# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
-src/Evergreen
-fusion/
-generated/
+# Directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+src/Evergreen/
 auth/
+lamdera-websocket-package/
+tools/

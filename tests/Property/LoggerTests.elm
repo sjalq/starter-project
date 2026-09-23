@@ -1,7 +1,7 @@
 module Property.LoggerTests exposing (suite)
 
 import Expect
-import Fuzz exposing (Fuzzer)
+import Fuzz
 import Fuzzers.DomainFuzzers exposing (logLevelFuzzer)
 import Json.Decode as Decode
 import Logger exposing (..)
@@ -12,7 +12,7 @@ suite : Test
 suite =
     describe "Logger Properties"
         [ describe "init"
-            [ fuzz (Fuzz.intRange 1 100) "creates empty state with correct maxEntries" <|
+            [ fuzz (Fuzz.intRange 1 100) "creates an empty state" <|
                 \maxEntries ->
                     let
                         state =
@@ -33,7 +33,7 @@ suite =
                             Logger.addLog Info "test" state
                     in
                     Logger.size afterLog
-                        |> Expect.atMost 1
+                        |> Expect.equal 1
             ]
         , describe "addLog"
             [ fuzz2 logLevelFuzzer Fuzz.string "increases nextIndex by 1" <|
@@ -221,22 +221,6 @@ suite =
                         |> Logger.levelToString
                         |> Logger.levelFromString
                         |> Expect.equal (Just level)
-            , test "Debug round-trips" <|
-                \_ ->
-                    Logger.levelFromString "DEBUG"
-                        |> Expect.equal (Just Debug)
-            , test "Info round-trips" <|
-                \_ ->
-                    Logger.levelFromString "INFO"
-                        |> Expect.equal (Just Info)
-            , test "Warn round-trips" <|
-                \_ ->
-                    Logger.levelFromString "WARN"
-                        |> Expect.equal (Just Warn)
-            , test "Error round-trips" <|
-                \_ ->
-                    Logger.levelFromString "ERROR"
-                        |> Expect.equal (Just Error)
             , test "unknown level returns Nothing" <|
                 \_ ->
                     Logger.levelFromString "UNKNOWN"

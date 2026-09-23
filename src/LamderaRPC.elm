@@ -11,21 +11,6 @@ import Task exposing (Task)
 import Types exposing (BackendModel)
 
 
-
--- The Lamdera HTTP RPC abstraction
-
-
-type RPC a
-    = Response a
-    | ResponseJson Json.Value
-    | ResponseString String
-    | Failure Http.Error
-
-
-fail string =
-    Failure <| Http.BadBody string
-
-
 type RPCResult
     = ResultBytes (List Int)
     | ResultJson Json.Value
@@ -84,17 +69,6 @@ type alias HttpRequest =
     , headers : Dict String String
     , body : HttpBody
     }
-
-
-
--- @TODO future
--- type alias HttpResponse =
---     { version : String -- HTTP/1.1, HTTP/2, etc.
---     , statusCode : Int -- 200, 404, etc.
---     , statusText : String -- "OK", "Not Found", etc.
---     , headers : List HttpHeader -- List of (header, value) pairs, e.g. [ ("Content-Type", "application/json") ]
---     , body : Maybe HttpBody
---     }
 
 
 type alias HttpHeader =
@@ -287,7 +261,6 @@ customResolver fn response =
             Err <| NetworkError
 
         BadStatus_ metadata body ->
-            -- @TODO use metadata better here
             Err <| BadStatus metadata.statusCode
 
         GoodStatus_ metadata text ->
@@ -306,14 +279,16 @@ handleEndpointBytes fn decoder encoder args model =
         BodyBytes intList ->
             case Wire3.bytesDecode decoder (Wire3.intListToBytes intList) of
                 Just arg ->
-                    case fn args.sessionId model args.headers arg of
-                        ( response, newModel, newCmds ) ->
-                            case response of
-                                Ok value ->
-                                    ( ResultBytes <| Wire3.intListFromBytes <| Wire3.bytesEncode <| encoder value, newModel, newCmds )
+                    let
+                        ( response, newModel, newCmds ) =
+                            fn args.sessionId model args.headers arg
+                    in
+                    case response of
+                        Ok value ->
+                            ( ResultBytes <| Wire3.intListFromBytes <| Wire3.bytesEncode <| encoder value, newModel, newCmds )
 
-                                Err httpErr ->
-                                    ( failWith StatusBadRequest <| httpErrorToString httpErr, newModel, newCmds )
+                        Err httpErr ->
+                            ( failWith StatusBadRequest <| httpErrorToString httpErr, newModel, newCmds )
 
                 Nothing ->
                     ( failWith StatusBadRequest <| "Failed to decode arg for " ++ args.endpoint, model, Cmd.none )
@@ -342,14 +317,16 @@ handleEndpointJson :
 handleEndpointJson fn args model =
     case args.body of
         BodyJson json ->
-            case fn args.sessionId model args.headers json of
-                ( response, newModel, newCmds ) ->
-                    case response of
-                        Ok value ->
-                            ( ResultJson value, newModel, newCmds )
+            let
+                ( response, newModel, newCmds ) =
+                    fn args.sessionId model args.headers json
+            in
+            case response of
+                Ok value ->
+                    ( ResultJson value, newModel, newCmds )
 
-                        Err httpErr ->
-                            ( failWith StatusBadRequest <| httpErrorToString httpErr, newModel, newCmds )
+                Err httpErr ->
+                    ( failWith StatusBadRequest <| httpErrorToString httpErr, newModel, newCmds )
 
         _ ->
             ( failWith StatusBadRequest <| "JSON endpoint '" ++ args.endpoint ++ "' was given body type " ++ bodyTypeToString args.body
@@ -366,14 +343,16 @@ handleEndpointJsonRaw :
 handleEndpointJsonRaw fn args model =
     case args.body of
         BodyJson json ->
-            case fn args.sessionId model args.headers json of
-                ( response, newModel, newCmds ) ->
-                    case response of
-                        Ok value ->
-                            ( ResultJson value, newModel, newCmds )
+            let
+                ( response, newModel, newCmds ) =
+                    fn args.sessionId model args.headers json
+            in
+            case response of
+                Ok value ->
+                    ( ResultJson value, newModel, newCmds )
 
-                        Err failResult ->
-                            ( failResult, newModel, newCmds )
+                Err failResult ->
+                    ( failResult, newModel, newCmds )
 
         _ ->
             ( failWith StatusBadRequest <| "JSON endpoint '" ++ args.endpoint ++ "' was given body type " ++ bodyTypeToString args.body
@@ -390,14 +369,16 @@ handleEndpointString :
 handleEndpointString fn args model =
     case args.body of
         BodyString string ->
-            case fn args.sessionId model args.headers string of
-                ( response, newModel, newCmds ) ->
-                    case response of
-                        Ok value ->
-                            ( ResultString value, newModel, newCmds )
+            let
+                ( response, newModel, newCmds ) =
+                    fn args.sessionId model args.headers string
+            in
+            case response of
+                Ok value ->
+                    ( ResultString value, newModel, newCmds )
 
-                        Err httpErr ->
-                            ( failWith StatusBadRequest <| httpErrorToString httpErr, newModel, newCmds )
+                Err httpErr ->
+                    ( failWith StatusBadRequest <| httpErrorToString httpErr, newModel, newCmds )
 
         _ ->
             ( failWith StatusBadRequest <| "String endpoint '" ++ args.endpoint ++ "' was given body type " ++ bodyTypeToString args.body

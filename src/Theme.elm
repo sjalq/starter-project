@@ -10,6 +10,7 @@ type alias Colors =
     , secondaryBg : String
     , secondaryText : String
     , accent : String
+    , accentText : String
     , border : String
     , buttonBg : String
     , buttonText : String
@@ -28,46 +29,48 @@ type alias Colors =
 
 lightColors : Colors
 lightColors =
-    { primaryBg = "#F2ECE4" -- Light cream (Sakeliga tertiary)
-    , primaryText = "#263745" -- Dark blue-grey (Sakeliga secondary)
+    { primaryBg = "#F2ECE4" -- Light cream
+    , primaryText = "#263745" -- Dark blue-grey
     , secondaryBg = "#FFFFFF" -- White
     , secondaryText = "#4A5568" -- Grey for secondary text
-    , accent = "#CFB793" -- Warm beige/gold (Sakeliga primary)
-    , border = "rgba(0, 0, 0, 0.15)" -- Semi-transparent black (lighter than original)
-    , buttonBg = "#CFB793" -- Warm beige/gold (Sakeliga primary)
+    , accent = "#CFB793" -- Warm beige/gold, for fills and borders
+    , accentText = "#7A5F30" -- Dark gold, readable on light backgrounds
+    , border = "rgba(0, 0, 0, 0.15)" -- Semi-transparent black
+    , buttonBg = "#CFB793" -- Warm beige/gold
     , buttonText = "#263745" -- Dark blue-grey
-    , buttonHoverBg = "#BEA682" -- Darker beige (Sakeliga hover)
-    , dangerBg = "#FF0000" -- Red (Sakeliga red)
-    , dangerHoverBg = "#CC0000" -- Darker red
-    , dangerText = "#FF0000" -- Red
+    , buttonHoverBg = "#BEA682" -- Darker beige
+    , dangerBg = "#FC8181" -- Soft red, readable with dark button text
+    , dangerHoverBg = "#F56565" -- Stronger red
+    , dangerText = "#B91C1C" -- Deep red, readable on light backgrounds
     , headerBg = "#FFFFFF" -- White
-    , headerBorder = "#D9D9D9" -- Grey (Sakeliga grey)
+    , headerBorder = "#D9D9D9" -- Light grey
     , headerText = "#263745" -- Dark blue-grey
-    , activeTabText = "#CFB793" -- Warm beige/gold
-    , inactiveTabText = "#B3B3B3" -- Dark grey
-    , successBg = "#48bb78" -- Green (keeping original for consistency)
+    , activeTabText = "#7A5F30" -- Dark gold
+    , inactiveTabText = "#5F6B7A" -- Slate grey
+    , successBg = "#48bb78" -- Green
     }
 
 
 darkColors : Colors
 darkColors =
     { primaryBg = "#1A1F26" -- Very dark blue-grey
-    , primaryText = "#F2ECE4" -- Light cream (from light mode tertiary)
-    , secondaryBg = "#263745" -- Dark blue-grey (Sakeliga secondary)
-    , secondaryText = "#CFB793" -- Warm beige/gold (Sakeliga primary)
+    , primaryText = "#F2ECE4" -- Light cream
+    , secondaryBg = "#263745" -- Dark blue-grey
+    , secondaryText = "#CFB793" -- Warm beige/gold
     , accent = "#E8D5BB" -- Lighter warm beige
+    , accentText = "#E8D5BB" -- Lighter warm beige
     , border = "rgba(207, 183, 147, 0.3)" -- Semi-transparent warm beige
     , buttonBg = "#CFB793" -- Warm beige/gold
     , buttonText = "#1A1F26" -- Very dark blue-grey
     , buttonHoverBg = "#E8D5BB" -- Lighter warm beige
     , dangerBg = "#E57373" -- Softer red for dark backgrounds
     , dangerHoverBg = "#EF5350" -- Brighter red on hover
-    , dangerText = "#E57373" -- Softer red
+    , dangerText = "#F49B93" -- Light red, readable on dark backgrounds
     , headerBg = "#263745" -- Dark blue-grey
     , headerBorder = "#2F3D4D" -- Slightly lighter blue-grey
     , headerText = "#F2ECE4" -- Light cream
     , activeTabText = "#E8D5BB" -- Lighter warm beige
-    , inactiveTabText = "#8B9AAB" -- Muted blue-grey
+    , inactiveTabText = "#AAB6C4" -- Light slate grey
     , successBg = "#4CAF50" -- Green
     }
 
@@ -112,7 +115,7 @@ secondaryText isDarkMode =
 
 accent : Bool -> Attribute msg
 accent isDarkMode =
-    Html.Attributes.style "color" (getColors isDarkMode).accent
+    Html.Attributes.style "color" (getColors isDarkMode).accentText
 
 
 buttonBg : Bool -> Attribute msg

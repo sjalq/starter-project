@@ -36,7 +36,7 @@ view config =
         titleElement =
             h1
                 [ Attr.class titleClasses
-                , Attr.style "color" config.colors.accent
+                , Attr.style "color" config.colors.accentText
                 ]
                 [ text config.title ]
 

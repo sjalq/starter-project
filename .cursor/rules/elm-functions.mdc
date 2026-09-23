@@ -8,40 +8,46 @@ alwaysApply: true
 
 ## src/AsyncRPC.elm
 ### AsyncRPC
-28 handleTaskChain _ model _ _ config
-53 handleTaskResult token encoder result
-69 handleTimeResult token result
-80 handlePollingResult _ model _ json
+29 handleTaskChain sessionId model _ _ config
+55 handleTaskResult token encoder result
+71 handleTimeResult token result
+82 handlePollingResult _ model _ json
 
 ## src/Auth/EmailPasswordAuth.elm
 ### Auth.EmailPasswordAuth
-32 handleLogin browserCookie connectionId email password model
-72 handleSignup browserCookie connectionId email password maybeName model
-95 completeSignup browserCookie connectionId email _ maybeName salt hash model
+17 handleLogin browserCookie connectionId rawEmail password model
+50 handleSignup browserCookie connectionId rawEmail password maybeName model
+80 completeSignup browserCookie connectionId email maybeName salt hash model
+102 minimumPasswordLength
+107 normalizeEmail
+112 isPlausibleEmail email
+122 emailIsTaken email model
+127 sendError connectionId message
+132 sendToClient connectionId
 
 ## src/Auth/PasswordHash.elm
 ### Auth.PasswordHash
-17 hashPassword salt password
-29 verifyPassword plainPassword hashedPassword
+26 hashPassword salt password
+38 verifyPassword plainPassword hashedPassword
 
 ## src/Backend.elm
 ### Backend
-29 app
-39 subscriptions _
-44 init
-66 update msg model
-145 updateFromFrontend sessionId clientId msg model
-261 updateFromFrontendCheckingRights sessionId clientId msg model
-300 getUserFromCookie browserCookie model
-306 userToFrontend user
-315 handleEmailPasswordAuth browserCookie connectionId authMsg model
+30 app
+41 subscriptions _
+46 init
+72 update msg model
+131 updateFromFrontend sessionId clientId msg model
+232 updateFromFrontendCheckingRights sessionId clientId msg model
+245 getUserFromCookie browserCookie model
+251 userToFrontend user
+260 handleEmailPasswordAuth browserCookie connectionId authMsg model
 
 ## src/Components/AuthControls.elm
 ### Components.AuthControls
 35 view config
 54 profileDropdown config
 152 loginButton config
-201 getInitials userInfo
+196 getInitials userInfo
 
 ## src/Components/Button.elm
 ### Components.Button
@@ -60,19 +66,10 @@ alwaysApply: true
 80 withTitle colors title children
 91 compact colors children
 
-## src/Components/EmailPasswordAuth.elm
-### Components.EmailPasswordAuth
-22 init
-33 update msg model
-51 updateForm msg model
-73 validateAndGetSubmitModel model
-89 view config
-
 ## src/Components/EmailPasswordForm.elm
 ### Components.EmailPasswordForm
 24 view config
 166 inputStyles colors
-177 buttonStyles colors
 
 ## src/Components/Header.elm
 ### Components.Header
@@ -83,9 +80,8 @@ alwaysApply: true
 
 ## src/Components/LoginModal.elm
 ### Components.LoginModal
-25 view config
-120 oauthButton config label onClickMsg backgroundColor
-164 oauthButtonWithIcon config label onClickMsg backgroundColor iconSrc
+26 view config
+127 oauthButtonWithIcon config label onClickMsg backgroundColor iconSrc
 
 ## src/Components/Tab.elm
 ### Components.Tab
@@ -94,114 +90,107 @@ alwaysApply: true
 
 ## src/EndpointExample/Price.elm
 ### EndpointExample.Price
-21 getPrice sessionId model headers json
-36 getPriceResult sessionId model headers json
-45 fetchEthPriceInZar
-118 fetchEthPrice
-139 fetchZarRate
-160 fetchJokeAboutEthPrice price
-202 openAiResponseDecoder responseBody
+20 getPrice sessionId model headers json
+35 getPriceResult sessionId model headers json
+44 fetchEthPriceInZar
+87 fetchEthPrice
+108 fetchZarRate
 
 ## src/Env.elm
 ### Env
-7 modelKey
-11 slackApiToken
-15 slackChannel
-19 logSize
-23 stillTesting
-28 auth0AppClientId
-33 auth0AppClientSecret
-38 auth0AppTenant
-43 sysAdminEmail
-48 openAiApiKey
-57 mode
+16 modelKey
+24 slackApiToken
+29 slackChannel
+36 logSize
+45 auth0AppClientId
+50 auth0AppClientSecret
+55 auth0AppTenant
+62 sysAdminEmail
+72 mode
 
 ## src/Frontend.elm
 ### Frontend
-53 app
-66 subscriptions _
-72 init url key
-110 inits model route
-129 update msg model
-272 updateFromBackend msg model
-323 view model
-354 callbackForAuth0Auth model url key
-363 callbackForGoogleAuth model url key
-372 authCallbackCmd model url key
-389 initWithAuth url key
-407 updateEmailPasswordAuth authMsg model
-463 updateEmailPasswordForm msg model
-496 viewWithAuth model
-572 authUpdateFromBackend authToFrontendMsg model
+43 app
+56 subscriptions _
+64 init url key
+89 inits model route
+108 update msg model
+216 updateFromBackend msg model
+270 view model
+302 callbackForAuth0Auth model url key
+311 callbackForGoogleAuth model url key
+320 authCallbackCmd model url key
+337 initWithAuth url key
+355 updateEmailPasswordAuth authMsg model
+400 emptyEmailPasswordForm
+411 updateEmailPasswordForm msg model
+443 authUpdateFromBackend authToFrontendMsg model
 
 ## src/LamderaRPC.elm
 ### LamderaRPC
-25 fail string
-43 resultWith statusCode body
-48 failWith statusCode stringBody
-63 bodyTypeToString body
-105 requestDecoder
-120 rawBody rawReq
-130 rawBodyDecoder
-147 process log rpcOut rawReq handler model
-209 asTask encoder decoder requestValue endpoint
-245 asTaskJson json endpoint
-266 asTaskString requestBody endpoint
-278 customResolver fn response
-304 handleEndpointBytes fn decoder encoder args model
-333 handleEndpoint fn args model
-342 handleEndpointJson fn args model
-366 handleEndpointJsonRaw fn args model
-390 handleEndpointString fn args model
-410 httpErrorToString err
-445 methodString method
-544 statusToInt code
-731 statusToString statusCode
+28 resultWith statusCode body
+33 failWith statusCode stringBody
+48 bodyTypeToString body
+79 requestDecoder
+94 rawBody rawReq
+104 rawBodyDecoder
+121 process log rpcOut rawReq handler model
+183 asTask encoder decoder requestValue endpoint
+219 asTaskJson json endpoint
+240 asTaskString requestBody endpoint
+252 customResolver fn response
+277 handleEndpointBytes fn decoder encoder args model
+308 handleEndpoint fn args model
+317 handleEndpointJson fn args model
+343 handleEndpointJsonRaw fn args model
+369 handleEndpointString fn args model
+391 httpErrorToString err
+426 methodString method
+525 statusToInt code
+712 statusToString statusCode
 
 ## src/Logger.elm
 ### Logger
-123 init maxEntries
-141 addLog level message state
-152 addLogWithTime level message timestamp state
-176 updateTimestamp index timestamp state
-201 getRecent n state
-212 getSinceIndex minIndex state
-225 getSinceTimestamp minTimestamp state
-235 getRange fromIndex toIndex state
-244 toList state
-251 size state
-259 nextIndex state
-315 logInfo
-326 logWarn
-337 logError
-348 logDebug
-363 logWithCmd level message state
-384 logInfoWithCmd
-392 handleMsg msg state
-405 encodeLogEntry entry
-417 encodeLogEntries entries
-424 decodeLogEntry
-433 decodeLevelHelper str
-445 decodeLogEntries
-456 levelToString level
-474 levelFromString str
+124 init maxEntries
+142 addLog level message state
+153 addLogWithTime level message timestamp state
+177 updateTimestamp index timestamp state
+202 getRecent n state
+213 getSinceIndex minIndex state
+226 getSinceTimestamp minTimestamp state
+236 getRange fromIndex toIndex state
+245 toList state
+252 size state
+260 nextIndex state
+316 logInfo
+327 logWarn
+338 logError
+349 logDebug
+364 logWithCmd level message state
+385 logInfoWithCmd
+393 handleMsg msg state
+406 encodeLogEntry entry
+418 encodeLogEntries entries
+425 decodeLogEntry
+434 decodeLevelHelper str
+446 decodeLogEntries
+457 levelToString level
+475 levelFromString str
 
 ## src/Pages/Admin.elm
 ### Pages.Admin
-22 init model adminRoute
-45 view model colors
-67 viewNoAccess _ colors
-91 viewTabs model colors
-102 viewTab tab model colors label
-152 viewTabContent model colors
-170 viewDefaultTab _ colors
-178 viewLogsTab model colors params
-262 viewPagination colors params totalPages navigateTo
-310 viewFetchModelTab model colors
-341 viewFusionTab model
-356 viewLogEntry entry
-400 formatTimestamp millis
-418 viewLogin _ colors
+15 init model adminRoute
+29 view model colors
+50 viewNoAccess _ colors
+74 viewTabs model colors
+82 viewTab tab model colors label
+129 viewTabContent model colors
+142 viewDefaultTab _ colors
+153 viewLogsTab model colors params
+243 viewPagination colors params totalPages navigateTo
+291 viewLogEntry entry
+335 formatTimestamp millis
+353 viewLogin _ colors
 
 ## src/Pages/Default.elm
 ### Pages.Default
@@ -212,32 +201,36 @@ alwaysApply: true
 ### Pages.Examples
 13 init model
 18 view model colors
+61 viewPortFeedback model colors
 
 ## src/Pages/PageFrame.elm
 ### Pages.PageFrame
-19 viewTabs model
-71 viewAccountControls model
-95 viewCurrentPage model
-126 viewNotFoundPage colors
+19 appName
+24 isAdminRoute route
+34 viewTabs model
+86 viewAccountControls model
+110 viewCurrentPage model
+139 viewNotFoundPage colors
 
 ## src/Ports/Clipboard.elm
 ### 
-14 copyToClipboard text
-19 copyResult toMsg
+16 copyToClipboard text
+21 copyResult toMsg
+33 resultDecoder
 
 ## src/Ports/ConsoleLogger.elm
 ### 
-14 log message
-19 logReceived toMsg
+16 log message
+21 logReceived toMsg
 
 ## src/RPC.elm
 ### RPC
-25 lamdera_handleEndpoints rawReq args model
-74 getLogs _ model headers _
-98 getModel _ model request
-124 setModel _ currentModel request
-163 makeModelImportUrl remoteLamderaUrl
-169 fetchImportedModel remoteLamderaUrl modelKey
+21 lamdera_handleEndpoints rawReq args model
+73 isAuthorized headers
+83 developmentModelKey
+91 getLogs _ model headers _
+103 getModel _ model request
+118 setModel _ currentModel request
 
 ## src/Rights/Auth0.elm
 ### Rights.Auth0
@@ -251,8 +244,8 @@ alwaysApply: true
 ## src/Rights/Permissions.elm
 ### Rights.Permissions
 12 actionRoleMap msg
-60 canPerformAction user action
-74 sessionCanPerformAction model browserCookie action
+45 canPerformAction user action
+59 sessionCanPerformAction model browserCookie action
 
 ## src/Rights/Role.elm
 ### Rights.Role
@@ -262,25 +255,18 @@ alwaysApply: true
 ## src/Rights/User.elm
 ### Rights.User
 10 isSysAdmin user
-16 getUserRole user
-25 createUser userInfo initialPreferences
-33 insertUser email newUser model
+15 getUserRole user
+24 createUser userInfo initialPreferences
+32 insertUser email newUser model
 
 ## src/Route.elm
 ### Route
 10 defaultLogsParams
 18 parser
-32 logsQueryParser
-40 fromUrl url
-46 toString route
-68 logsParamsToQuery params
-
-## src/SignatureParser.elm
-### SignatureParser
-33 parseSignature line
-74 parseTypeSignature signature
-111 splitBeforeTuple segments
-135 extractOutputType tuple
+29 logsQueryParser
+37 fromUrl url
+43 toString route
+62 logsParamsToQuery params
 
 ## src/Supplemental.elm
 ### Supplemental
@@ -290,70 +276,65 @@ alwaysApply: true
 67 responseToString response
 86 httpErrorToString error
 105 handleJsonResponse decoder response
-144 performNow msg
-149 getTime msg
-154 waitThenPerform ms msg
-165 at_ path decoder
-170 requiredAt_ path decoder
-175 optionalAt_ path valDecoder fallback decoder
-186 slackApiUrl
-191 sendSlackMessage token channel message
-229 formatFloat decimals value
-273 formatPrice currency price
-287 formatPercent percent
-303 formatPercentWithoutSign percent
-319 monthToString month
-359 monthToInt month
-399 formatDate time
-414 second
-419 minute
-424 hour
-429 day
-434 week
+135 performNow msg
+140 getTime msg
+145 waitThenPerform ms msg
+156 at_ path decoder
+161 requiredAt_ path decoder
+166 optionalAt_ path valDecoder fallback decoder
+177 slackApiUrl
+182 sendSlackMessage token channel message
+217 formatFloat decimals value
+261 formatPrice currency price
+275 formatPercent percent
+291 formatPercentWithoutSign percent
+307 monthToString month
+347 monthToInt month
+387 formatDate time
+402 second
+407 minute
+412 hour
+417 day
+422 week
 
 ## src/SupplementalRPC.elm
 ### SupplementalRPC
-14 stringifyHttpRequest request
-41 stringifyRPCResult result
-85 encodeHttpBody body
-107 encodeRPCCallAndResult args result
+15 stringifyHttpRequest request
+44 redactSensitiveHeaders
+56 stringifyRPCResult result
+100 encodeHttpBody body
+122 encodeRPCCallAndResult args result
 
 ## src/TestData.elm
 ### TestData
-12 defaultUsers
-26 defaultEmailPasswordCredentials
-46 defaultSessions
-53 initializeTestData model
+13 defaultUsers
+27 defaultEmailPasswordCredentials
+47 defaultSessions
+54 initializeTestData model
 
 ## src/Theme.elm
 ### Theme
-30 lightColors
-53 darkColors
-76 getColors isDarkMode
-89 primaryBg isDarkMode
-94 primaryText isDarkMode
-99 primaryBorder isDarkMode
-104 secondaryBg isDarkMode
-109 secondaryText isDarkMode
-114 accent isDarkMode
-119 buttonBg isDarkMode
-124 buttonText isDarkMode
-129 buttonHoverBg isDarkMode
-134 dangerBg isDarkMode
-139 dangerHoverBg isDarkMode
-144 headerBg isDarkMode
-149 headerBorder isDarkMode
-154 headerText isDarkMode
-159 activeTabText isDarkMode
-164 inactiveTabText isDarkMode
+31 lightColors
+55 darkColors
+79 getColors isDarkMode
+92 primaryBg isDarkMode
+97 primaryText isDarkMode
+102 primaryBorder isDarkMode
+107 secondaryBg isDarkMode
+112 secondaryText isDarkMode
+117 accent isDarkMode
+122 buttonBg isDarkMode
+127 buttonText isDarkMode
+132 buttonHoverBg isDarkMode
+137 dangerBg isDarkMode
+142 dangerHoverBg isDarkMode
+147 headerBg isDarkMode
+152 headerBorder isDarkMode
+157 headerText isDarkMode
+162 activeTabText isDarkMode
+167 inactiveTabText isDarkMode
 
-## src/Wire3SortTest.elm
-### Wire3SortTest
-36 encodeAA
-43 encodeA_
-50 bytesToList bytes
-59 aaBytes
-64 a_Bytes
-71 sortOrderResult
-92 proofTest
+## src/Types.elm
+### Types
+230 defaultPreferences
 

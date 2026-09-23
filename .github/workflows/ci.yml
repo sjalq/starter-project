@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  LAMDERA_VERSION: 1.4.0
+  ELM_TEST_RS_VERSION: 3.0.1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Cache Elm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.elm
+          key: elm-${{ runner.os }}-${{ env.LAMDERA_VERSION }}-${{ hashFiles('elm.json', 'review/elm.json') }}
+          restore-keys: elm-${{ runner.os }}-${{ env.LAMDERA_VERSION }}-
+
+      - name: Install lamdera and elm-test-rs
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL -o "$HOME/.local/bin/lamdera" "https://static.lamdera.com/bin/lamdera-${LAMDERA_VERSION}-linux-x86_64"
+          chmod +x "$HOME/.local/bin/lamdera"
+          curl -fsSL "https://github.com/mpizenberg/elm-test-rs/releases/download/v${ELM_TEST_RS_VERSION}/elm-test-rs_linux.tar.gz" | tar xz -C "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build (docs, tests, compile)
+        run: node compile.js
+
+      - name: Generated function index is committed and current
+        run: git diff --exit-code -- .cursor/rules/elm-functions.mdc
+
+      - name: elm-review
+        run: npm run review
+
+      - name: lamdera-cli tests
+        run: |
+          npm ci --prefix scripts/node/lamdera-cli
+          npm run test:cli
+
+      - name: Syntax-check Node scripts
+        run: for f in bin/*.js compile.js reset.js LLMBuildTools/*.cjs; do node --check "$f"; done
+
+      - name: Scaffold smoke test
+        run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@example.com"
+          cd "$RUNNER_TEMP"
+          node "$GITHUB_WORKSPACE/bin/lamdera-starter-kit.js" smoke-app -y --json > scaffold.json
+          node -e '
+            const r = JSON.parse(require("fs").readFileSync("scaffold.json", "utf8"));
+            if (!r.success || r.errors.length || r.warnings.length) {
+              console.error(JSON.stringify(r, null, 2));
+              process.exit(1);
+            }
+          '
+          test -f smoke-app/elm.json
+          test ! -e smoke-app/bin
+          test "$(git -C smoke-app submodule status | wc -l)" -eq 3
+          git -C smoke-app log --oneline -1

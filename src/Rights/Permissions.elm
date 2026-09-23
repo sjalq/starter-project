@@ -20,9 +20,6 @@ actionRoleMap msg =
         Admin_ClearLogs ->
             SysAdmin
 
-        Admin_FetchRemoteModel _ ->
-            SysAdmin
-
         AuthToBackend _ ->
             Anonymous
 
@@ -38,20 +35,8 @@ actionRoleMap msg =
         SetDarkModePreference _ ->
             Anonymous
 
-        -- Allow anyone to send websocket messages
         A _ ->
             Anonymous
-
-        UploadMesh _ ->
-            Anonymous
-
-
-
--- Allow anyone to send websocket messages
--- Fusion_PersistPatch _ ->
---     SysAdmin
--- Fusion_Query _ ->
---     SysAdmin
 
 
 {-| Checks if a user has permission to perform a specific backend action
@@ -72,15 +57,13 @@ canPerformAction user action =
 -}
 sessionCanPerformAction : BackendModel -> BrowserCookie -> ToBackend -> Bool
 sessionCanPerformAction model browserCookie action =
-    case Dict.get browserCookie model.sessions of
-        Just userInfo ->
-            case Dict.get userInfo.email model.users of
-                Just user ->
-                    canPerformAction user action
+    if actionRoleMap action == Anonymous then
+        True
 
-                Nothing ->
-                    False
+    else
+        case Dict.get browserCookie model.sessions |> Maybe.andThen (\userInfo -> Dict.get userInfo.email model.users) of
+            Just user ->
+                canPerformAction user action
 
-        Nothing ->
-            -- Only anonymous actions allowed without session
-            actionRoleMap action == Anonymous
+            Nothing ->
+                False

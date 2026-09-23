@@ -1,11 +1,24 @@
+# Build output and dependencies
+elm-stuff/
+node_modules/
+/elm.js
+/index.html
+*.log
 
-elm-stuff
-node_modules
+# Generated test viewer bundle (build with scripts/run-test-viewer.sh)
+tests/viewer.js
 
-# CLI config (contains secrets) and state
+# Secrets and local environment (never commit)
+.env
+.env.*
+!.env.example
 .lamdera-cli.json
 .lamdera-cli.state.json
-# OS / tool scratch
+
+# BackendModel backups from lamdera-cli (contain user data)
+backups/
+
+# OS and tool scratch
 .DS_Store
 .playwright-mcp/
 .wire-extractor-prove/

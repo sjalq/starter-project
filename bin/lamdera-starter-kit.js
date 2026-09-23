@@ -13,7 +13,7 @@
  *   npx lamdera-starter-kit my-project --json # JSON output for automation
  */
 
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
@@ -25,26 +25,33 @@ const os = require('os');
 
 const REPO_URL = 'https://github.com/sjalq/starter-project.git';
 const IS_WINDOWS = process.platform === 'win32';
+const KIT_VERSION = require('../package.json').version;
 
-// Files/folders that should NEVER be copied to new projects
-const EXCLUDE_PATTERNS = [
-  '.git',
-  '.gitmodules',
+// Only files tracked by git in the template are copied, so untracked and
+// ignored files (secrets, local state, build output) can never ship.
+// These tracked paths are maintainer-only and are also skipped. Each entry is
+// relative to the template root and matches that file or everything under it.
+const EXCLUDE_PATHS = [
+  '.gitmodules', // recreated by `git submodule add`
+  '.github', // template CI, tests the scaffolder itself
+  '.claude',
   'bin',
   'clone.sh',
   'clone.ps1',
-  'node_modules',
+  'LICENSE', // the new project is the user's own
   'package-lock.json',
-  '.npmignore',
-  'elm-stuff',
-  'auth',
-  'lamdera-websocket-package',
+  'auth', // submodule
+  'lamdera-websocket-package', // submodule
+  'tools', // submodule
 ];
 
-// Submodules to set up in new project
+// Submodules to set up in new project, pinned to the commit the template uses
 const SUBMODULES = [
-  { name: 'auth', url: 'https://github.com/sjalq/auth.git' },
-  { name: 'lamdera-websocket-package', url: 'https://github.com/sjalq/lamdera-websocket.git' },
+  { path: 'auth', url: 'https://github.com/sjalq/auth.git' },
+  { path: 'lamdera-websocket-package', url: 'https://github.com/sjalq/lamdera-websocket.git' },
+  // Generates tests/Protocol.elm and tests/ProtocolWireProof.elm; rerun it after
+  // changing ToBackend/ToFrontend: node tools/wire-extractor/bin/wire-extractor.js
+  { path: 'tools/wire-extractor', url: 'https://github.com/sjalq/wire-extractor.git' },
 ];
 
 // ============================================================================
@@ -198,34 +205,35 @@ const run = (cmd, options = {}) => {
   });
 };
 
-const copyRecursive = (src, dest, excludeSet) => {
-  const stat = fs.statSync(src);
-  const basename = path.basename(src);
+// Run git without a shell (no quoting issues on any OS) and return stdout.
+const git = (args, cwd) =>
+  execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 
-  if (excludeSet.has(basename)) {
-    return;
-  }
+const isExcluded = (relPath) =>
+  EXCLUDE_PATHS.some((excluded) => relPath === excluded || relPath.startsWith(`${excluded}/`));
 
-  if (stat.isDirectory()) {
-    fs.mkdirSync(dest, { recursive: true });
-    for (const item of fs.readdirSync(src)) {
-      if (!excludeSet.has(item)) {
-        copyRecursive(
-          path.join(src, item),
-          path.join(dest, item),
-          excludeSet
-        );
-      }
-    }
-  } else {
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.copyFileSync(src, dest);
-  }
+// Tracked entries of the template, from its git index. Submodule gitlinks
+// (mode 160000) are returned separately with the commit they are pinned to.
+const listTrackedEntries = (sourceDir) => {
+  const entries = git(['ls-files', '--stage', '-z'], sourceDir)
+    .split('\0')
+    .filter(Boolean)
+    .map((line) => {
+      const [meta, relPath] = line.split('\t');
+      const [mode, sha] = meta.split(' ');
+      return { mode, sha, relPath };
+    });
+  return {
+    files: entries.filter((e) => e.mode !== '160000').map((e) => e.relPath),
+    submoduleShas: new Map(entries.filter((e) => e.mode === '160000').map((e) => [e.relPath, e.sha])),
+  };
 };
 
-const removeDir = (dir) => {
-  if (fs.existsSync(dir)) {
-    fs.rmSync(dir, { recursive: true, force: true });
+const remoteTagExists = (repoUrl, tag) => {
+  try {
+    return git(['ls-remote', '--tags', repoUrl, `refs/tags/${tag}`]).trim() !== '';
+  } catch {
+    return false;
   }
 };
 
@@ -268,8 +276,8 @@ ${COLORS.yellow}USAGE${COLORS.reset}
   npx lamdera-starter-kit                  Interactive mode
 
 ${COLORS.yellow}OPTIONS${COLORS.reset}
-  -y, --yes      Non-interactive mode (use defaults, no prompts)
-  --json         Output JSON (for LLMs/scripts)
+  -y, --yes      Non-interactive; error instead of prompting
+  --json         Output JSON (for LLMs/scripts); implies --quiet, never prompts
   -q, --quiet    Suppress decorative output
   -v, --verbose  Show detailed output
   -h, --help     Show this help
@@ -310,6 +318,22 @@ const spinner = (text) => {
   return stop;
 };
 
+// Temp clone of the template, removed on every exit path (see process 'exit')
+let tempDirToClean = null;
+
+const cleanupTempDir = () => {
+  if (tempDirToClean) {
+    try {
+      fs.rmSync(tempDirToClean, { recursive: true, force: true });
+    } catch {
+      // Best effort: the OS temp dir is cleaned eventually anyway
+    }
+    tempDirToClean = null;
+  }
+};
+
+process.on('exit', cleanupTempDir);
+
 process.on('SIGINT', () => {
   if (activeSpinner) activeSpinner();
   if (outputMode.json) {
@@ -339,6 +363,8 @@ const updatePackageJson = (targetDir, projectName, cleanName) => {
     pkg.version = '0.1.0';
     pkg.description = `${projectName} - A Lamdera application`;
 
+    delete pkg.author;
+    delete pkg.license;
     delete pkg.bin;
     delete pkg.files;
     delete pkg.repository;
@@ -349,6 +375,123 @@ const updatePackageJson = (targetDir, projectName, cleanName) => {
     fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
   } catch (err) {
     warn(`Could not update package.json: ${err.message}`);
+  }
+};
+
+// ============================================================================
+// Rebranding the generated project
+// ============================================================================
+
+// Template README sections worth keeping in a generated project, in template order
+const README_SECTIONS = [
+  'Prerequisites',
+  'Everyday commands',
+  'Configuration',
+  'Project layout',
+  'Wire protocol freeze',
+  'Operations',
+  'Working with AI assistants',
+];
+
+// Split markdown into `## ` sections keyed by heading, ignoring headings in code fences
+const splitReadmeSections = (markdown) => {
+  const sections = new Map();
+  let current = null;
+  let inFence = false;
+  for (const line of markdown.split(/\r?\n/)) {
+    if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+    const heading = !inFence && /^## (.+?)\s*$/.exec(line);
+    if (heading) {
+      current = { heading: heading[1], lines: [line] };
+      sections.set(current.heading, current);
+    } else if (current) {
+      current.lines.push(line);
+    }
+  }
+  return sections;
+};
+
+const buildProjectReadme = (templateReadme, projectName) => {
+  const sections = splitReadmeSections(templateReadme);
+  const kept = README_SECTIONS
+    .filter((heading) => sections.has(heading))
+    .map((heading) => sections.get(heading).lines.join('\n').trimEnd());
+  return [
+    `# ${projectName}`,
+    'A Lamdera application created with [lamdera-starter-kit](https://github.com/sjalq/starter-project).',
+    ...kept,
+  ].join('\n\n') + '\n';
+};
+
+const escapeElmString = (text) => text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+const escapeHtmlAttr = (text) =>
+  text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Apply `transform` to a copied file; warn (never fail) when its pattern is gone
+const patchFile = (targetDir, relPath, transform) => {
+  const filePath = path.join(targetDir, relPath);
+  try {
+    const before = fs.readFileSync(filePath, 'utf8');
+    const after = transform(before);
+    if (after === null || after === before) {
+      warn(`Could not rebrand ${relPath}: expected pattern not found`);
+      return;
+    }
+    fs.writeFileSync(filePath, after);
+    verbose(`Rebranded ${relPath}`);
+  } catch (err) {
+    warn(`Could not rebrand ${relPath}: ${err.message}`);
+  }
+};
+
+// Only files the scaffolder copied are touched, never the user's own files
+const rebrandProject = (sourceDir, targetDir, projectName, copiedFiles) => {
+  const copied = new Set(copiedFiles);
+
+  if (copied.has('README.md')) {
+    patchFile(targetDir, 'README.md', () =>
+      buildProjectReadme(fs.readFileSync(path.join(sourceDir, 'README.md'), 'utf8'), projectName));
+  }
+
+  const pageFrame = 'src/Pages/PageFrame.elm';
+  if (copied.has(pageFrame)) {
+    patchFile(targetDir, pageFrame, (text) => {
+      const pattern = /(^appName =\r?\n)    "Lamdera Starter Kit"/m;
+      return pattern.test(text)
+        ? text.replace(pattern, (_, head) => `${head}    "${escapeElmString(projectName)}"`)
+        : null;
+    });
+  }
+
+  if (copied.has('head.html')) {
+    patchFile(targetDir, 'head.html', (text) => {
+      const phrase = 'A Lamdera application built with lamdera-starter-kit';
+      return text.includes(phrase) ? text.replace(phrase, () => escapeHtmlAttr(projectName)) : null;
+    });
+  }
+};
+
+// Stage exactly these paths, in batches that stay well under OS argument limits
+const gitAddPaths = (paths, cwd) => {
+  const BATCH_SIZE = 200;
+  for (let i = 0; i < paths.length; i += BATCH_SIZE) {
+    git(['add', '--', ...paths.slice(i, i + BATCH_SIZE)], cwd);
+  }
+};
+
+// True when the repo's index already differs from HEAD (or has entries before the first commit)
+const hasStagedChanges = (cwd) => {
+  try {
+    git(['rev-parse', '--verify', '--quiet', 'HEAD'], cwd);
+  } catch {
+    return git(['ls-files', '--cached'], cwd).trim() !== '';
+  }
+  try {
+    git(['diff', '--cached', '--quiet'], cwd);
+    return false;
+  } catch {
+    return true;
   }
 };
 
@@ -494,10 +637,25 @@ const main = async () => {
     process.exit(1);
   }
 
+  // Submodule paths are never deleted or overwritten: abort instead
+  const existingSubmodulePaths = SUBMODULES
+    .map((sub) => sub.path)
+    .filter((subPath) => fs.existsSync(path.join(targetDir, subPath)));
+  if (existingSubmodulePaths.length > 0) {
+    error(
+      `Target already contains ${existingSubmodulePaths.join(', ')}, which the starter kit adds as git submodules. ` +
+      'Move or remove them first; nothing was changed.'
+    );
+    if (outputMode.json) {
+      outputJson();
+    }
+    process.exit(1);
+  }
+
   // Check if target exists and has content
   if (fs.existsSync(targetDir) && !isDirEmpty(targetDir)) {
-    if (flags.yes) {
-      // Non-interactive mode: error on non-empty directory (safe default)
+    if (flags.yes || flags.json) {
+      // Non-interactive and JSON modes: error on non-empty directory (safe default)
       error(`Directory not empty: ${targetDir}. Remove contents or choose different name.`);
       if (outputMode.json) {
         outputJson();
@@ -506,7 +664,7 @@ const main = async () => {
     } else {
       // Interactive: prompt for confirmation
       warn(`Directory exists and is not empty: ${targetDir}`);
-      const confirm = await prompt(`${COLORS.cyan}?${COLORS.reset} Continue anyway? ${COLORS.dim}(y/N)${COLORS.reset}: `);
+      const confirm = await prompt(`${COLORS.cyan}?${COLORS.reset} Continue? Existing files are kept, missing template files are added. ${COLORS.dim}(y/N)${COLORS.reset}: `);
       if (!/^y(es)?$/i.test(confirm.trim())) {
         println(`${COLORS.yellow}Cancelled.${COLORS.reset}`);
         process.exit(0);
@@ -548,10 +706,21 @@ const main = async () => {
   } else {
     info('Downloading from GitHub...');
     tempDir = path.join(os.tmpdir(), `lamdera-starter-kit-${Date.now()}`);
+    tempDirToClean = tempDir;
+
+    // Use the template matching this CLI's version when it has been tagged
+    const tag = `v${KIT_VERSION}`;
+    const cloneArgs = ['clone', '--depth', '1'];
+    if (remoteTagExists(REPO_URL, tag)) {
+      verbose(`Using template tag ${tag}`);
+      cloneArgs.push('--branch', tag);
+    } else {
+      verbose(`Tag ${tag} not found on ${REPO_URL}, using the default branch`);
+    }
 
     const stopSpinner = spinner('Cloning repository...');
     try {
-      run(`git clone --depth 1 "${REPO_URL}" "${tempDir}"`, { silent: true });
+      git([...cloneArgs, REPO_URL, tempDir]);
       stopSpinner();
       success('Downloaded starter template');
     } catch (err) {
@@ -570,44 +739,60 @@ const main = async () => {
   // -------------------------------------------------------------------------
 
   info('Copying project files...');
-  verbose(`Excluding: ${EXCLUDE_PATTERNS.join(', ')}`);
+  verbose(`Excluding: ${EXCLUDE_PATHS.join(', ')}`);
 
-  const excludeSet = new Set(EXCLUDE_PATTERNS);
-  let copiedCount = 0;
+  let tracked;
+  try {
+    tracked = listTrackedEntries(sourceDir);
+  } catch (err) {
+    error(`Could not list template files with git: ${err.message || err}`);
+    if (outputMode.json) {
+      outputJson();
+    }
+    process.exit(1);
+  }
+
+  const copiedFiles = [];
   let skippedCount = 0;
 
-  for (const item of fs.readdirSync(sourceDir)) {
-    if (!excludeSet.has(item)) {
-      const destPath = path.join(targetDir, item);
-      // Skip if file already exists in init-in-place mode
-      if (initInPlace && fs.existsSync(destPath)) {
-        verbose(`Skipped (exists): ${item}`);
-        skippedCount++;
-        continue;
-      }
-      verbose(`Copying: ${item}`);
-      copyRecursive(
-        path.join(sourceDir, item),
-        destPath,
-        excludeSet
-      );
-      copiedCount++;
+  for (const relPath of tracked.files.filter((f) => !isExcluded(f))) {
+    const srcPath = path.join(sourceDir, relPath);
+    const destPath = path.join(targetDir, relPath);
+    if (!fs.existsSync(srcPath)) {
+      verbose(`Skipped (missing in working tree): ${relPath}`);
+      skippedCount++;
+      continue;
     }
+    // Never overwrite a file that already exists in the target
+    if (fs.existsSync(destPath)) {
+      verbose(`Skipped (exists): ${relPath}`);
+      skippedCount++;
+      continue;
+    }
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.copyFileSync(srcPath, destPath);
+    copiedFiles.push(relPath);
   }
-  verbose(`Copied ${copiedCount} items, skipped ${skippedCount}`);
+  verbose(`Copied ${copiedFiles.length} files, skipped ${skippedCount}`);
   success('Project files copied');
 
   // -------------------------------------------------------------------------
   // Update package.json
   // -------------------------------------------------------------------------
 
-  updatePackageJson(targetDir, projectName, cleanName);
+  // Only the copies made above are rewritten; an existing package.json is the user's own
+  if (copiedFiles.includes('package.json')) {
+    updatePackageJson(targetDir, projectName, cleanName);
+  }
+  rebrandProject(sourceDir, targetDir, projectName, copiedFiles);
 
   // -------------------------------------------------------------------------
   // Initialize git repository
   // -------------------------------------------------------------------------
 
   const hasGit = fs.existsSync(path.join(targetDir, '.git'));
+  // A commit would sweep up whatever the user had already staged, so skip it then
+  const hadStagedChanges = hasGit && hasStagedChanges(targetDir);
 
   if (!hasGit) {
     info('Initializing git repository...');
@@ -624,19 +809,21 @@ const main = async () => {
   info('Setting up dependencies...');
 
   for (const sub of SUBMODULES) {
-    const subPath = path.join(targetDir, sub.name);
-    verbose(`Submodule ${sub.name}: ${sub.url}`);
-
-    if (fs.existsSync(subPath)) {
-      verbose(`Removing existing ${sub.name} directory`);
-      removeDir(subPath);
-    }
+    const subPath = path.join(targetDir, sub.path);
+    const pinnedSha = tracked.submoduleShas.get(sub.path);
+    verbose(`Submodule ${sub.path}: ${sub.url} @ ${pinnedSha || 'default branch'}`);
 
     try {
-      run(`git submodule add "${sub.url}" "${sub.name}"`, { silent: true, cwd: targetDir });
-      success(`Added ${sub.name}`);
+      git(['submodule', 'add', sub.url, sub.path], targetDir);
+      if (pinnedSha) {
+        git(['checkout', '--quiet', pinnedSha], subPath);
+        git(['add', sub.path], targetDir);
+      } else {
+        warn(`${sub.path}: template has no pinned commit, using the latest`);
+      }
+      success(`Added ${sub.path}`);
     } catch (err) {
-      warn(`${sub.name}: ${err.message || 'setup failed'}`);
+      warn(`${sub.path}: ${err.message || 'setup failed'}`);
     }
   }
 
@@ -652,11 +839,21 @@ const main = async () => {
 
   info('Creating initial commit...');
   try {
-    verbose('Running: git add -A');
-    run('git add -A', { silent: true, cwd: targetDir });
-    verbose('Running: git commit');
-    run('git commit -m "Initial commit from lamdera-starter-kit"', { silent: true, cwd: targetDir });
-    success('Initial commit created');
+    // Stage only what the scaffolder created, never unrelated files in the target
+    const scaffoldedPaths = [
+      ...copiedFiles,
+      ...['.gitmodules', ...SUBMODULES.map((sub) => sub.path)]
+        .filter((relPath) => fs.existsSync(path.join(targetDir, relPath))),
+    ];
+    verbose(`Staging ${scaffoldedPaths.length} scaffolded paths`);
+    gitAddPaths(scaffoldedPaths, targetDir);
+    if (hadStagedChanges) {
+      warn('Commit skipped: the repository already had staged changes. Scaffolded files are staged; commit when ready.');
+    } else {
+      verbose('Running: git commit');
+      git(['commit', '--quiet', '-m', 'Initial commit from lamdera-starter-kit'], targetDir);
+      success('Initial commit created');
+    }
   } catch (err) {
     warn(`Commit skipped: ${err.message || 'check git config'}`);
   }
@@ -665,9 +862,7 @@ const main = async () => {
   // Cleanup
   // -------------------------------------------------------------------------
 
-  if (tempDir) {
-    removeDir(tempDir);
-  }
+  cleanupTempDir();
 
   // -------------------------------------------------------------------------
   // Success output
@@ -675,6 +870,7 @@ const main = async () => {
 
   const nextSteps = [
     initInPlace ? null : `cd "${targetDir}"`,
+    'npm install',
     IS_WINDOWS ? '.\\compile.ps1' : './compile.sh',
     'lamdera live',
   ].filter(Boolean);
@@ -694,7 +890,7 @@ const main = async () => {
       println(`  ${COLORS.cyan}${i + 1}.${COLORS.reset} ${step}`);
     });
     println('');
-    println(`${COLORS.dim}Test login: sys@admin.com / admin${COLORS.reset}`);
+    println(`${COLORS.dim}Dev login (local only): admin@example.com / admin${COLORS.reset}`);
     println(`${COLORS.dim}AI docs: Open CLAUDE.md for development guide${COLORS.reset}`);
     println('');
   }

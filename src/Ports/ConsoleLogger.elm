@@ -1,5 +1,7 @@
 port module Ports.ConsoleLogger exposing (log, logReceived)
 
+import Effect.Command as Command exposing (Command, FrontendOnly)
+import Effect.Subscription as Subscription exposing (Subscription)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -7,22 +9,20 @@ import Json.Encode as E
 port console_logger_to_js : E.Value -> Cmd msg
 
 
-port console_logger_from_js : (E.Value -> msg) -> Sub msg
+port console_logger_from_js : (D.Value -> msg) -> Sub msg
 
 
-log : String -> Cmd msg
+log : String -> Command FrontendOnly toMsg msg
 log message =
-    console_logger_to_js (E.string message)
+    Command.sendToJs "console_logger_to_js" console_logger_to_js (E.string message)
 
 
-logReceived : (String -> msg) -> Sub msg
+logReceived : (String -> msg) -> Subscription FrontendOnly msg
 logReceived toMsg =
-    console_logger_from_js
+    Subscription.fromJs "console_logger_from_js"
+        console_logger_from_js
         (\value ->
-            case D.decodeValue D.string value of
-                Ok message ->
-                    toMsg message
-
-                Err _ ->
-                    toMsg "Error decoding message from JS"
+            D.decodeValue D.string value
+                |> Result.withDefault "Error decoding message from JS"
+                |> toMsg
         )

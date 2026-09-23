@@ -12,26 +12,5 @@
 </head>
 <body>
     <iframe id="viewer" src="viewer-inner.html"></iframe>
-    <script>
-        function injectTailwindCSS() {
-            var iframe = document.getElementById('viewer');
-            try {
-                var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                if (iframeDoc && !iframeDoc.getElementById('tailwind-css')) {
-                    var link = iframeDoc.createElement('link');
-                    link.id = 'tailwind-css';
-                    link.rel = 'stylesheet';
-                    link.href = 'tailwind-compiled.css';
-                    iframeDoc.head.appendChild(link);
-                }
-            } catch(e) {}
-        }
-
-        document.getElementById('viewer').addEventListener('load', function() {
-            injectTailwindCSS();
-            // Keep re-injecting in case Elm removes it
-            setInterval(injectTailwindCSS, 200);
-        });
-    </script>
 </body>
 </html>

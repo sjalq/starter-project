@@ -3,18 +3,19 @@ module TestData exposing (initializeTestData)
 import Auth.Common
 import Auth.PasswordHash
 import Dict exposing (Dict)
+import Env
 import Types exposing (..)
 
 
-{-| Default test users for development and demo purposes
+{-| Demo SysAdmin account, seeded only when Env.mode is Development
 -}
 defaultUsers : Dict Email User
 defaultUsers =
     Dict.fromList
-        [ ( "sys@admin.com"
-          , { email = "sys@admin.com"
+        [ ( Env.sysAdminEmail
+          , { email = Env.sysAdminEmail
             , name = Just "System Administrator"
-            , preferences = { darkMode = True }
+            , preferences = defaultPreferences
             }
           )
         ]
@@ -30,8 +31,8 @@ defaultEmailPasswordCredentials =
             Auth.PasswordHash.hashPassword "salt123" "admin"
     in
     Dict.fromList
-        [ ( "sys@admin.com"
-          , { email = "sys@admin.com"
+        [ ( Env.sysAdminEmail
+          , { email = Env.sysAdminEmail
             , passwordHash = adminHash.hash
             , passwordSalt = "salt123"
             , createdAt = 0

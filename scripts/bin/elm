@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# `elm` shim that forwards to the lamdera compiler.
+#
+# Tools that shell out to `elm` (elm-review, which tools/wire-extractor uses)
+# otherwise pick up whatever `elm` is on PATH, which fails on Lamdera-only
+# packages or a mismatched Elm version. Prepend this directory to PATH so only
+# this shim is exposed:
+#
+#   PATH="$PWD/scripts/bin:$PATH" npx elm-review
+exec lamdera "$@"

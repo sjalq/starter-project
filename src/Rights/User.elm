@@ -8,8 +8,7 @@ import Types exposing (BackendModel, Email, Preferences, Role(..), User)
 
 isSysAdmin : User -> Bool
 isSysAdmin user =
-    -- Check if email is admin or sysAdmin email
-    user.email == Env.sysAdminEmail
+    String.toLower (String.trim user.email) == String.toLower (String.trim Env.sysAdminEmail)
 
 
 getUserRole : User -> Role

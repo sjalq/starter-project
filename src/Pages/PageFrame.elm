@@ -1,7 +1,5 @@
 module Pages.PageFrame exposing (..)
 
--- Import the new Theme module
-
 import Components.AuthControls
 import Components.Header
 import Components.Tab
@@ -13,6 +11,23 @@ import Pages.Examples
 import Route
 import Theme
 import Types exposing (..)
+
+
+{-| Shown in the page header and the browser tab title.
+-}
+appName : String
+appName =
+    "Lamdera Starter Kit"
+
+
+isAdminRoute : Route -> Bool
+isAdminRoute route =
+    case route of
+        Admin _ ->
+            True
+
+        _ ->
+            False
 
 
 viewTabs : FrontendModel -> Html FrontendMsg
@@ -33,7 +48,7 @@ viewTabs model =
             case model.currentUser of
                 Just user ->
                     if user.isSysAdmin then
-                        [ { label = "Admin", href = Route.toString (Admin AdminDefault), isActive = model.currentRoute == Admin AdminDefault, colors = colors } ]
+                        [ { label = "Admin", href = Route.toString (Admin AdminDefault), isActive = isAdminRoute model.currentRoute, colors = colors } ]
 
                     else
                         []
@@ -53,8 +68,8 @@ viewTabs model =
             [ div [ Attr.class "flex flex-col lg:flex-row lg:items-start lg:justify-between" ]
                 [ div [ Attr.class "text-center lg:text-left mb-4 lg:mb-0" ]
                     [ Components.Header.view
-                        { title = "Starter Project Dashboard"
-                        , subtitle = Just "Your starting point"
+                        { title = appName
+                        , subtitle = Just "Auth, roles, RPC and testing, ready to build on"
                         , colors = colors
                         , size = Components.Header.Large
                         }
@@ -120,11 +135,8 @@ viewCurrentPage model =
         ]
 
 
-viewNotFoundPage :
-    Theme.Colors
-    -> Html FrontendMsg -- Accept colors
+viewNotFoundPage : Theme.Colors -> Html FrontendMsg
 viewNotFoundPage colors =
     div [ Attr.class "text-center p-4", Attr.style "color" colors.primaryText ]
-        -- Use theme color
         [ h1 [] [ text "404 - Page Not Found" ]
         ]

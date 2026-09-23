@@ -1,7 +1,4 @@
-module Backend exposing (Model, app, init, update, updateFromFrontendCheckingRights, subscriptions)
-
--- import Fusion.Generated.Types
--- import Fusion.Patch
+module Backend exposing (Model, app, init, subscriptions, update, updateFromFrontendCheckingRights)
 
 import Auth.EmailPasswordAuth as EmailPasswordAuth
 import Auth.Flow
@@ -16,8 +13,6 @@ import Rights.Auth0 exposing (backendConfig)
 import Rights.Permissions exposing (sessionCanPerformAction)
 import Rights.Role exposing (roleToString)
 import Rights.User exposing (createUser, getUserRole, insertUser, isSysAdmin)
-import Supplemental exposing (..)
-import Task
 import TestData
 import Types exposing (..)
 
@@ -26,8 +21,15 @@ type alias Model =
     BackendModel
 
 
+app :
+    { init : ( Model, Cmd BackendMsg )
+    , update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )
+    , updateFromFrontend : String -> String -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
+    , subscriptions : Model -> Sub BackendMsg
+    }
 app =
-    Effect.Lamdera.backend Lamdera.broadcast Lamdera.sendToFrontend
+    Effect.Lamdera.backend Lamdera.broadcast
+        Lamdera.sendToFrontend
         { init = init
         , update = update
         , updateFromFrontend = updateFromFrontendCheckingRights
@@ -55,11 +57,15 @@ init =
             , pollingJobs = Dict.empty
             }
 
-        -- Initialize with test data for development
-        modelWithTestData =
-            TestData.initializeTestData initialModel
+        seededModel =
+            case Env.mode of
+                Env.Development ->
+                    TestData.initializeTestData initialModel
+
+                Env.Production ->
+                    initialModel
     in
-    ( modelWithTestData, Command.none )
+    ( seededModel, Command.none )
 
 
 update : BackendMsg -> Model -> ( Model, Command BackendOnly ToFrontend BackendMsg )
@@ -73,43 +79,12 @@ update msg model =
             , Command.none
             )
 
-        GotRemoteModel result ->
-            case result of
-                Ok model_ ->
-                    Logger.logInfo "GotRemoteModel Ok" GotLogTime ( model_, Cmd.none )
-                        |> wrapLogCmd
-
-                Err err ->
-                    Logger.logError ("GotRemoteModel Err: " ++ httpErrorToString err) GotLogTime ( model, Cmd.none )
-                        |> wrapLogCmd
-
         AuthBackendMsg authMsg ->
             Auth.Flow.backendUpdate (backendConfig model) authMsg
                 |> Tuple.mapSecond (Command.fromCmd "AuthBackendMsg")
 
-        EmailPasswordAuthResult result ->
-            case result of
-                EmailPasswordSignupWithHash browserCookie connectionId email password maybeName salt hash ->
-                    EmailPasswordAuth.completeSignup browserCookie connectionId email password maybeName salt hash model
-                        |> Tuple.mapSecond (Command.fromCmd "EmailPasswordAuth")
-
-        GotCryptoPriceResult token result ->
-            case result of
-                Ok priceStr ->
-                    let
-                        updatedPollingJobs =
-                            Dict.insert token (Ready (Ok priceStr)) model.pollingJobs
-                    in
-                    Logger.logInfo ("Crypto price calculated: " ++ priceStr) GotLogTime ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                        |> wrapLogCmd
-
-                Err err ->
-                    let
-                        updatedPollingJobs =
-                            Dict.insert token (Ready (Err (httpErrorToString err))) model.pollingJobs
-                    in
-                    Logger.logError ("Failed to calculate crypto price: " ++ httpErrorToString err) GotLogTime ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
-                        |> wrapLogCmd
+        EmailPasswordAuthResult (EmailPasswordSignupWithHash browserCookie connectionId email maybeName salt hash) ->
+            EmailPasswordAuth.completeSignup browserCookie connectionId email maybeName salt hash model
 
         StoreTaskResult token result ->
             let
@@ -128,7 +103,18 @@ update msg model =
         GotJobTime token timestamp ->
             let
                 updatedPollingJobs =
-                    Dict.insert token (BusyWithTime timestamp) model.pollingJobs
+                    Dict.update token
+                        (Maybe.map
+                            (\status ->
+                                case status of
+                                    Busy ->
+                                        BusyWithTime timestamp
+
+                                    _ ->
+                                        status
+                            )
+                        )
+                        model.pollingJobs
             in
             Logger.logDebug ("Updated job " ++ token ++ " with timestamp: " ++ String.fromInt timestamp) GotLogTime ( { model | pollingJobs = updatedPollingJobs }, Cmd.none )
                 |> wrapLogCmd
@@ -144,7 +130,6 @@ wrapLogCmd ( m, cmd ) =
 updateFromFrontend : Effect.Lamdera.SessionId -> Effect.Lamdera.ClientId -> ToBackend -> Model -> ( Model, Command BackendOnly ToFrontend BackendMsg )
 updateFromFrontend sessionId clientId msg model =
     let
-        -- Convert Effect types to strings for compatibility with existing code
         browserCookie =
             Effect.Lamdera.sessionIdToString sessionId
 
@@ -184,17 +169,12 @@ updateFromFrontend sessionId clientId msg model =
             in
             ( newModel, Effect.Lamdera.sendToFrontend clientId (Admin_Logs_ToFrontend []) )
 
-        Admin_FetchRemoteModel _ ->
-            -- Remote model fetching removed (was RPC-based)
-            ( model, Command.none )
-
         AuthToBackend authToBackend ->
             Auth.Flow.updateFromFrontend (backendConfig model) connectionId browserCookie authToBackend model
                 |> Tuple.mapSecond (Command.fromCmd "AuthToBackend")
 
         EmailPasswordAuthToBackend authMsg ->
             handleEmailPasswordAuth browserCookie connectionId authMsg model
-                |> Tuple.mapSecond (Command.fromCmd "EmailPasswordAuth")
 
         GetUserToBackend ->
             case Dict.get browserCookie model.sessions of
@@ -205,12 +185,8 @@ updateFromFrontend sessionId clientId msg model =
 
                         Nothing ->
                             let
-                                initialPreferences =
-                                    { darkMode = True }
-
-                                -- Default new users to dark mode
                                 user =
-                                    createUser userInfo initialPreferences
+                                    createUser userInfo defaultPreferences
 
                                 newModel =
                                     insertUser userInfo.email user model
@@ -227,7 +203,6 @@ updateFromFrontend sessionId clientId msg model =
             case getUserFromCookie browserCookie model of
                 Just user ->
                     let
-                        -- Explicitly alias the nested record
                         currentPreferences =
                             user.preferences
 
@@ -235,7 +210,6 @@ updateFromFrontend sessionId clientId msg model =
                         updatedUserPreferences =
                             { currentPreferences | darkMode = preference }
 
-                        -- Update the alias
                         updatedUser : User
                         updatedUser =
                             { user | preferences = updatedUserPreferences }
@@ -253,9 +227,6 @@ updateFromFrontend sessionId clientId msg model =
             -- Echo websocket message back to frontend
             ( model, Effect.Lamdera.sendToFrontend clientId (A0 ("Echo: " ++ message)) )
 
-        UploadMesh point ->
-            ( model, Effect.Lamdera.sendToFrontend clientId (MeshPointEcho point) )
-
 
 updateFromFrontendCheckingRights : Effect.Lamdera.SessionId -> Effect.Lamdera.ClientId -> ToBackend -> Model -> ( Model, Command BackendOnly ToFrontend BackendMsg )
 updateFromFrontendCheckingRights sessionId clientId msg model =
@@ -263,33 +234,7 @@ updateFromFrontendCheckingRights sessionId clientId msg model =
         browserCookie =
             Effect.Lamdera.sessionIdToString sessionId
     in
-    if
-        case msg of
-            NoOpToBackend ->
-                True
-
-            LoggedOut ->
-                True
-
-            AuthToBackend _ ->
-                True
-
-            EmailPasswordAuthToBackend _ ->
-                True
-
-            GetUserToBackend ->
-                True
-
-            SetDarkModePreference _ ->
-                -- Allow everyone to set their own preference
-                True
-
-            UploadMesh _ ->
-                True
-
-            _ ->
-                sessionCanPerformAction model browserCookie msg
-    then
+    if sessionCanPerformAction model browserCookie msg then
         updateFromFrontend sessionId clientId msg model
 
     else
@@ -311,7 +256,7 @@ userToFrontend user =
     }
 
 
-handleEmailPasswordAuth : BrowserCookie -> ConnectionId -> EmailPasswordAuthToBackend -> Model -> ( Model, Cmd BackendMsg )
+handleEmailPasswordAuth : BrowserCookie -> ConnectionId -> EmailPasswordAuthToBackend -> Model -> ( Model, Command BackendOnly ToFrontend BackendMsg )
 handleEmailPasswordAuth browserCookie connectionId authMsg model =
     case authMsg of
         EmailPasswordLoginToBackend email password ->

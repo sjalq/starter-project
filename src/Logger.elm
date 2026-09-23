@@ -3,31 +3,31 @@ module Logger exposing
     , LogLevel(..)
     , LogState
     , Msg(..)
-    , init
     , addLog
     , addLogWithTime
-    , updateTimestamp
+    , decodeLogEntries
+    , decodeLogEntry
+    , encodeLogEntries
+    , encodeLogEntry
+    , getRange
     , getRecent
     , getSinceIndex
     , getSinceTimestamp
-    , getRange
-    , toList
-    , size
-    , nextIndex
-    , log
-    , logInfo
-    , logWarn
-    , logError
-    , logDebug
-    , logWithCmd
-    , logInfoWithCmd
     , handleMsg
-    , encodeLogEntry
-    , encodeLogEntries
-    , decodeLogEntry
-    , decodeLogEntries
-    , levelToString
+    , init
     , levelFromString
+    , levelToString
+    , log
+    , logDebug
+    , logError
+    , logInfo
+    , logInfoWithCmd
+    , logWarn
+    , logWithCmd
+    , nextIndex
+    , size
+    , toList
+    , updateTimestamp
     )
 
 {-| High-quality logging module for Lamdera applications.
@@ -38,6 +38,7 @@ Provides structured logging with:
   - Timestamps for human-readable log viewing
   - Log levels for filtering and categorization
   - Efficient querying (since index, since timestamp, recent N)
+
 
 ## Basic Usage
 

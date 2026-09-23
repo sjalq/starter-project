@@ -62,7 +62,7 @@ const fetchRecentLogs = async (envConfig, { limit, level, useColor }) => {
   const result = await fetchLogs(envConfig, { limit, level });
 
   if (!result.ok) {
-    console.error(`❌ ${result.error}`);
+    console.error(`Error: ${result.error}`);
     process.exit(1);
   }
 
@@ -73,9 +73,9 @@ const fetchRecentLogs = async (envConfig, { limit, level, useColor }) => {
     return;
   }
 
-  console.log(`${DIM}─── Showing ${logs.length} logs (next index: ${nextIndex}) ───${RESET}\n`);
+  console.log(`${DIM}--- Showing ${logs.length} logs (next index: ${nextIndex}) ---${RESET}\n`);
   printLogs(logs, useColor);
-  console.log(`\n${DIM}─── End of logs ───${RESET}`);
+  console.log(`\n${DIM}--- End of logs ---${RESET}`);
 };
 
 /**
@@ -93,11 +93,11 @@ const tailLogs = async (envConfig, { level, interval, useColor, resume }) => {
     ? ` (resuming from index ${currentIndex})`
     : '';
 
-  console.log(`${DIM}─── Tailing logs${resumeInfo} (Ctrl+C to stop) ───${RESET}\n`);
+  console.log(`${DIM}--- Tailing logs${resumeInfo} (Ctrl+C to stop) ---${RESET}\n`);
 
   // Handle graceful shutdown
   const shutdown = () => {
-    console.log(`\n${DIM}─── Stopped tailing ───${RESET}`);
+    console.log(`\n${DIM}--- Stopped tailing ---${RESET}`);
     process.exit(0);
   };
 
@@ -123,10 +123,10 @@ const tailLogs = async (envConfig, { level, interval, useColor, resume }) => {
 
     if (!result.ok) {
       consecutiveErrors++;
-      console.error(`${DIM}⚠️  ${result.error}${consecutiveErrors < MAX_CONSECUTIVE_ERRORS ? ' - retrying...' : ''}${RESET}`);
+      console.error(`${DIM}Warning: ${result.error}${consecutiveErrors < MAX_CONSECUTIVE_ERRORS ? ' - retrying...' : ''}${RESET}`);
 
       if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-        console.error(`❌ Too many consecutive errors, stopping.`);
+        console.error(`Error: too many consecutive errors, stopping.`);
         process.exit(1);
       }
 
@@ -181,7 +181,7 @@ export const logsCommand = async (options) => {
   // Load environment config
   const envResult = getEnvConfig(env);
   if (!envResult.ok) {
-    console.error(`❌ ${envResult.error}`);
+    console.error(`Error: ${envResult.error}`);
     process.exit(1);
   }
 
@@ -189,9 +189,9 @@ export const logsCommand = async (options) => {
   const useColor = !noColor && process.stdout.isTTY;
 
   // Header
-  console.log(`📡 Connecting to ${BOLD}${envConfig.name}${RESET} (${envConfig.url})`);
-  if (level) console.log(`🔍 Filtering: level >= ${level.toUpperCase()}`);
-  if (follow && resume) console.log(`🔄 Resume mode enabled`);
+  console.log(`Connecting to ${BOLD}${envConfig.name}${RESET} (${envConfig.url})`);
+  if (level) console.log(`Filtering: level >= ${level.toUpperCase()}`);
+  if (follow && resume) console.log(`Resume mode enabled`);
   console.log('');
 
   // Execute appropriate mode

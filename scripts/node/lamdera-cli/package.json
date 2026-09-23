@@ -1,7 +1,7 @@
 {
   "name": "lamdera-cli",
   "version": "1.0.0",
-  "description": "CLI tools for Lamdera starter project",
+  "description": "CLI tools for lamdera-starter-kit",
   "type": "module",
   "bin": {
     "lamdera-cli": "./index.js"

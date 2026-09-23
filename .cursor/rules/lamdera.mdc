@@ -103,15 +103,6 @@ This section outlines general interaction patterns and coding style preferences.
 
 ## Feature Development Workflow
 
-### Feature Checklist
-
-**Before starting implementation (Phase 1):**
-
-0.  Create a feature checklist document in the `docs/` folder named `feature-<feature_name>.md`.
-    *   List verifiable and concrete TODO items required to complete the new feature.
-    *   Ensure the TODOs follow logically.
-    *   **Crucially:** Update this checklist by ticking off items (`- [x] Item`) as you implement the feature.
-
 ### Phase 1: Type Design
 1. Start with the Backend Model
    - Define your persistent data structures
@@ -132,7 +123,7 @@ This section outlines general interaction patterns and coding style preferences.
    - Create UI components
    - Implement frontend logic
    - Use hardcoded data for testing
-   - Remember the to add the relevant changes to the PageFrame.elm file
+   - Remember to add the relevant changes to the PageFrame.elm file
    - **Note:** After this step, the code should at least compile
 
 5. Wire Up Backend Communication
@@ -155,12 +146,13 @@ This section outlines general interaction patterns and coding style preferences.
    - Polish error handling
    - **Note:** After this step, the code should at least compile
 
-8. Update the Fusion Generated Types and Compile
+8. Compile and Test
    - Always use the `./compile.sh` script to:
-     - Generate fusion types
-     - Compile all necessary files
-     - Verify that your code compiles correctly
-   - Run this script after completing your feature to ensure everything works properly
+     - Regenerate the function index in `.cursor/rules/elm-functions.mdc`
+     - Run the test suite
+     - Compile the Frontend, Backend and RPC modules
+   - Add or update program tests in `tests/Program/` for the new behaviour
+   - If `ToBackend` or `ToFrontend` changed, regenerate the wire protocol freeze (see CLAUDE.md)
 
 ### Diagram of the Workflow
 ```mermaid
@@ -187,8 +179,8 @@ sequenceDiagram
     BE->>FE: 7. Complete Frontend Integration
     Note right of FE: Code Should Compile
 
-    FE->>BE: 8. Update Fusion Generated Types
-    Note over BE: Types Should Be Updated
+    FE->>BE: 8. Compile and Test
+    Note over BE: Tests Should Pass
 ```
 
 
@@ -208,24 +200,39 @@ fetchEthPriceInZar : Task Http.Error String
 fetchEthPriceInZar =
     let
         log message =
-            sendSlackMessage Env.slackApiToken Env.slackChannel message
-                |> Task.map (\_ -> ())
-                |> Task.onError (\_ -> Task.succeed ())
+            if String.isEmpty Env.slackApiToken then
+                Task.succeed ()
+
+            else
+                sendSlackMessage Env.slackApiToken Env.slackChannel message
+                    |> Task.map (\_ -> ())
+                    |> Task.onError (\_ -> Task.succeed ())
     in
-    log "Starting to fetch ETH price"
+    log "Fetching ETH price"
         |> Task.andThen (\_ -> fetchEthPrice)
-        |> Task.andThen (\ethPrice -> 
-            log ("ETH price fetched: " ++ String.fromFloat ethPrice ++ " USD")
-                |> Task.map (\_ -> ethPrice))
-        |> Task.andThen (\ethPrice ->
-            fetchZarRate
-                |> Task.map (\zarRate -> { ethPrice = ethPrice, zarRate = zarRate }))
-        |> Task.andThen (\data ->
-            let
-                finalPrice = data.ethPrice * data.zarRate
-            in
-            log ("Final price calculated: " ++ String.fromFloat finalPrice ++ " ZAR")
-                |> Task.map (\_ -> finalPrice))
+        |> Task.andThen
+            (\ethUsd ->
+                log ("ETH price fetched: " ++ String.fromFloat ethUsd ++ " USD")
+                    |> Task.andThen (\_ -> fetchZarRate)
+                    |> Task.map (\usdZar -> { ethUsd = ethUsd, usdZar = usdZar })
+            )
+        |> Task.andThen
+            (\rates ->
+                let
+                    ethZar =
+                        rates.ethUsd * rates.usdZar
+                in
+                log ("Final price calculated: " ++ String.fromFloat ethZar ++ " ZAR")
+                    |> Task.map
+                        (\_ ->
+                            Encode.object
+                                [ ( "ethUsd", Encode.float rates.ethUsd )
+                                , ( "usdZar", Encode.float rates.usdZar )
+                                , ( "ethZar", Encode.float ethZar )
+                                ]
+                                |> Encode.encode 0
+                        )
+            )
 ```
 
 **Benefits of Task Chains:**
@@ -262,7 +269,7 @@ update msg model =
         
         GotZarRate (Ok rate) ->
             ( { model | finalPrice = model.ethPrice * rate }
-            , fetchJoke model.finalPrice
+            , Cmd.none
             )
 ```
 
@@ -284,61 +291,16 @@ Even when you need some of the benefits of message ricochets, consider using a h
 
 Remember: Task chains should be your default choice. Only deviate from this when you have a clear, compelling reason that makes message ricochets necessary for your specific use case.
 
-## Task Chain Pattern Example
-
-Here's a concrete example of a Task Chain pattern from the codebase that demonstrates fetching an ETH price and converting it to ZAR:
-
-```elm
-fetchEthPriceInZar : Task Http.Error String
-fetchEthPriceInZar =
-    let
-        log message =
-            sendSlackMessage Env.slackApiToken Env.slackChannel message
-                |> Task.map (\_ -> ())
-                |> Task.onError (\_ -> Task.succeed ())
-    in
-    log "Starting to fetch ETH price"
-        |> Task.andThen (\_ -> fetchEthPrice)
-        |> Task.andThen (\ethPrice -> 
-            log ("ETH price fetched: " ++ String.fromFloat ethPrice ++ " USD")
-                |> Task.map (\_ -> ethPrice))
-        |> Task.andThen (\ethPrice ->
-            fetchZarRate
-                |> Task.map (\zarRate -> { ethPrice = ethPrice, zarRate = zarRate }))
-        |> Task.andThen (\data ->
-            let
-                finalPrice = data.ethPrice * data.zarRate
-            in
-            log ("Final price calculated: " ++ String.fromFloat finalPrice ++ " ZAR")
-                |> Task.map (\_ -> finalPrice))
-```
-
-This pattern shows:
-- Clear sequential flow of operations
-- Error handling through Task results
-- Data passing between steps
-- Integrated logging
-- Final transformation of the data
-
-The Task Chain pattern is particularly useful for:
-- Complex API calls
-- Multi-step data transformations
-- Operations requiring intermediate logging
-- Processes with potential failure points
-- Sequential operations that depend on previous results
-
 ## The Perils of Ports: A Warning
 
 Ports are almost always the wrong approach in Lamdera applications and should be avoided. While Elm's port system was designed as an intentional escape hatch to JavaScript, this comes with significant downsides:
 
-- They are lazy and based on the mid dev out there, you're not being "mid" are you!?
 - Every port introduces untypable, unverifiable code into your application
 - Ports require boilerplate on both Elm and JavaScript sides
 - They create implicit dependencies that break Elm's guarantees
 - Ports make applications harder to maintain and evolve
 - Error handling becomes significantly more complex
 - Testing is more difficult and less reliable
-- It's lazy, lazy, lazy
 
 ### Better Alternatives to Ports
 
@@ -378,35 +340,35 @@ This section highlights common mistakes and specific patterns to follow or avoid
 
 ### Type Organization
 - Types should preferably be defined in Types.elm
-- When there are clearly seperatable types, like in a game for instance where the game state and msgs needs to be defined, then you can define them in their own module. 
+- When there are clearly separable types, like in a game for instance where the game state and msgs needs to be defined, then you can define them in their own module. 
 - When grouping types within `Types.elm`, use comment separators for clarity (e.g., `-- USER RELATED TYPES`).
 
 ### CSS Best Practices
 - Avoid using separate CSS files
 - Use Elm's built-in HTML and CSS functionality through the `elm/html` package
 - Leverage Elm's type system for styling by using the `Html.Attributes` and `Html.Events` modules
-- Use Elm's CSS-in-Elm approach for type-safe styling
+- Style with Tailwind utility classes and `Theme.Colors`; check new colour pairs keep WCAG AA contrast (tests/Property/ThemeTests.elm)
 
 ### Lamdera/Elm Specific Patterns
 -   **Ports:** Avoid using Ports. They introduce untyped code and complexity. Exhaust pure Elm options first.
 -   **`Supplemental.elm`:** Before writing utility functions, especially for things like handling HTTP responses (`handleJsonResponse`), check the `Supplemental.elm` file first.
 -   **HTTP Headers:** Avoid explicitly setting `Http.header "Content-Type" "application/json"` in most cases, it is likely already the default.
--   **Logging:** Use the `log` function defined in `Backend.elm` (which likely uses `Supplemental.log NoOpBackendMsg`) for backend logging. Do not use the `Log` Msg constructor directly for this purpose.
+-   **Logging:** Use `Logger.logInfo` / `logWarn` / `logError` / `logDebug` with `GotLogTime` in the backend, e.g. `Logger.logInfo "message" GotLogTime ( model, Cmd.none ) |> wrapLogCmd`.
 -   **`sendToFrontend`:** The pattern `_ = Lamdera.sendToFrontend msg` will **not** work. It discards the command necessary to send the message. Ensure `Lamdera.sendToFrontend` is used correctly within the TEA loop, typically returned as part of the `( model, Cmd msg )` tuple in `update` functions where appropriate.
 
 ### Auth
 -  Try your best not to mess with ANY of the Auth related functions in the system. 
 
-### Circular dependancies
--  Typically you can't import project moduble stuff that isn't in another API. module without risking a circular dependancy
--  Circular dependancies don't work in Elm / Lamdera, so don't do that.
+### Circular dependencies
+-  Importing project modules from each other easily creates a cycle. Keep shared types in `Types.elm` and helpers in leaf modules.
+-  Elm does not allow circular imports.
 
 
 ### Date / Time / DateTime
--  Use only Elm's default Date field for actually working and calculating times.
--  Use the rtfeldman/elm-iso8601 lib for working with date strings
+-  Use `Time.Posix` for storing and calculating times.
+-  Install `rtfeldman/elm-iso8601-date-strings` if you need to parse or print ISO 8601 strings
 -  For simple things regarding dates, look at Supplemental.elm
--  Don't install random Date libs, the top three should deal with most cases.
+-  Avoid adding other date libraries unless these cannot cover the case.
 
 ### Breaking code
 -  The structure in Elm is purposefully flat, keep it that way.
@@ -415,34 +377,33 @@ This section highlights common mistakes and specific patterns to follow or avoid
 ### Including Random
 -  The Random library is almost never needed. Try to work around it as far as possible. 
 
-### Complaining about the proxy server.
--  The localhost proxy in dev is NOT the problem. 
+### The dev proxy
+-  `Supplemental.addProxy` routes backend HTTP through Lamdera's local proxy in development. It is not the cause of failing requests.
 
-### Do not write comments
--  I cannot stress this strongly enough, do not comment code unless asked
+### Comments
+-  Do not add comments unless asked; prefer descriptive names.
 
 # Checking the compiled output
-- Always use the `./compile.sh` script to check your code compiles and to generate Fusion types:
+- Always use the `./compile.sh` script to check your code compiles and the tests pass:
   ```
   ./compile.sh
   ```
 - This script will:
-  1. Generate Fusion types using elm-pages
-  2. Compile all necessary Lamdera files
-  3. Show you a list of errors and warnings that you can fix
+  1. Regenerate the Elm function index
+  2. Run the test suite with elm-test-rs
+  3. Compile all Lamdera entry points and report errors
 - Run this script:
   - At the start of every new feature session
   - When you complete a feature
 
 # ALWAYS
   -  Always write as little code as humanly possible to solve the problem at hand.
-  -  Always keep explainations as concise as possible.
+  -  Always keep explanations as concise as possible.
   -  Always think as much as you need to.
-  -  Always start every response with "Writing as little code as humanly possible, being as concise as possible with explanations, avoiding comments, preferring exposing (..) and |> where appropriate, compiling my work when finish and klaar...." unless you were asked something unrelated. 
   -  Always use |> when you can. 
 
 # Debugging
-  -  When things goes sideways. Please pepper your code liberally with `_ = Debug.log "{msg}" thingy` and ` |> Debug.log "{msg}"`
+  -  When things go sideways, Please pepper your code liberally with `_ = Debug.log "{msg}" thingy` and ` |> Debug.log "{msg}"`
 
 # Refactoring
   -  DO : move functions into their own modules when appropriate

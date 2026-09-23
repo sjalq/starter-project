@@ -1,15 +1,12 @@
 module Program.NavigationTests exposing (suite)
 
-{-| Program tests for navigation functionality.
-
-Tests that routes are handled correctly and URL changes work as expected.
-
+{-| Program tests for navigation: each URL loads the expected route.
 -}
 
 import Effect.Lamdera
 import Effect.Test as Test
 import Helpers.Simulation as Sim
-import SeqDict
+import Route
 import Test exposing (Test)
 import Types exposing (..)
 
@@ -17,94 +14,30 @@ import Types exposing (..)
 suite : Test
 suite =
     Test.describe "Navigation"
-        [ testStartsAtHomePage
-        , testNavigateToAdmin
-        , testNavigateToExamples
+        [ loadsRoute "/" Default
+        , loadsRoute "/admin" (Admin AdminDefault)
+        , loadsRoute "/admin/logs" (Admin (AdminLogs Route.defaultLogsParams))
+        , loadsRoute "/examples" Examples
+        , loadsRoute "/does-not-exist" NotFound
         ]
 
 
-{-| Test that the app starts at the home page.
--}
-testStartsAtHomePage : Test
-testStartsAtHomePage =
-    Sim.start "starts at home page"
-        [ Test.connectFrontend
-            0
-            (Effect.Lamdera.sessionIdFromString "session1")
-            (Sim.testUrl "/")
+loadsRoute : String -> Route -> Test
+loadsRoute path expected =
+    Sim.start ("loading " ++ path ++ " selects the expected route")
+        [ Test.connectFrontend 0
+            (Effect.Lamdera.sessionIdFromString ("session-nav" ++ path))
+            path
             { width = 1920, height = 1080 }
             (\frontend ->
-                [ Test.checkState 0 <|
-                    \data ->
-                        case SeqDict.get frontend.clientId data.frontends of
-                            Just model ->
-                                if model.currentRoute == Default then
-                                    Ok ()
+                [ frontend.checkModel 100
+                    (\model ->
+                        if model.currentRoute == expected then
+                            Ok ()
 
-                                else
-                                    Err ("Expected Default route, got: " ++ Debug.toString model.currentRoute)
-
-                            Nothing ->
-                                Err "Frontend not found"
-                ]
-            )
-        ]
-        |> Test.toTest
-
-
-{-| Test navigating to the admin page.
--}
-testNavigateToAdmin : Test
-testNavigateToAdmin =
-    Sim.start "navigate to admin"
-        [ Test.connectFrontend
-            0
-            (Effect.Lamdera.sessionIdFromString "session2")
-            (Sim.testUrl "/admin")
-            { width = 1920, height = 1080 }
-            (\frontend ->
-                [ Test.checkState 0 <|
-                    \data ->
-                        case SeqDict.get frontend.clientId data.frontends of
-                            Just model ->
-                                case model.currentRoute of
-                                    Admin _ ->
-                                        Ok ()
-
-                                    other ->
-                                        Err ("Expected Admin route, got: " ++ Debug.toString other)
-
-                            Nothing ->
-                                Err "Frontend not found"
-                ]
-            )
-        ]
-        |> Test.toTest
-
-
-{-| Test navigating to the examples page.
--}
-testNavigateToExamples : Test
-testNavigateToExamples =
-    Sim.start "navigate to examples"
-        [ Test.connectFrontend
-            0
-            (Effect.Lamdera.sessionIdFromString "session3")
-            (Sim.testUrl "/examples")
-            { width = 1920, height = 1080 }
-            (\frontend ->
-                [ Test.checkState 0 <|
-                    \data ->
-                        case SeqDict.get frontend.clientId data.frontends of
-                            Just model ->
-                                if model.currentRoute == Examples then
-                                    Ok ()
-
-                                else
-                                    Err ("Expected Examples route, got: " ++ Debug.toString model.currentRoute)
-
-                            Nothing ->
-                                Err "Frontend not found"
+                        else
+                            Err ("Expected " ++ Debug.toString expected ++ ", got " ++ Debug.toString model.currentRoute)
+                    )
                 ]
             )
         ]

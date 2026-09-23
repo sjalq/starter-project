@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// Build the project: regenerate the Elm function cheat sheet, run tests, compile.
+// Keep in step with compile.sh and compile.ps1.
+
 const { execSync } = require('child_process');
 
 function run(command, description) {
@@ -12,22 +15,16 @@ function run(command, description) {
   }
 }
 
-// Generating Elm function documentation
 run(
-  'node LLMBuildTools/gen-elm-functions.cjs --exclude src/Fusion --exclude src/Evergreen --exclude src/generated',
+  'node LLMBuildTools/gen-elm-functions.cjs --exclude src/Evergreen',
   'Generating Elm function documentation...'
 );
 
-// Running tests
-run(
-  'elm-test-rs --compiler lamdera',
-  'Running tests...'
-);
+run('elm-test-rs --compiler lamdera', 'Running tests...');
 
-// Compiling Lamdera
 run(
-  'lamdera make src/Backend.elm src/Frontend.elm src/RPC.elm',
+  'lamdera make src/Backend.elm src/Frontend.elm src/RPC.elm --output=/dev/null',
   'Compiling Lamdera...'
 );
 
-console.log('\n✅ Build completed successfully!');
+console.log('Build completed successfully!');

@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Viewer</title>
+    <!-- Same Tailwind CDN as head.html; it watches the DOM, so Elm-rendered snapshots get styled. -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-    <script src="viewer.js?v=15"></script>
+    <script src="viewer.js"></script>
     <script>
         var app = Elm.TestViewer.init({
             node: document.body

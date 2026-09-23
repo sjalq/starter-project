@@ -41,6 +41,10 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      # elm-test-rs can only resolve lamdera/* packages once they are in ~/.elm
+      - name: Download Elm dependencies
+        run: lamdera make src/Backend.elm src/Frontend.elm src/RPC.elm --output=/dev/null
+
       - name: Build (docs, tests, compile)
         run: node compile.js
 

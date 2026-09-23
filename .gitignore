@@ -21,4 +21,3 @@ backups/
 # OS and tool scratch
 .DS_Store
 .playwright-mcp/
-.wire-extractor-prove/

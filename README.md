@@ -3,8 +3,9 @@
 A production-minded starting point for [Lamdera](https://lamdera.com) apps: authentication, role-based permissions, an HTTP RPC layer, structured logging, an admin area and a full program-test suite, wired together and passing CI.
 
 ```bash
-npx lamdera-starter-kit my-app
+git clone --recursive https://github.com/sjalq/starter-project.git my-app
 cd my-app
+git remote rename origin template   # pull future template fixes with: git pull template master
 npm install
 ./compile.sh
 lamdera live
@@ -28,8 +29,8 @@ Logging           Logger.elm: in-memory ring buffer for the admin UI, mirrored
 Ports             elm-pkg-js examples (console logger, clipboard) wired through
                   Effect so program tests can simulate them
 Theming           Light and dark themes, contrast checked against WCAG AA
-Testing           lamdera/program-test end-to-end tests, property tests, a
-                  frozen Wire3 protocol proof and a visual snapshot viewer
+Testing           lamdera/program-test end-to-end tests, property tests and
+                  a visual snapshot viewer
 Tooling           CI workflow, elm-review config, lamdera-cli for logs/backups
 ```
 
@@ -38,38 +39,6 @@ Tooling           CI workflow, elm-review config, lamdera-cli for logs/backups
 - [Lamdera](https://lamdera.com/start) 1.4 or newer
 - [elm-test-rs](https://github.com/mpizenberg/elm-test-rs) (the standard `elm-test` cannot compile Lamdera codecs)
 - Node.js 18 or newer and Git
-
-## Creating a project
-
-```
-npx lamdera-starter-kit [project-name] [options]
-
-Arguments
-  project-name    Create ./<project-name, lowercased, other characters as "-">
-  .               Initialise the current (empty) directory
-
-Options
-  -y, --yes       Non-interactive; errors where it would otherwise prompt
-                  (missing name, non-empty directory)
-  --json          Machine-readable result on stdout (implies --quiet, never prompts)
-  -q, --quiet     Suppress decorative output
-  -v, --verbose   Show each step
-  -h, --help      Show help
-```
-
-The generator copies the template's tracked files, gives the app your project name, adds the `auth`, `lamdera-websocket-package` and `tools/wire-extractor` submodules at the commits the template was tested with, and creates an initial commit. `--json` prints:
-
-```json
-{
-  "success": true,
-  "path": "/path/to/my-app",
-  "projectName": "my-app",
-  "nextSteps": ["cd \"/path/to/my-app\"", "npm install", "./compile.sh", "lamdera live"],
-  "errors": [],
-  "warnings": [],
-  "details": []
-}
-```
 
 ## Everyday commands
 
@@ -128,25 +97,13 @@ src/
 tests/
   Program/                    End-to-end program tests
   Property/                   Property and unit tests
-  Protocol*.elm               Generated Wire3 protocol freeze (see below)
   TestViewer.elm              Visual snapshot viewer
 scripts/node/lamdera-cli/     Fetch logs and back up the BackendModel
 scripts/node/lamdera-logs.mjs Read Lamdera's production log file
 LLMBuildTools/                Generates .cursor/rules/elm-functions.mdc
-auth/                         Auth library (submodule)
+auth/                         Auth library, vendored from lamdera/auth
 lamdera-websocket-package/    JavaScript WebSocket client for Lamdera (submodule)
-tools/wire-extractor/         Protocol freezer (submodule)
 ```
-
-## Wire protocol freeze
-
-`tests/Protocol.elm` and `tests/ProtocolWireProof.elm` snapshot `ToBackend` and `ToFrontend` and prove the app still encodes them byte-for-byte the same. When you change either type on purpose, regenerate them:
-
-```bash
-PATH="$PWD/scripts/bin:$PATH" node tools/wire-extractor/bin/wire-extractor.js
-```
-
-(`scripts/bin/elm` points `elm` at the Lamdera compiler for elm-review.) `tests/Property/WebSocketWireTests.elm` separately guarantees that `A` and `A0` keep constructor tag 0, which the WebSocket client relies on.
 
 ## Operations
 

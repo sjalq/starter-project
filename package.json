@@ -1,7 +1,7 @@
 {
   "name": "lamdera-starter-kit",
   "version": "1.0.0",
-  "description": "Create production-ready Lamdera apps with authentication, WebSockets, program-test, and more",
+  "description": "Production-minded Lamdera (Elm) starter: auth, permissions, RPC, logging, admin area and program tests",
   "author": "Schalk Dormehl",
   "license": "MIT",
   "repository": {
@@ -12,12 +12,6 @@
   "bugs": {
     "url": "https://github.com/sjalq/starter-project/issues"
   },
-  "bin": {
-    "lamdera-starter-kit": "./bin/lamdera-starter-kit.js"
-  },
-  "files": [
-    "bin/lamdera-starter-kit.js"
-  ],
   "scripts": {
     "build": "node compile.js",
     "test": "elm-test-rs --compiler lamdera",
@@ -29,18 +23,15 @@
     "elm",
     "starter",
     "template",
-    "scaffolding",
     "authentication",
     "websockets",
-    "program-test",
-    "create",
-    "cli",
-    "generator"
+    "program-test"
   ],
-  "engines": {
-    "node": ">=18"
-  },
   "devDependencies": {
     "elm-review": "^2.13.4"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=18"
   }
 }

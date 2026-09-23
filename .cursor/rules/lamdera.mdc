@@ -152,7 +152,6 @@ This section outlines general interaction patterns and coding style preferences.
      - Run the test suite
      - Compile the Frontend, Backend and RPC modules
    - Add or update program tests in `tests/Program/` for the new behaviour
-   - If `ToBackend` or `ToFrontend` changed, regenerate the wire protocol freeze (see CLAUDE.md)
 
 ### Diagram of the Workflow
 ```mermaid

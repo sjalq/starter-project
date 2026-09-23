@@ -31,17 +31,13 @@ import Simplify
 config : List Rule
 config =
     let
-        -- Submodules, Evergreen migrations and wire-extractor output are not hand-maintained
+        -- Vendored libraries and Evergreen migrations are not hand-maintained
         ignoreDirs =
-            [ "auth/", "lamdera-websocket-package/", "tools/", "src/Evergreen/" ]
-
-        ignoreFiles =
-            [ "tests/Protocol.elm", "tests/ProtocolWireProof.elm" ]
+            [ "auth/", "lamdera-websocket-package/", "src/Evergreen/" ]
 
         applyIgnores rule =
             rule
                 |> Rule.ignoreErrorsForDirectories ignoreDirs
-                |> Rule.ignoreErrorsForFiles ignoreFiles
     in
     [ Docs.ReviewAtDocs.rule |> applyIgnores
     , NoConfusingPrefixOperator.rule |> applyIgnores

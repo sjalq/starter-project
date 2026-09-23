@@ -60,22 +60,4 @@ jobs:
           npm run test:cli
 
       - name: Syntax-check Node scripts
-        run: for f in bin/*.js compile.js reset.js LLMBuildTools/*.cjs; do node --check "$f"; done
-
-      - name: Scaffold smoke test
-        run: |
-          git config --global user.name "CI"
-          git config --global user.email "ci@example.com"
-          cd "$RUNNER_TEMP"
-          node "$GITHUB_WORKSPACE/bin/lamdera-starter-kit.js" smoke-app -y --json > scaffold.json
-          node -e '
-            const r = JSON.parse(require("fs").readFileSync("scaffold.json", "utf8"));
-            if (!r.success || r.errors.length || r.warnings.length) {
-              console.error(JSON.stringify(r, null, 2));
-              process.exit(1);
-            }
-          '
-          test -f smoke-app/elm.json
-          test ! -e smoke-app/bin
-          test "$(git -C smoke-app submodule status | wc -l)" -eq 3
-          git -C smoke-app log --oneline -1
+        run: for f in compile.js reset.js LLMBuildTools/*.cjs; do node --check "$f"; done

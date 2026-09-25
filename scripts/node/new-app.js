@@ -48,15 +48,24 @@ const boot = api('agentBoot', {})
 if (!boot.ok) fail(`${boot.error?.message} Run \`lam login\` first.`)
 const email = boot.you.username
 
-// 2. The project, with its own admin and model key. Re-runs keep the existing key.
+// 2. The project, with its own admin and model key. Lamdera wants a production value
+//    for every Env.elm key the code uses, so any key the project doesn't have yet gets
+//    its local default. Re-runs keep what is already set.
 const existing = api('agentProject', { project: name })
+const alreadySet = new Set(existing.ok ? existing.project.env.map((e) => e.key) : [])
 const modelKey = crypto.randomBytes(32).toString('hex')
+const isSecret = (key) => /secret|token|key|password/i.test(key)
+
+// Top-level `name =\n    "value"` string definitions in src/Env.elm.
+const envDefaults = [...fs.readFileSync(path.join(root, 'src/Env.elm'), 'utf8').matchAll(/^([a-z][A-Za-z0-9_]*)\s*=\s*\n\s+"((?:[^"\\]|\\.)*)"/gm)]
+  .map(([, key, value]) => [key, JSON.parse(`"${value}"`)])
+const chosen = { sysAdminEmail: email, modelKey }
 const ops = [
   ...(existing.ok ? [] : [{ op: 'create_project', project: name, ...(team ? { team } : {}) }]),
   { op: 'set_env', project: name, key: 'sysAdminEmail', value: email, public: true },
-  ...(existing.ok && existing.project.env.some((e) => e.key === 'modelKey')
-    ? []
-    : [{ op: 'set_env', project: name, key: 'modelKey', value: modelKey }]),
+  ...envDefaults
+    .filter(([key]) => key !== 'sysAdminEmail' && !alreadySet.has(key))
+    .map(([key, value]) => ({ op: 'set_env', project: name, key, value: chosen[key] ?? value, public: !isSecret(key) })),
 ]
 const applied = api('agentApply', { ops })
 if (!applied.ok) fail(applied.error.message)
@@ -64,7 +73,7 @@ say(existing.ok ? `Project ${name} already exists; config updated.` : `Created p
 
 // Keep the model key locally (gitignored) so scripts/node/lamdera-cli can back up and read logs.
 const cliConfig = path.join(root, '.lamdera-cli.json')
-if (!fs.existsSync(cliConfig) && ops.some((o) => o.key === 'modelKey')) {
+if (!fs.existsSync(cliConfig) && !alreadySet.has('modelKey')) {
   fs.writeFileSync(
     cliConfig,
     JSON.stringify(
@@ -100,6 +109,8 @@ if (remotes.includes('origin') && !remotes.includes('template')) run('git', ['re
 const remote = `lamdera-git@127.0.0.1:${name}.git`
 if (run('git', ['remote']).stdout.split('\n').includes('lamdera')) run('git', ['remote', 'set-url', 'lamdera', remote])
 else run('git', ['remote', 'add', 'lamdera', remote])
+// lamdera deploys production from main (other branches become previews).
+run('git', ['branch', '-M', 'main'])
 run('git', ['add', '-A'])
 run('git', ['commit', '-q', '-m', `Start ${name} from the starter kit`])
 

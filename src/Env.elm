@@ -2,8 +2,8 @@ module Env exposing (Mode(..), auth0AppClientId, auth0AppClientSecret, auth0AppT
 
 {-| Per-environment configuration.
 
-Values here are the local development defaults. Set production values in the
-Lamdera dashboard: <https://dashboard.lamdera.app/docs/environment>
+Values here are the local development defaults. Production values come from the
+dashboard on the sjalq.app box: `set_env` (see README, "Live on the sjalq.app box").
 
 -}
 

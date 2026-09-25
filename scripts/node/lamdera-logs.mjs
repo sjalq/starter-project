@@ -147,7 +147,7 @@ Options:
     process.exit(1);
   }
 
-  const baseUrl = `https://${appName}.lamdera.app`;
+  const baseUrl = `https://${appName}.sjalq.app`;
 
   // Status doesn't need a key
   if (args.command === "status") {

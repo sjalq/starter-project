@@ -5,12 +5,8 @@
       "modelKey": "1234567890"
     },
     "prod": {
-      "url": "https://your-app.lamdera.app",
+      "url": "https://your-app.sjalq.app",
       "modelKey": "YOUR_PRODUCTION_MODEL_KEY"
-    },
-    "preview": {
-      "url": "https://your-app-preview.lamdera.app",
-      "modelKey": "YOUR_PREVIEW_MODEL_KEY"
     }
   },
   "defaultEnv": "local"

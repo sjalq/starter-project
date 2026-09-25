@@ -13,6 +13,10 @@ npm run review                      # elm-review (npm install once)
 ./reset.sh                          # clears the compiler cache on Types.w3_encode_* errors
 ```
 
+## Deploying (sjalq.app box)
+
+This is the `lam` branch. Apps go live at `https://<name>.sjalq.app` via `lam deploy`, never lamdera.app. First deploy: `node scripts/node/new-app.js <name>` (needs `lam login`). After that: `./compile.sh`, commit, `lam deploy`. Production config: `lam api agentApply` `set_env`. Full steps in README "Live on the sjalq.app box"; account-level operations in <https://lmd.sjalq.app/llm_guide.md>.
+
 ## Laws
 
 **MISI first.** Shape types so invalid states cannot be constructed; tests are the second line. When you catch a bug, first ask what type change makes that class of bug impossible.
@@ -130,4 +134,4 @@ Shell: `lamdera backend --import='import Dict' --eval='Dict.size model.users'`.
 
 ## Evergreen migrations
 
-Run `lamdera check` (or `lamdera deploy`) first so Lamdera generates the skeletons in `src/Evergreen/`, then edit the generated code.
+Run `lam check` (or `lam deploy`) first so Lamdera generates the skeletons in `src/Evergreen/`, then edit the generated code.

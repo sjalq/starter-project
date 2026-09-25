@@ -13,6 +13,27 @@ lamdera live
 
 Open <http://localhost:8000> and sign in with the development account `admin@example.com` / `admin` (seeded locally only).
 
+## Live on the sjalq.app box
+
+This `lam` branch deploys to the self-hosted Lamdera box, where apps live at `https://<name>.sjalq.app`. From a shell on the box (a harness agent's shell works):
+
+```bash
+lam login                       # once per machine; a human approves the printed URL
+git clone -b lam --recursive https://github.com/sjalq/starter-project.git ~/workspace/<name>
+cd ~/workspace/<name> && npm install
+node scripts/node/new-app.js <name> [--team <team>]
+```
+
+`new-app.js` creates the project on the box, makes your account its SysAdmin (`sysAdminEmail`) with a fresh `modelKey` (also saved to the gitignored `.lamdera-cli.json`), renames the kit, sets the `lamdera` git remote to `lamdera-git@127.0.0.1:<name>.git`, compiles, commits and runs `lam deploy`. It prints the live URL. Re-running it is safe.
+
+After that the loop is: change code, `./compile.sh`, commit, `lam deploy`.
+
+- **Sign-in:** new projects start with the box's shared Auth0 application (wildcard callbacks on `*.sjalq.app`), so "Continue with Google" works on the first deploy. Sign in with your own Google account to become SysAdmin and reach `/admin`. Email/password signup works too.
+- **Config:** production values are set with `lam api agentApply` `set_env` ops (secret unless `"public": true`) and apply on the next `lam deploy`. If a deploy stops with MISSING PRODUCTION CONFIG, set the keys it names.
+- **Type changes:** `lam deploy` writes `src/Evergreen/Migrate/V<n>.elm` and stops. Implement the `Unimplemented` parts, carrying every field forward, commit, deploy again.
+- **Logs:** `lam api agentLogs '{"project":"<name>"}'` (the box's process log), or `/admin/logs` and `node scripts/node/lamdera-cli/index.js logs --env prod` (the app's own log).
+- **Everything else** (teams, invites, deleting, tokens): <https://lmd.sjalq.app/llm_guide.md>.
+
 ## What you get
 
 ```
@@ -58,7 +79,7 @@ npm run test:cli           Test lamdera-cli (run `npm ci --prefix scripts/node/l
 
 ## Configuration
 
-Local development uses the defaults in `src/Env.elm`. Set production values in the [Lamdera dashboard](https://dashboard.lamdera.app/docs/environment):
+Local development uses the defaults in `src/Env.elm`. Set production values with `set_env` (see "Live on the sjalq.app box"):
 
 ```
 modelKey              Secret for /_r/getModel, /_r/setModel and /_r/getLogs.

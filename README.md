@@ -29,7 +29,7 @@ node scripts/node/new-app.js <name> [--team <team>]
 After that the loop is: change code, `./compile.sh`, commit, `lam deploy`.
 
 - **Sign-in:** new projects start with the box's shared Auth0 application (wildcard callbacks on `*.sjalq.app`), so "Continue with Google" works on the first deploy. Sign in with your own Google account to become SysAdmin and reach `/admin`. Email/password signup works too.
-- **Config:** production values are set with `lam api agentApply` `set_env` ops (secret unless `"public": true`) and apply on the next `lam deploy`. If a deploy stops with MISSING PRODUCTION CONFIG, set the keys it names.
+- **Config:** production values are set with `lam api agentApply` `set_env` ops (secret unless `"public": true`) and apply on the next `lam deploy`. With no code change, deploy with `git commit --allow-empty -m "Apply config" && lam deploy` (a deploy without a new commit pushes nothing). If a deploy stops with MISSING PRODUCTION CONFIG, set the keys it names.
 - **Type changes:** `lam deploy` writes `src/Evergreen/Migrate/V<n>.elm` and stops. Implement the `Unimplemented` parts, carrying every field forward, commit, deploy again.
 - **Logs:** `lam api agentLogs '{"project":"<name>"}'` (the box's process log), or `/admin/logs` and `node scripts/node/lamdera-cli/index.js logs --env prod` (the app's own log).
 - **Everything else** (teams, invites, deleting, tokens): <https://lmd.sjalq.app/llm_guide.md>.

@@ -15,7 +15,7 @@ npm run review                      # elm-review (npm install once)
 
 ## Deploying (sjalq.app box)
 
-This is the `lam` branch. Apps go live at `https://<name>.sjalq.app` via `lam deploy`, never lamdera.app. First deploy: `node scripts/node/new-app.js <name>` (needs `lam login`). After that: `./compile.sh`, commit, `lam deploy`. Production config: `lam api agentApply` `set_env`. Full steps in README "Live on the sjalq.app box"; account-level operations in <https://lmd.sjalq.app/llm_guide.md>.
+This is the `lam` branch. Apps go live at `https://<name>.sjalq.app` via `lam deploy`, never lamdera.app. First deploy: `node scripts/node/new-app.js <name>` (needs `lam login`). After that: `./compile.sh`, commit, `lam deploy`. Production config: `lam api agentApply` `set_env`, then deploy (config-only: `git commit --allow-empty -m "Apply config"` first). Full steps in README "Live on the sjalq.app box"; account-level operations in <https://lmd.sjalq.app/llm_guide.md>.
 
 ## Laws
 
